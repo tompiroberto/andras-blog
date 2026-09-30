@@ -1,0 +1,63 @@
+{
+  "owner": "András",
+  "nicknames": [
+    "Später",
+    "ანდრო"
+  ],
+  "email": "nincsemailcimemhosszuivel@gmail.com",
+  "strava": "https://strava.app.link/nSMCGZAQL6b",
+  "instagram": {
+    "url": "https://instagram.com/pum_939",
+    "handle": "@pum_939"
+  },
+  "facebook": "https://www.facebook.com/share/1DVEhLBoM5/",
+  "currentlyIn": {
+    "countryId": "GR",
+    "program": "Erasmus+"
+  },
+  "personalBests": [
+    {
+      "distance": "3 km",
+      "time": "9:29",
+      "ringFill": 0.72
+    },
+    {
+      "distance": "5 km",
+      "time": "16:20",
+      "ringFill": 0.8
+    },
+    {
+      "distance": "10 km",
+      "time": "34:40",
+      "ringFill": 0.88
+    }
+  ],
+  "raceBadges": [
+    {
+      "label": "Split 21k",
+      "icon": "trophy"
+    },
+    {
+      "label": "Youth Skyrunning Worlds 2026",
+      "icon": "mountain"
+    }
+  ],
+  "languages": [
+    {
+      "key": "lang.english",
+      "level": "solid"
+    },
+    {
+      "key": "lang.german",
+      "level": "solid"
+    },
+    {
+      "key": "lang.spanish",
+      "level": "learning"
+    },
+    {
+      "key": "lang.georgian",
+      "level": "learning"
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "_comment": "North to south. position = share of the page scroll (0 = top of page, 1 = bottom). position = (lat - latArica) / (latPuntaArenas - latArica).",
+  "cities": [
+    {
+      "name": "Arica",
+      "lat": -18.48,
+      "lon": -70.31,
+      "position": 0
+    },
+    {
+      "name": "Iquique",
+      "lat": -20.21,
+      "lon": -70.15,
+      "position": 0.05
+    },
+    {
+      "name": "Calama",
+      "lat": -22.46,
+      "lon": -68.93,
+      "position": 0.115
+    },
+    {
+      "name": "Antofagasta",
+      "lat": -23.65,
+      "lon": -70.4,
+      "position": 0.149
+    },
+    {
+      "name": "Copiapó",
+      "lat": -27.37,
+      "lon": -70.33,
+      "position": 0.256
+    },
+    {
+      "name": "La Serena",
+      "lat": -29.9,
+      "lon": -71.25,
+      "position": 0.329
+    },
+    {
+      "name": "Valparaíso",
+      "lat": -33.05,
+      "lon": -71.62,
+      "position": 0.42
+    },
+    {
+      "name": "Santiago",
+      "lat": -33.45,
+      "lon": -70.67,
+      "position": 0.432
+    },
+    {
+      "name": "Talca",
+      "lat": -35.43,
+      "lon": -71.66,
+      "position": 0.489
+    },
+    {
+      "name": "Concepción",
+      "lat": -36.83,
+      "lon": -73.05,
+      "position": 0.529
+    },
+    {
+      "name": "Temuco",
+      "lat": -38.74,
+      "lon": -72.59,
+      "position": 0.584
+    },
+    {
+      "name": "Valdivia",
+      "lat": -39.81,
+      "lon": -73.25,
+      "position": 0.615
+    },
+    {
+      "name": "Puerto Montt",
+      "lat": -41.47,
+      "lon": -72.94,
+      "position": 0.663
+    },
+    {
+      "name": "Coyhaique",
+      "lat": -45.57,
+      "lon": -72.07,
+      "position": 0.781
+    },
+    {
+      "name": "Punta Arenas",
+      "lat": -53.16,
+      "lon": -70.91,
+      "position": 1
+    }
+  ]
+}

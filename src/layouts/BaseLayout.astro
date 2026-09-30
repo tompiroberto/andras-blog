@@ -1,0 +1,282 @@
+---
+import '@fontsource/unbounded/700.css';
+import '@fontsource/unbounded/800.css';
+import '@fontsource/dm-sans/400.css';
+import '@fontsource/dm-sans/500.css';
+import '@fontsource/dm-sans/700.css';
+import '@fontsource/noto-sans/greek-400.css';
+import '@fontsource/noto-sans/greek-700.css';
+import '@fontsource/noto-sans-georgian/400.css';
+import '@fontsource/noto-sans-georgian/700.css';
+import '../styles/global.css';
+import unboundedPreload from '@fontsource/unbounded/files/unbounded-latin-800-normal.woff2?url';
+import dmSans400Preload from '@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff2?url';
+import dmSans700Preload from '@fontsource/dm-sans/files/dm-sans-latin-700-normal.woff2?url';
+
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import ChileScroll from '../components/ChileScroll.astro';
+import CoordinateGrid from '../components/CoordinateGrid.astro';
+import WorldLayer from '../components/WorldLayer.astro';
+import FactCard from '../components/FactCard.astro';
+import ChaosView from '../components/ChaosView.astro';
+import MapMode from '../components/MapMode.astro';
+import RibbonSwitch from '../components/RibbonSwitch.astro';
+import Roadside from '../components/Roadside.astro';
+import PlaceMessage from '../components/PlaceMessage.astro';
+import CvView from '../components/CvView.astro';
+import NutellaRain from '../components/NutellaRain.astro';
+import CountryView from '../components/CountryView.astro';
+import RouteView from '../components/RouteView.astro';
+import ZoomSpace from '../components/ZoomSpace.astro';
+import HorizonScene from '../components/HorizonScene.astro';
+import DevMode from '../components/DevMode.astro';
+import StreetView from '../components/StreetView.astro';
+import { CV_STORAGE_KEY, STREET_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, MAP_MODE_STORAGE_KEY, CITIES_STORAGE_KEY, GRID_STORAGE_KEY, RIBBON_STORAGE_KEY, RIBBON_TRUE_STORAGE_KEY, THEME_STORAGE_KEY, ZOOM_STORAGE_KEY } from '../lib/constants';
+import { DEFAULT_ZOOM, ZOOM_MAX, ZOOM_MIN } from '../lib/zoom';
+import { THEMES } from '../lib/themes';
+import { RIBBON_WIDTHS } from '../lib/ribbon';
+import { HTML_LANG, LOCALES, localePath, stripLang, t, type Lang } from '../i18n';
+import site from '../data/site.json';
+
+interface Props {
+  lang: Lang;
+  /** Page title (without the site name); omit on the home page */
+  title?: string;
+  description?: string;
+  ogType?: 'website' | 'article';
+  /** Override the path used for alternates (defaults to the current URL) */
+  path?: string;
+}
+
+const { lang, title, description = t(lang, 'meta.description'), ogType = 'website' } = Astro.props;
+const path = Astro.props.path ?? stripLang(Astro.url.pathname);
+
+const fullTitle = title ? `${title} · ${site.owner}` : `${t(lang, 'hero.title')} · ${site.owner}`;
+const siteUrl = Astro.site ?? new URL('https://example.com');
+const canonical = new URL(localePath(lang, path), siteUrl).href;
+const ogImage = new URL('/images/andras.jpg', siteUrl).href;
+const ogLocale = HTML_LANG[lang].replace('-', '_');
+const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
+---
+
+<!doctype html>
+<html lang={HTML_LANG[lang]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#7B2FF7" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    {LOCALES.map((l) => <link rel="alternate" hreflang={HTML_LANG[l]} href={new URL(localePath(l, path), siteUrl).href} />)}
+    <link rel="alternate" hreflang="x-default" href={new URL(localePath('en', path), siteUrl).href} />
+
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={site.owner} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="800" />
+    <meta property="og:image:alt" content={t(lang, 'about.photoAlt')} />
+    <meta property="og:locale" content={ogLocale} />
+    {
+      LOCALES.filter((l) => l !== lang).map((l) => (
+        <meta property="og:locale:alternate" content={HTML_LANG[l].replace('-', '_')} />
+      ))
+    }
+    <meta name="twitter:card" content="summary" />
+
+    {
+      usesLatinHeadings &&
+        [unboundedPreload, dmSans400Preload, dmSans700Preload].map((href) => <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />)
+    }
+
+    <script is:inline define:vars={{ streetKey: STREET_STORAGE_KEY, cvKey: CV_STORAGE_KEY, horizontalKey: HORIZONTAL_STORAGE_KEY, mapModeKey: MAP_MODE_STORAGE_KEY, ribbonTrueKey: RIBBON_TRUE_STORAGE_KEY, zoomKey: ZOOM_STORAGE_KEY, zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX, defaultZoom: DEFAULT_ZOOM, citiesKey: CITIES_STORAGE_KEY, gridKey: GRID_STORAGE_KEY, ribbonKey: RIBBON_STORAGE_KEY, themeKey: THEME_STORAGE_KEY, themes: THEMES.map((x) => x.id), ribbonWidths: RIBBON_WIDTHS }}>
+      document.documentElement.classList.add('js');
+      // Netlify Identity e-mails (invite, password reset) link to the home page: the editor handles them
+      if (/(invite|recovery|confirmation|email_change)_token=/.test(location.hash)) location.replace('/admin/' + location.hash);
+      // page zoom (slider): saved level, else the default "zoomed out a bit".
+      // Same formula as zoomVars() in src/lib/zoom.ts.
+      var zoom = defaultZoom;
+      try {
+        var savedZoom = Number(localStorage.getItem(zoomKey));
+        if (savedZoom >= zoomMin && savedZoom <= zoomMax) zoom = savedZoom;
+      } catch (e) {}
+      var z = zoom / 100;
+      document.documentElement.style.zoom = String(z);
+      document.documentElement.style.setProperty('--tz', '1');
+      document.documentElement.style.setProperty('--fill', '1');
+      document.documentElement.style.setProperty('--inv-zoom', String(1 / z));
+      if (z < 1) document.documentElement.classList.add('zoomed-out');
+      try {
+        if (localStorage.getItem(gridKey) === '1') document.documentElement.classList.add('grid-on');
+        if (localStorage.getItem(citiesKey) === '0') document.documentElement.classList.add('cities-off');
+        if (localStorage.getItem(mapModeKey) === '1') document.documentElement.classList.add('map-mode');
+        if (localStorage.getItem(horizontalKey) === '1') document.documentElement.classList.add('horizontal');
+        if (localStorage.getItem(cvKey) === '1') document.documentElement.classList.add('cv-mode');
+        if (localStorage.getItem(streetKey) === '1') document.documentElement.classList.add('street-mode');
+        if (localStorage.getItem(ribbonTrueKey) === '1') document.documentElement.classList.add('ribbon-true');
+        var ribbon = localStorage.getItem(ribbonKey);
+        if (ribbon && ribbon !== 'chile' && ribbonWidths[ribbon]) {
+          document.documentElement.dataset.ribbon = ribbon;
+          document.documentElement.style.setProperty('--ribbon-w-current', ribbonWidths[ribbon] + 'px');
+        }
+        var theme = localStorage.getItem(themeKey);
+        if (theme && theme !== 'violet' && themes.indexOf(theme) !== -1) document.documentElement.dataset.theme = theme;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <ZoomSpace lang={lang} />
+    <HorizonScene />
+    <a class="skip-link" href="#main">{t(lang, 'a11y.skip')}</a>
+    <WorldLayer />
+    <Header lang={lang} path={path} />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+    <Roadside />
+    <ChileScroll lang={lang} />
+    <RibbonSwitch lang={lang} />
+    <CoordinateGrid />
+    <MapMode lang={lang} />
+    <ChaosView lang={lang} />
+    <FactCard lang={lang} />
+    <NutellaRain lang={lang} />
+    <CountryView lang={lang} />
+    <RouteView lang={lang} />
+    <CvView lang={lang} />
+    <PlaceMessage lang={lang} />
+    <DevMode lang={lang} />
+    <StreetView lang={lang} />
+
+    <script>
+      import { HORIZONTAL_EVENT, REDUCED_MOTION_QUERY, ZOOM_EVENT } from '../lib/constants';
+      import { applySeen } from '../lib/seen';
+
+      // "already looked at" marks: re-applied (at most once a frame) whenever labels are drawn again
+      let seenQueued = false;
+      new MutationObserver(() => {
+        if (seenQueued) return;
+        seenQueued = true;
+        requestAnimationFrame(() => {
+          seenQueued = false;
+          applySeen();
+        });
+      }).observe(document.body, { childList: true, subtree: true });
+
+      // Horizontal page: the mouse wheel scrolls sideways (anything that scrolls on its own, like the
+      // message box, scrolls first).
+      const root = document.documentElement;
+      window.addEventListener(
+        'wheel',
+        (e) => {
+          if (!root.classList.contains('horizontal') || root.classList.contains('map-mode') || e.ctrlKey) return;
+          if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // sideways trackpad gesture: native
+          for (let el = e.target as Element | null; el && el !== document.body; el = el.parentElement) {
+            if (!(el instanceof HTMLElement) || el.scrollHeight <= el.clientHeight + 1) continue;
+            if (!/(auto|scroll)/.test(getComputedStyle(el).overflowY)) continue;
+            const atTop = el.scrollTop <= 0;
+            const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+            if ((e.deltaY < 0 && !atTop) || (e.deltaY > 0 && !atBottom)) return;
+          }
+          e.preventDefault();
+          window.scrollBy({ left: e.deltaY * (e.deltaMode === 1 ? 32 : 1), behavior: 'instant' });
+        },
+        { passive: false },
+      );
+      // Horizontal page: nothing scrolls up or down. Every column's content is zoomed out by one shared
+      // factor (--col-fit), just enough that the tallest section fits the screen.
+      const columns = () => Array.from(document.querySelectorAll<HTMLElement>('main > :not(script), body > .site-footer'));
+      function flow() {
+        root.style.removeProperty('--col-fit');
+        if (!root.classList.contains('horizontal')) return;
+        // measured at full size (the scale is a transform, so it does not change the layout)
+        let fit = 1;
+        for (const col of columns()) {
+          const box = col.getBoundingClientRect();
+          if (!box.height || !col.offsetHeight) continue;
+          // on screen, content only (the clipped background globes don't count); the content is
+          // centred, so it can stick out at the top as well as at the bottom
+          const scale = box.height / col.offsetHeight;
+          const cs = getComputedStyle(col);
+          const avail = box.height - ((parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0)) * scale;
+          let top = Infinity;
+          let bottom = -Infinity;
+          for (const child of Array.from(col.children)) {
+            if (child.classList.contains('bg-layer')) continue;
+            const r = child.getBoundingClientRect();
+            if (!r.height) continue;
+            top = Math.min(top, r.top);
+            bottom = Math.max(bottom, r.bottom);
+          }
+          const used = bottom - top;
+          if (used > avail + 2) fit = Math.min(fit, avail / used);
+        }
+        root.style.setProperty('--col-fit', Math.max(0.45, fit).toFixed(3));
+      }
+      let flowTimer = 0;
+      const scheduleFlow = () => {
+        window.clearTimeout(flowTimer);
+        flowTimer = window.setTimeout(flow, 120);
+      };
+      window.addEventListener('resize', scheduleFlow);
+      window.addEventListener(ZOOM_EVENT, scheduleFlow);
+      window.addEventListener('load', flow);
+      document.addEventListener('load', scheduleFlow, true); // images arriving change heights
+      document.fonts?.ready.then(flow);
+      flow();
+      // switching the axis: start from the beginning and let everything re-measure
+      window.addEventListener(HORIZONTAL_EVENT, () => {
+        flow();
+        window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      // Scroll-reveal: fade sections up once when they enter the viewport
+      const revealables = document.querySelectorAll<HTMLElement>('.reveal');
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                io.unobserve(entry.target);
+              }
+            }
+          },
+          { rootMargin: '0px 0px -10% 0px', threshold: 0.08 },
+        );
+        revealables.forEach((el) => io.observe(el));
+      } else {
+        revealables.forEach((el) => el.classList.add('is-visible'));
+      }
+
+      // SMIL animations (breathing globe meridians) are not covered by the CSS rule
+      const reduced = window.matchMedia(REDUCED_MOTION_QUERY);
+      const syncSmil = () =>
+        document.querySelectorAll<SVGSVGElement>('svg').forEach((svg) => {
+          if (!svg.querySelector('animate')) return;
+          if (reduced.matches) {
+            svg.pauseAnimations();
+            svg.setCurrentTime(0);
+          } else svg.unpauseAnimations();
+        });
+      syncSmil();
+      reduced.addEventListener('change', syncSmil);
+    </script>
+  </body>
+</html>
+
+<style>
+  main:focus {
+    outline: none;
+  }
+</style>

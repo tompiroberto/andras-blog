@@ -1,0 +1,138 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Globe from '../../components/Globe.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import { langStaticPaths, localePath, t, type Lang } from '../../i18n';
+import site from '../../data/site.json';
+
+export const getStaticPaths = langStaticPaths;
+
+const lang = Astro.params.lang as Lang;
+// Short notice in English; Hungarian for /hu/. Other languages show the English text.
+const textLang = lang === 'hu' ? 'hu' : 'en';
+const mail = site.email;
+---
+
+<BaseLayout lang={lang} title={t(lang, 'footer.privacy')}>
+  <section class="section privacy">
+    <div class="bg-layer">
+      <Globe size="min(620px, 110vw)" right="-16%" top="-20%" speed={80} dots={false} />
+    </div>
+    <div class="container">
+      <a class="link-arrow back-link" href={localePath(lang)}>{t(lang, 'posts.back')}</a>
+      <SectionHeading icon="shield-check" as="h1">{t(lang, 'footer.privacy')}</SectionHeading>
+
+      <div class="prose card" lang={textLang}>
+        {
+          textLang === 'hu' ? (
+            <>
+              <h2>Kapcsolatfelvételi űrlap</h2>
+              <p>
+                Ha az „Üzenj!” űrlapon keresztül írsz nekem, a következő adatokat kapom meg: a <strong>neved</strong>, az
+                általad megadott <strong>elérhetőséged</strong> (e-mail-cím vagy Instagram-név – ez nem kötelező) és az{' '}
+                <strong>üzeneted</strong>.
+              </p>
+              <p>
+                Ezeket az adatokat kizárólag arra használom, hogy válaszolni tudjak neked. Az üzenetek soha nem jelennek meg
+                nyilvánosan az oldalon, és nem adom tovább őket senkinek.
+              </p>
+              <p>
+                Az űrlapot a Netlify (az oldal tárhelyszolgáltatója) kezeli, így a beküldött üzeneteket a Netlify tárolja.
+              </p>
+              <h2>Városkereső</h2>
+              <p>
+                A városkereső a beírt szöveget elküldi az Open-Meteo szolgáltatásnak (open-meteo.com) – ha az nem válaszol,
+                az OpenStreetMap Nominatim szolgáltatásnak –, hogy megtalálja a város koordinátáit. Ha egy városra kattintasz, a böngésződ elküldi a nevét és a koordinátáit a Wikipédiának, hogy egy érdekes tényt mutasson róla. Ez az oldal a kereséseket nem tárolja.
+              </p>
+              <h2>„Távolság tőlem”</h2>
+              <p>
+                A térképes nézet domborzati térképén a „Távolság tőlem” gomb megnyomásakor a böngésződ a GeoJS
+                szolgáltatástól (geojs.io) kéri le az IP-címed alapján becsült helyet (város szintjén). Ez csak a gomb
+                megnyomásakor történik. Ha inkább beírod a helyzeted, azt csak a böngésződ tárolja (localStorage).
+              </p>
+              <h2>Országoldalak és útvonaltervező</h2>
+              <p>
+                Ha megnyitsz egy országoldalt (dupla kattintás a görgetősávon), a böngésződ látogatásonként egyszer a GeoJS-től
+                (geojs.io) lekéri az IP-címed alapján becsült helyet – csak azért, hogy kiderüljön, repülő, autó vagy stoppolás
+                legyen az animáció –, és betölt egy képet a Wikipédiáról (wikipedia.org / wikimedia.org). Az útvonaltervező a
+                beírt helyről indul (ezt csak a böngésződ tárolja), vagy ha kéred, az IP-címed alapján becsült helyről.
+              </p>
+              <h2>Strava</h2>
+              <p>
+                Egyes bejegyzésekben Strava-aktivitások vannak beágyazva. Ezeket a Strava (strava.com) szolgáltatja,
+                ezért azokon az oldalakon a böngésződ kapcsolatba lép a Strava szervereivel.
+              </p>
+              <h2>Törlés</h2>
+              <p>
+                Ha szeretnéd, hogy töröljem az üzenetedet és az adataidat, írj egy e-mailt a{' '}
+                <a href={`mailto:${mail}`}>{mail}</a> címre, és törlöm őket.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2>Contact form</h2>
+              <p>
+                When you write to me through the “Message me” form, I receive your <strong>name</strong>, the optional{' '}
+                <strong>contact details</strong> you enter (an e-mail address or Instagram handle) and your{' '}
+                <strong>message</strong>.
+              </p>
+              <p>
+                I only use this information to reply to you. Messages are never shown publicly on this site and are not
+                shared with anyone else.
+              </p>
+              <p>The form is handled by Netlify, the host of this site, so submitted messages are stored by Netlify.</p>
+              <h2>City search</h2>
+              <p>
+                The city search sends the text you type to Open-Meteo (open-meteo.com) – or, if that does not answer,
+                to OpenStreetMap Nominatim – to look up the city's coordinates. When you click a city, its name and coordinates are sent to Wikipedia to show a fact about it. This site does not store your searches.
+              </p>
+              <h2>"Distance from me"</h2>
+              <p>
+                On the terrain view of map mode, pressing "Distance from me" makes your browser ask GeoJS (geojs.io) for
+                the approximate location of your IP address (city level). This only happens when you press the button.
+                If you type in your location instead, it is only stored in your browser (localStorage).
+              </p>
+              <h2>Country pages and the route planner</h2>
+              <p>
+                When you open a country page (double-click the scrollbar), your browser asks GeoJS (geojs.io) once per visit
+                for the approximate location of your IP address, only to choose the travel animation (plane, car or
+                hitchhiking), and loads a photo from Wikipedia (wikipedia.org / wikimedia.org). The route planner starts
+                from the place you type (stored only in your browser) or, if you ask for it, from your IP location.
+              </p>
+              <h2>Strava</h2>
+              <p>
+                Some posts embed Strava activities. They are served by Strava (strava.com), so on those pages your browser
+                connects to Strava's servers.
+              </p>
+              <h2>Deletion</h2>
+              <p>
+                If you would like your message and details deleted, write to <a href={`mailto:${mail}`}>{mail}</a> and I will
+                delete them.
+              </p>
+            </>
+          )
+        }
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .privacy {
+    padding-top: clamp(32px, 6vw, 72px);
+    padding-bottom: 0;
+  }
+  .privacy :global(.section-heading) {
+    margin-top: 16px;
+  }
+  .privacy .card {
+    max-width: calc(70ch * var(--tz));
+  }
+  .privacy .card h2:first-child {
+    margin-top: 0;
+  }
+  .back-link::after {
+    order: -1;
+    transform: rotate(180deg);
+  }
+</style>

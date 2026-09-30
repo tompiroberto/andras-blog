@@ -1,0 +1,246 @@
+---
+/**
+ * Chooses the scrollbar ribbon (country or river), grouped by continent. A native <select> with
+ * <optgroup>s: accessible, keyboard-friendly and a proper picker on phones. Instances stay in sync.
+ */
+import Icon from './Icon.astro';
+import { t, type Lang, type TKey } from '../i18n';
+import { CONTINENTS, DEFAULT_RIBBON, getRibbons } from '../lib/ribbon';
+
+interface Props {
+  lang: Lang;
+  /** 'floating' = above the ribbon (desktop), 'inline' = inside the mobile menu */
+  variant?: 'floating' | 'inline';
+}
+
+const { lang, variant = 'floating' } = Astro.props;
+const ribbons = getRibbons();
+const id = `ribbon-select-${variant}`;
+const label = t(lang, 'scroll.switch');
+---
+
+<div class:list={['ribbon-switch', `ribbon-switch--${variant}`]} data-ribbon-switch>
+  <label class:list={{ 'visually-hidden': variant === 'floating' }} for={id}>{label}</label>
+  <div class="ribbon-switch__field">
+    <select id={id} data-ribbon-select>
+      {
+        CONTINENTS.map((continent) => (
+          <optgroup label={t(lang, `continent.${continent}` as TKey)}>
+            {ribbons
+              .filter((r) => r.continent === continent)
+              .map((r) => (
+                <option value={r.id} data-width={r.width} selected={r.id === DEFAULT_RIBBON}>
+                  {t(lang, r.nameKey)}
+                </option>
+              ))}
+          </optgroup>
+        ))
+      }
+    </select>
+    <span class="ribbon-switch__chevron" aria-hidden="true"><Icon name="chevron-down" size={16} /></span>
+  </div>
+  <button type="button" class="ribbon-open" data-ribbon-open aria-label={t(lang, 'cf.open')} title={t(lang, 'cf.open')}>
+    <Icon name="maximize-2" size={16} />
+  </button>
+  {
+    variant === 'floating' && (
+      <button type="button" class="ribbon-stretch" role="switch" aria-checked="true" data-ribbon-stretch>
+        <span class="ribbon-stretch__track" aria-hidden="true">
+          <span class="ribbon-stretch__knob" />
+        </span>
+        {t(lang, 'scroll.distort')}
+      </button>
+    )
+  }
+</div>
+
+<style>
+  .ribbon-switch__field {
+    position: relative;
+    display: inline-flex;
+  }
+  .ribbon-open {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .ribbon-open:hover,
+  .ribbon-open:focus-visible {
+    background: var(--yellow);
+  }
+  .ribbon-switch select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 700;
+    line-height: 1.2;
+    max-width: 100%;
+    text-overflow: ellipsis;
+  }
+  .ribbon-switch select:hover {
+    background: var(--violet-tint);
+  }
+  .ribbon-switch__chevron {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    display: grid;
+  }
+
+  .ribbon-switch--floating {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    position: fixed;
+    z-index: var(--z-chile);
+    right: 12px;
+    top: calc(var(--header-h) + 12px);
+    max-width: calc(var(--chile-space) - 16px);
+  }
+  .ribbon-switch--floating select {
+    min-height: 32px;
+    padding: 5px 32px 5px 14px;
+    font-size: 13px;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .ribbon-stretch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    padding: 4px 12px 4px 6px;
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .ribbon-stretch:hover {
+    background: var(--violet-tint);
+  }
+  .ribbon-stretch__track {
+    position: relative;
+    flex: none;
+    width: 30px;
+    height: 18px;
+    border-radius: 999px;
+    border: 2px solid var(--ink);
+    background: var(--bg);
+    transition: background-color var(--t-fast);
+  }
+  .ribbon-stretch__knob {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--ink);
+    transition: transform var(--t-fast) var(--ease);
+  }
+  .ribbon-stretch[aria-checked='true'] .ribbon-stretch__track {
+    background: var(--violet);
+  }
+  .ribbon-stretch[aria-checked='true'] .ribbon-stretch__knob {
+    transform: translateX(12px);
+    background: #fff;
+  }
+
+  .ribbon-switch--inline {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .ribbon-switch--inline label {
+    font-weight: 700;
+    font-size: var(--fs-small);
+  }
+  .ribbon-switch--inline select {
+    min-height: var(--touch);
+    padding: 8px 40px 8px 18px;
+    font-size: var(--fs-small);
+  }
+
+  /* The floating switch belongs to the full desktop ribbon */
+  @media (max-width: 899px), (pointer: coarse) {
+    .ribbon-switch--floating {
+      display: none;
+    }
+  }
+  @media print {
+    .ribbon-switch--floating {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { COUNTRY_EVENT, RIBBON_EVENT, RIBBON_STORAGE_KEY, RIBBON_TRUE_STORAGE_KEY } from '../lib/constants';
+
+  const html = document.documentElement;
+  const selects = document.querySelectorAll<HTMLSelectElement>('[data-ribbon-select]');
+  const DEFAULT = 'chile';
+  const current = () => html.dataset.ribbon || DEFAULT;
+
+  function apply(id: string) {
+    if (id === DEFAULT) delete html.dataset.ribbon;
+    else html.dataset.ribbon = id;
+    const opt = selects[0]?.querySelector<HTMLOptionElement>(`option[value="${id}"]`);
+    html.style.setProperty('--ribbon-w-current', `${opt?.dataset.width ?? 56}px`);
+    window.dispatchEvent(new Event(RIBBON_EVENT));
+  }
+  const sync = () => selects.forEach((s) => (s.value = current()));
+
+  selects.forEach((s) =>
+    s.addEventListener('change', () => {
+      try {
+        localStorage.setItem(RIBBON_STORAGE_KEY, s.value);
+      } catch {
+        /* storage unavailable */
+      }
+      apply(s.value);
+    }),
+  );
+  window.addEventListener(RIBBON_EVENT, sync);
+  document.querySelectorAll<HTMLButtonElement>('[data-ribbon-open]').forEach((b) =>
+    b.addEventListener('click', () => window.dispatchEvent(new CustomEvent(COUNTRY_EVENT, { detail: current() }))),
+  );
+  window.addEventListener('storage', (e) => {
+    if (e.key === RIBBON_STORAGE_KEY) apply(e.newValue || DEFAULT);
+  });
+  sync();
+
+  // Stretched ribbon (on, default) or true proportions (off)
+  document.querySelectorAll<HTMLButtonElement>('[data-ribbon-stretch]').forEach((b) => {
+    const syncStretch = () => b.setAttribute('aria-checked', String(!html.classList.contains('ribbon-true')));
+    b.addEventListener('click', () => {
+      const trueShape = html.classList.toggle('ribbon-true');
+      try {
+        localStorage.setItem(RIBBON_TRUE_STORAGE_KEY, trueShape ? '1' : '0');
+      } catch {
+        /* storage unavailable */
+      }
+      window.dispatchEvent(new Event(RIBBON_EVENT));
+    });
+    window.addEventListener(RIBBON_EVENT, syncStretch);
+    syncStretch();
+  });
+</script>

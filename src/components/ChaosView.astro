@@ -1,0 +1,1329 @@
+---
+/**
+ * The "Chaos" theme: the website disappears (see the :root[data-theme='chaos'] rules in global.css)
+ * and only a full-screen, fully zoomed-out world map is left – loud colours, tilted city names,
+ * no scrolling. A search bar zooms in on a city and shows facts about it (FactCard).
+ */
+import Icon from './Icon.astro';
+import ThemeSwitch from './ThemeSwitch.astro';
+import { t, type Lang, type TKey } from '../i18n';
+import continentCities from '../data/continent-cities.json';
+import worldCities from '../data/world-cities.json';
+import { continentOf } from '../lib/continents';
+import { jarSvg } from '../lib/jar';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+
+/** Continents for the zoom menu: bounding boxes in degrees (west, south, east, north). */
+const CONTINENTS = [
+  { id: 'northAmerica', key: 'continent.northAmerica', box: [-168, 7, -52, 72], color: '#ff6b00' },
+  { id: 'southAmerica', key: 'continent.southAmerica', box: [-82, -56, -34, 13], color: '#c6ff00' },
+  { id: 'europe', key: 'continent.europe', box: [-25, 34, 45, 71], color: '#00f0ff' },
+  { id: 'africa', key: 'continent.africa', box: [-18, -35, 52, 38], color: '#ffe600' },
+  { id: 'asia', key: 'continent.asia', box: [26, -11, 150, 72], color: '#ff00c8' },
+  { id: 'oceania', key: 'continent.oceania', box: [110, -48, 180, -1], color: '#ffffff' },
+] as const;
+
+/** Continent of every always-visible city, so a continent view can hide all the others. */
+const baseContinents = Object.fromEntries(worldCities.cities.map((c) => [c.name, continentOf(c.name, c.lat, c.lon)]));
+
+/** A clean, not-to-scale solar system: orbit radius, planet size, colour, seconds per orbit. */
+const PLANETS = [
+  { id: 'mercury', r: 17, size: 2.2, color: '#b8b8b8', period: 9 },
+  { id: 'venus', r: 25, size: 3.3, color: '#e8c07a', period: 15 },
+  { id: 'earth', r: 34, size: 3.6, color: '#3a8dde', period: 22 },
+  { id: 'mars', r: 43, size: 2.8, color: '#d9553a', period: 32 },
+  { id: 'jupiter', r: 55, size: 7, color: '#d8a86a', period: 50 },
+  { id: 'saturn', r: 67, size: 5.6, color: '#e6cf8f', period: 66, ring: true },
+  { id: 'uranus', r: 78, size: 4.4, color: '#8fd8e0', period: 82 },
+  { id: 'neptune', r: 88, size: 4.2, color: '#4a6fe0', period: 98 },
+] as const;
+const planetStart = (i: number) => (i * 137) % 360; // spread the planets around their orbits
+---
+
+
+<div class="chaos-view" data-chaos-view data-lang={lang} data-base-continents={JSON.stringify(baseContinents)}>
+  <div class="chaos-bg" aria-hidden="true"></div>
+
+  <svg class="chaos-map" viewBox="0 0 360 180" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t(lang, 'chaos.map')} data-chaos-map>
+    <defs>
+      <pattern id="chaos-stripes" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(35)">
+        <rect width="4" height="4" fill="#1B0033" />
+        <rect width="2" height="4" fill="#2B0052" />
+      </pattern>
+    </defs>
+    <rect class="chaos-ocean" x="0" y="0" width="360" height="180" fill="url(#chaos-stripes)" />
+    <g class="chaos-graticule" aria-hidden="true">
+      {[30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((x) => <line x1={x} y1="0" x2={x} y2="180" />)}
+      {[30, 60, 90, 120, 150].map((y) => <line x1="0" y1={y} x2="360" y2={y} />)}
+    </g>
+    <g class="chaos-land-glitch" data-chaos-land-glitch aria-hidden="true"></g>
+    <g class="chaos-land" data-chaos-land aria-hidden="true"></g>
+    <g data-chaos-cities></g>
+    <g class="chaos-pin" data-chaos-pin>
+      <path d="M0 0C0 0 -4 -5 -4 -8.3a4 4 0 1 1 8 0c0 3.3-4 8.3-4 8.3Z" />
+      <circle cx="0" cy="-8.3" r="1.6" />
+    </g>
+  </svg>
+
+  <!-- the solar system (instead of the map) -->
+  <div class="chaos-solar" hidden data-chaos-solar>
+    <svg class="chaos-solar__svg" viewBox="-100 -100 200 200" role="img" aria-label={t(lang, 'solar.title')}>
+      <g class="solar-stars" data-solar-stars aria-hidden="true"></g>
+      <defs>
+        <radialGradient id="solar-glow">
+          <stop offset="0.45" stop-color="#ffd23f" stop-opacity="0.9" />
+          <stop offset="1" stop-color="#ff9f1c" stop-opacity="0" />
+        </radialGradient>
+      </defs>
+      <circle class="solar-sun-glow" r="17" fill="url(#solar-glow)" />
+      <circle class="solar-sun" r="9.5" />
+      <text class="solar-label solar-label--sun" y="15">{t(lang, 'solar.sun')}</text>
+      {
+        PLANETS.map((pl, i) => (
+          <>
+            <circle class="solar-orbit" r={pl.r} />
+            <g class="solar-spin" style={`--period:${pl.period}s;--start:${planetStart(i)}deg`}>
+              <g transform={`translate(${pl.r} 0)`}>
+                <g class="solar-counter" style={`--period:${pl.period}s;--start:${planetStart(i)}deg`}>
+                  <g class:list={['solar-planet', { 'is-earth': pl.id === 'earth' }]} data-planet={pl.id}>
+                    {pl.id === 'earth' && <title>{t(lang, 'solar.back')}</title>}
+                    {'ring' in pl && pl.ring && <ellipse class="solar-ring" rx={pl.size * 2} ry={pl.size * 0.62} />}
+                    <circle r={pl.size} fill={pl.color} />
+                    <text class="solar-label" y={pl.size + 4.6}>
+                      {t(lang, `solar.${pl.id}` as TKey)}
+                    </text>
+                  </g>
+                </g>
+              </g>
+            </g>
+          </>
+        ))
+      }
+      <!-- a jar of chocolate spread orbiting in the asteroid belt -->
+      <circle class="solar-orbit solar-orbit--jar" r="49" />
+      <g class="solar-spin" style="--period:40s;--start:200deg">
+        <g transform="translate(49 0)">
+          <g class="solar-counter" style="--period:40s;--start:200deg">
+            <g class="solar-planet solar-jar" data-solar-jar data-solar-name="Nutella">
+              <g class="solar-jar__wobble">
+                <svg x="-4.6" y="-5.6" width="9.2" height="11.2" viewBox="0 0 46 56" set:html={jarSvg().replace(/^<svg[^>]*>|<\/svg>$/g, '')} />
+              </g>
+              <text class="solar-label" y="10">Nutella</text>
+            </g>
+          </g>
+        </g>
+      </g>
+    </svg>
+    <div class="chaos-ufos" data-chaos-ufos aria-hidden="true"></div>
+  </div>
+
+  <template data-ufo-template>
+    <svg class="ufo" viewBox="0 0 165 110" width="165" height="110">
+      <g class="ufo__bubble">
+        <path d="M96 6h58a6 6 0 0 1 6 6v14a6 6 0 0 1-6 6h-38l-8 8 1-8h-13a6 6 0 0 1-6-6V12a6 6 0 0 1 6-6Z" />
+        <text x="125" y="24">nom nom!</text>
+      </g>
+      <ellipse class="ufo__glass" cx="60" cy="50" rx="24" ry="26" />
+      <g class="ufo__alien">
+        <path d="M52 30l-5-9M68 30l5-9" />
+        <circle cx="47" cy="20" r="2.6" />
+        <circle cx="73" cy="20" r="2.6" />
+        <ellipse cx="60" cy="44" rx="12" ry="14" />
+        <ellipse class="ufo__eye" cx="55" cy="41" rx="3.4" ry="4.6" />
+        <ellipse class="ufo__eye" cx="65" cy="41" rx="3.4" ry="4.6" />
+        <path class="ufo__mouth" d="M56 51q4 4 8 0" />
+      </g>
+      <g class="ufo__food ufo__food--pizza">
+        <path d="M70 46l20-9-2 16z" class="ufo__crust" />
+        <path d="M72 46l16-7-1.7 12.5z" class="ufo__cheese" />
+        <circle cx="80" cy="44" r="1.8" class="ufo__pep" />
+        <circle cx="84.5" cy="48" r="1.5" class="ufo__pep" />
+      </g>
+      <g class="ufo__food ufo__food--jar">
+        <rect x="70" y="36" width="15" height="17" rx="3" class="ufo__jar" />
+        <rect x="69" y="32" width="17" height="5" rx="1.5" class="ufo__lid" />
+        <rect x="71" y="41" width="13" height="6" rx="1" class="ufo__label" />
+        <path d="M76 44h3" class="ufo__label-line" />
+      </g>
+      <ellipse class="ufo__saucer" cx="60" cy="68" rx="56" ry="15" />
+      <ellipse class="ufo__belly" cx="60" cy="74" rx="30" ry="7" />
+      <circle class="ufo__light" cx="22" cy="69" r="3.2" />
+      <circle class="ufo__light" cx="41" cy="73" r="3.2" />
+      <circle class="ufo__light" cx="60" cy="75" r="3.2" />
+      <circle class="ufo__light" cx="79" cy="73" r="3.2" />
+      <circle class="ufo__light" cx="98" cy="69" r="3.2" />
+    </svg>
+  </template>
+
+  <!-- left: back to the website, city search -->
+  <div class="chaos-rail chaos-rail--left">
+    <button type="button" class="chaos-icon chaos-back" data-chaos-exit>
+      <Icon name="arrow-left" size={18} />
+      <span>{t(lang, 'chaos.exit')}</span>
+    </button>
+    <div class="chaos-search-wrap">
+      <button
+        type="button"
+        class="chaos-icon"
+        aria-expanded="false"
+        aria-controls="chaos-search"
+        aria-label={t(lang, 'search.label')}
+        title={t(lang, 'search.label')}
+        data-chaos-search-toggle
+      >
+        <Icon name="search" size={18} />
+      </button>
+      <form class="chaos-search" id="chaos-search" role="search" hidden data-chaos-form>
+        <label class="visually-hidden" for="chaos-search-input">{t(lang, 'search.label')}</label>
+        <input id="chaos-search-input" type="search" autocomplete="off" required maxlength="80" placeholder={t(lang, 'search.placeholder')} data-chaos-input />
+        <button type="submit" class="chaos-icon chaos-icon--go" aria-label={t(lang, 'search.go')} title={t(lang, 'search.go')} data-chaos-go>
+          <Icon name="arrow-right" size={18} />
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- right: whole world + continents, colour theme -->
+  <div class="chaos-rail chaos-rail--right">
+    <button
+      type="button"
+      class="chaos-icon"
+      aria-expanded="false"
+      aria-controls="chaos-continents"
+      aria-label={t(lang, 'chaos.zoomOut')}
+      title={t(lang, 'chaos.zoomOut')}
+      data-chaos-world
+    >
+      <Icon name="globe" size={18} />
+    </button>
+    <ul class="chaos-continents" id="chaos-continents" hidden data-chaos-continents>
+      {
+        CONTINENTS.map((c) => (
+          <li>
+            <button type="button" data-continent-btn={c.id} data-box={c.box.join(',')} aria-pressed="false">
+              <span class="chaos-continents__dot" style={`background:${c.color}`} aria-hidden="true" />
+              {t(lang, c.key as TKey)}
+            </button>
+          </li>
+        ))
+      }
+      <li class="chaos-continents__sep" aria-hidden="true"></li>
+      <li>
+        <button type="button" data-solar-btn aria-pressed="false">
+          <span class="chaos-continents__dot chaos-continents__dot--sun" aria-hidden="true" />
+          {t(lang, 'solar.title')}
+        </button>
+      </li>
+    </ul>
+    <ThemeSwitch lang={lang} uid="chaos" />
+  </div>
+
+  <p class="chaos-status" role="status" aria-live="polite" data-chaos-status>{t(lang, 'chaos.hint')}</p>
+
+  <script type="application/json" data-chaos-extra-data set:html={JSON.stringify(continentCities)} />
+  <template data-chaos-msg-searching>{t(lang, 'search.searching')}</template>
+  <template data-chaos-msg-none>{t(lang, 'search.none')}</template>
+  <template data-chaos-msg-error>{t(lang, 'search.error')}</template>
+  <template data-chaos-msg-hint>{t(lang, 'chaos.hint')}</template>
+</div>
+
+<style>
+  .chaos-view {
+    display: none;
+    position: fixed;
+    /* never affected by the page zoom slider: undo it completely */
+    zoom: var(--inv-zoom, 1);
+    inset: 0;
+    z-index: 600;
+    overflow: hidden;
+    color: #fff;
+    font-family: 'Unbounded', 'Noto Sans Georgian', 'Noto Sans', system-ui, sans-serif;
+  }
+  :global(:root[data-theme='chaos']) .chaos-view {
+    display: block;
+  }
+
+  /* loud, shifting background */
+  .chaos-bg {
+    position: absolute;
+    inset: -20%;
+    background:
+      repeating-conic-gradient(from 0deg at 30% 40%, #ff00c8 0 12deg, #00f0ff 12deg 24deg, #c6ff00 24deg 36deg, #ff6b00 36deg 48deg, #7b2ff7 48deg 60deg);
+    filter: saturate(1.4);
+    animation: chaos-hue 9s linear infinite, chaos-spin 60s linear infinite;
+  }
+  @keyframes chaos-hue {
+    to {
+      filter: saturate(1.4) hue-rotate(360deg);
+    }
+  }
+  @keyframes chaos-spin {
+    to {
+      transform: rotate(360deg) scale(1.1);
+    }
+  }
+
+  .chaos-map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: manipulation;
+  }
+  .chaos-ocean {
+    stroke: #c6ff00;
+    stroke-width: 3;
+    vector-effect: non-scaling-stroke;
+  }
+  .chaos-graticule line {
+    stroke: #00f0ff;
+    stroke-width: 1;
+    stroke-dasharray: 6 5;
+    opacity: 0.6;
+    vector-effect: non-scaling-stroke;
+  }
+  .chaos-land :global(path) {
+    fill: #c6ff00;
+    stroke: #ff00c8;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .chaos-land-glitch :global(path) {
+    fill: #00f0ff;
+    opacity: 0.75;
+    animation: chaos-glitch 1.7s steps(2, jump-none) infinite;
+  }
+  @keyframes chaos-glitch {
+    0% {
+      transform: translate(0.8px, 0.5px);
+    }
+    50% {
+      transform: translate(-0.9px, -0.4px);
+    }
+    100% {
+      transform: translate(0.5px, -0.7px);
+    }
+  }
+
+  .chaos-map :global([data-chaos-city]) {
+    cursor: pointer;
+  }
+  .chaos-map :global([data-chaos-city].is-crowded) {
+    visibility: hidden;
+  }
+  .chaos-map :global([data-chaos-city] circle) {
+    /* dots shrink back as the map zooms in, like the labels (the r attribute is the fallback) */
+    r: calc(var(--r, 1) * var(--inv, 1) * 1px);
+    stroke: #1b0033;
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+  }
+  .chaos-map :global([data-chaos-city] text) {
+    font-family: 'Unbounded', 'DM Sans', sans-serif;
+    font-weight: 800;
+    font-size: calc(var(--fs) * var(--inv, 1) * 1px);
+    paint-order: stroke;
+    stroke: #1b0033;
+    stroke-width: 3px;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .chaos-map :global([data-chaos-city]:hover text) {
+    fill: #fff !important;
+  }
+  .chaos-pin:not(.is-on) {
+    display: none;
+  }
+  .chaos-pin path {
+    fill: #ff00c8;
+    stroke: #1b0033;
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .chaos-pin circle {
+    fill: #c6ff00;
+    stroke: #1b0033;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* ---- side rails with small icon buttons ---- */
+  .chaos-rail {
+    position: absolute;
+    top: 16px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .chaos-rail--left {
+    left: 16px;
+    align-items: flex-start;
+  }
+  .chaos-rail--right {
+    right: 16px;
+    align-items: flex-end;
+  }
+  .chaos-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: var(--touch);
+    min-height: var(--touch);
+    padding: 0 12px;
+    border: 3px solid #1b0033;
+    border-radius: 14px 6px 14px 6px;
+    background: #c6ff00;
+    color: #1b0033;
+    font-family: 'DM Sans', 'Noto Sans', 'Noto Sans Georgian', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    box-shadow: 3px 3px 0 #1b0033;
+    transition: transform var(--t-fast);
+  }
+  .chaos-icon:hover {
+    transform: rotate(-4deg) scale(1.06);
+  }
+  .chaos-icon[aria-expanded='true'] {
+    background: #ff00c8;
+    color: #fff;
+  }
+  .chaos-back {
+    background: #fff;
+    box-shadow: 3px 3px 0 #ff00c8;
+  }
+  .chaos-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chaos-search {
+    display: flex;
+    gap: 6px;
+  }
+  .chaos-search input {
+    width: min(320px, calc(100vw - 150px));
+    min-height: var(--touch);
+    padding: 8px 14px;
+    border: 3px solid #1b0033;
+    border-radius: 12px 4px 14px 6px;
+    background: #fff;
+    color: #141a33;
+    font-family: 'DM Sans', 'Noto Sans', 'Noto Sans Georgian', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    box-shadow: 4px 4px 0 #ff00c8;
+  }
+  .chaos-icon--go {
+    background: #ff00c8;
+    color: #fff;
+  }
+  .chaos-continents {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .chaos-continents button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 38px;
+    padding: 4px 12px;
+    border: 2px solid #1b0033;
+    border-radius: 999px;
+    background: #1b0033;
+    color: #fff;
+    font-family: 'DM Sans', 'Noto Sans', 'Noto Sans Georgian', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .chaos-continents button:hover,
+  .chaos-continents button[aria-pressed='true'] {
+    background: #fff;
+    color: #1b0033;
+  }
+  .chaos-continents__dot {
+    width: 12px;
+    height: 12px;
+    flex: none;
+    border-radius: 50%;
+    border: 2px solid #1b0033;
+    box-shadow: 0 0 0 1.5px #fff;
+  }
+  .chaos-status {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: 2;
+    max-width: calc(100% - 32px);
+    margin: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: #1b0033;
+    color: #fff;
+    font-family: 'DM Sans', 'Noto Sans', 'Noto Sans Georgian', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+  }
+  .chaos-view :global(.theme-switch__btn) {
+    border-width: 3px;
+    border-color: #1b0033;
+    box-shadow: 3px 3px 0 #1b0033;
+  }
+
+  .chaos-continents__sep {
+    height: 2px;
+    margin: 2px 8px;
+    background: #1b0033;
+    border-radius: 2px;
+  }
+  .chaos-continents__dot--sun {
+    background: radial-gradient(circle, #fff6b0, #ffc400 60%, #ff7a00);
+  }
+
+  /* ---- solar system ---- */
+  .chaos-bg,
+  .chaos-map {
+    transition:
+      opacity 700ms ease,
+      transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .chaos-view.is-space .chaos-bg,
+  .chaos-view.is-space .chaos-map {
+    opacity: 0;
+    transform: scale(0.2) rotate(40deg);
+    pointer-events: none;
+  }
+  .chaos-solar {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(ellipse at 50% 50%, #151a45 0%, #070920 60%, #02030d 100%);
+    animation: solar-in 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    overflow: hidden;
+  }
+  @keyframes solar-in {
+    from {
+      opacity: 0;
+      transform: scale(1.6);
+    }
+  }
+  .chaos-solar__svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .chaos-solar :global(.solar-star) {
+    fill: #fff;
+    animation: solar-twinkle 3s ease-in-out infinite alternate;
+  }
+  @keyframes solar-twinkle {
+    from {
+      opacity: 0.25;
+    }
+    to {
+      opacity: 0.9;
+    }
+  }
+  .solar-sun-glow {
+    opacity: 0.7;
+    animation: solar-pulse 4s ease-in-out infinite alternate;
+    transform-origin: 0 0;
+  }
+  @keyframes solar-pulse {
+    to {
+      transform: scale(1.2);
+      opacity: 0.4;
+    }
+  }
+  .solar-sun {
+    fill: #ffd23f;
+    stroke: #ff9f1c;
+    stroke-width: 1.2;
+  }
+  .solar-orbit {
+    fill: none;
+    stroke: rgb(255 255 255 / 0.16);
+    stroke-width: 0.35;
+  }
+  .solar-spin {
+    transform-origin: 0 0;
+    animation: solar-orbit var(--period) linear infinite;
+  }
+  .solar-counter {
+    transform-origin: 0 0;
+    animation: solar-counter var(--period) linear infinite;
+  }
+  @keyframes solar-orbit {
+    from {
+      transform: rotate(var(--start));
+    }
+    to {
+      transform: rotate(calc(var(--start) + 360deg));
+    }
+  }
+  @keyframes solar-counter {
+    from {
+      transform: rotate(calc(var(--start) * -1));
+    }
+    to {
+      transform: rotate(calc(var(--start) * -1 - 360deg));
+    }
+  }
+  .solar-ring {
+    fill: none;
+    stroke: #f3e3b3;
+    stroke-width: 0.9;
+  }
+  .solar-planet circle {
+    stroke: rgb(0 0 0 / 0.35);
+    stroke-width: 0.4;
+  }
+  .solar-planet,
+  .solar-sun {
+    cursor: pointer;
+  }
+  .solar-planet:hover circle,
+  .solar-sun:hover {
+    stroke: #fff;
+    stroke-width: 0.8;
+  }
+  .solar-orbit--jar {
+    stroke-dasharray: 1 2;
+  }
+  .solar-jar__wobble {
+    animation: jar-float 3s ease-in-out infinite alternate;
+  }
+  @keyframes jar-float {
+    from {
+      transform: rotate(-14deg);
+    }
+    to {
+      transform: rotate(14deg);
+    }
+  }
+  .solar-planet.is-earth:hover circle {
+    stroke: #fff;
+    stroke-width: 0.8;
+  }
+  .solar-label {
+    fill: #fff;
+    font-family: 'DM Sans', 'Noto Sans', 'Noto Sans Georgian', sans-serif;
+    font-weight: 700;
+    font-size: 3.4px;
+    text-anchor: middle;
+    opacity: 0.85;
+  }
+  .solar-label--sun {
+    font-size: 4px;
+    fill: #ffd23f;
+  }
+
+  /* ---- UFOs eating pizza or chocolate-hazelnut spread ---- */
+  .chaos-ufos {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .chaos-ufos :global(.ufo) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    overflow: visible;
+    pointer-events: auto;
+    cursor: pointer;
+    filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.5));
+  }
+  .chaos-ufos :global(.boom-bit) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+  }
+  .chaos-ufos :global(.boom-blob) {
+    width: 18px;
+    height: 18px;
+    margin: -9px;
+    border-radius: 50% 45% 55% 50%;
+    background: #4a2812;
+    box-shadow: inset -3px -3px 0 rgb(255 255 255 / 0.15);
+  }
+  .chaos-ufos :global(.boom-jar) {
+    width: 34px;
+    height: 42px;
+    margin: -21px -17px;
+  }
+  .chaos-ufos :global(.boom-jar svg) {
+    width: 100%;
+    height: 100%;
+  }
+  .chaos-ufos :global(.boom-flash) {
+    width: 240px;
+    height: 240px;
+    margin: -120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff 0 18%, #ffe27a 30%, #c6ff00 45%, transparent 70%);
+  }
+  .chaos-ufos :global(.boom-word) {
+    font-family: 'Unbounded', system-ui, sans-serif;
+    font-size: 34px;
+    font-weight: 800;
+    color: #c6ff00;
+    text-shadow: 3px 3px 0 #b0007a, -2px -2px 0 #00f0ff;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+  }
+  .chaos-ufos :global(.ufo__glass) {
+    fill: rgb(160 240 255 / 0.35);
+    stroke: #d8f7ff;
+    stroke-width: 2;
+  }
+  .chaos-ufos :global(.ufo__alien) {
+    fill: #7cff6b;
+    stroke: #1b5e20;
+    stroke-width: 1.5;
+  }
+  .chaos-ufos :global(.ufo__alien path:first-child) {
+    fill: none;
+  }
+  .chaos-ufos :global(.ufo__eye) {
+    fill: #111;
+    stroke: none;
+  }
+  .chaos-ufos :global(.ufo__mouth) {
+    fill: none;
+    stroke: #1b5e20;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    animation: ufo-chew 0.35s steps(2, jump-none) infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  @keyframes ufo-chew {
+    50% {
+      transform: scaleY(-1);
+    }
+  }
+  .chaos-ufos :global(.ufo__crust) {
+    fill: #e0a050;
+    stroke: #8a4b12;
+    stroke-width: 1.2;
+    stroke-linejoin: round;
+  }
+  .chaos-ufos :global(.ufo__cheese) {
+    fill: #ffd44d;
+  }
+  .chaos-ufos :global(.ufo__pep) {
+    fill: #d43a2a;
+  }
+  .chaos-ufos :global(.ufo__jar) {
+    fill: #5a2d0c;
+    stroke: #2b1405;
+    stroke-width: 1.2;
+  }
+  .chaos-ufos :global(.ufo__lid) {
+    fill: #fff;
+    stroke: #2b1405;
+    stroke-width: 1.2;
+  }
+  .chaos-ufos :global(.ufo__label) {
+    fill: #fff;
+  }
+  .chaos-ufos :global(.ufo__label-line) {
+    stroke: #d43a2a;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+  }
+  .chaos-ufos :global(.ufo.eats-pizza .ufo__food--jar),
+  .chaos-ufos :global(.ufo.eats-jar .ufo__food--pizza) {
+    display: none;
+  }
+  .chaos-ufos :global(.ufo__food) {
+    animation: ufo-bite 0.7s ease-in-out infinite alternate;
+    transform-box: fill-box;
+    transform-origin: left center;
+  }
+  @keyframes ufo-bite {
+    to {
+      transform: translate(-3px, 1px) rotate(-8deg);
+    }
+  }
+  .chaos-ufos :global(.ufo__saucer) {
+    fill: #c9d2e3;
+    stroke: #3c4660;
+    stroke-width: 2.5;
+  }
+  .chaos-ufos :global(.ufo__belly) {
+    fill: #8c97ad;
+    stroke: #3c4660;
+    stroke-width: 2;
+  }
+  .chaos-ufos :global(.ufo__light) {
+    fill: #ff00c8;
+    stroke: #3c4660;
+    stroke-width: 1;
+    animation: ufo-blink 0.9s steps(2, jump-none) infinite;
+  }
+  .chaos-ufos :global(.ufo__light:nth-of-type(2n)) {
+    fill: #c6ff00;
+    animation-delay: 0.45s;
+  }
+  @keyframes ufo-blink {
+    50% {
+      fill: #ffffff;
+    }
+  }
+  .chaos-ufos :global(.ufo__bubble path) {
+    fill: #fff;
+    stroke: #1b0033;
+    stroke-width: 1.5;
+  }
+  .chaos-ufos :global(.ufo__bubble text) {
+    fill: #1b0033;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 800;
+    font-size: 11px;
+    text-anchor: middle;
+  }
+
+  /* zoomed onto a continent: every city outside it is hidden */
+  .chaos-map :global([data-focus='northAmerica'] [data-chaos-city]:not([data-continent='northAmerica'])),
+  .chaos-map :global([data-focus='southAmerica'] [data-chaos-city]:not([data-continent='southAmerica'])),
+  .chaos-map :global([data-focus='europe'] [data-chaos-city]:not([data-continent='europe'])),
+  .chaos-map :global([data-focus='africa'] [data-chaos-city]:not([data-continent='africa'])),
+  .chaos-map :global([data-focus='asia'] [data-chaos-city]:not([data-continent='asia'])),
+  .chaos-map :global([data-focus='oceania'] [data-chaos-city]:not([data-continent='oceania'])) {
+    display: none;
+  }
+
+  /* extra cities: only for the continent the map is zoomed onto */
+  .chaos-map :global(.chaos-extra) {
+    display: none;
+  }
+  .chaos-map :global(.chaos-extra.is-shown) {
+    display: inline;
+  }
+  .chaos-map :global(.chaos-extra.is-shown [data-chaos-city]) {
+    animation: chaos-city-pop 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: var(--pop, 0ms);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  /* ---- Entrance, right after the page has fallen apart (class set by the script) ---- */
+  .chaos-view.is-entering .chaos-bg {
+    animation:
+      chaos-burst 900ms cubic-bezier(0.2, 0.9, 0.3, 1) both,
+      chaos-hue 9s linear infinite,
+      chaos-spin 60s linear infinite;
+  }
+  @keyframes chaos-burst {
+    from {
+      clip-path: circle(0% at 50% 50%);
+    }
+    to {
+      clip-path: circle(75% at 50% 50%);
+    }
+  }
+  .chaos-view.is-entering .chaos-map {
+    animation: chaos-map-in 1000ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms both;
+  }
+  @keyframes chaos-map-in {
+    from {
+      opacity: 0;
+      transform: scale(0.55) rotate(-8deg);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .chaos-view.is-entering :global([data-chaos-city]) {
+    animation: chaos-city-pop 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: var(--pop, 600ms);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  @keyframes chaos-city-pop {
+    from {
+      opacity: 0;
+      scale: 0;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+  .chaos-view.is-entering .chaos-rail,
+  .chaos-view.is-entering .chaos-status {
+    animation: chaos-drop 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 700ms both;
+  }
+  @keyframes chaos-drop {
+    from {
+      opacity: 0;
+      translate: 0 -120px;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+  @media (max-width: 599px) {
+    .chaos-back span {
+      display: none;
+    }
+    .chaos-rail {
+      top: 10px;
+    }
+    .chaos-rail--left {
+      left: 10px;
+    }
+    .chaos-rail--right {
+      right: 10px;
+    }
+  }
+</style>
+
+<script>
+  import { FACTS_EVENT, PLACE_MESSAGE_EVENT, THEME_EVENT, type SearchTarget } from '../lib/constants';
+  import { geocode } from '../lib/geocode';
+  import { jarSvg } from '../lib/jar';
+
+  type City = [name: string, lat: number, lon: number, rank?: number];
+  type Box = { x: number; y: number; w: number; h: number };
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const COLORS = ['#c6ff00', '#ff00c8', '#00f0ff', '#ff6b00', '#ffffff', '#ffe600'];
+  const ZOOM = 3.4; // how far a city search zooms in
+  const WORLD: Box = { x: 0, y: 0, w: 360, h: 180 };
+
+  const view = document.querySelector<HTMLElement>('[data-chaos-view]');
+  if (view) setup(view);
+
+  function setup(view: HTMLElement) {
+    const html = document.documentElement;
+    const map = view.querySelector<SVGSVGElement>('[data-chaos-map]')!;
+    const land = view.querySelector<SVGGElement>('[data-chaos-land]')!;
+    const glitch = view.querySelector<SVGGElement>('[data-chaos-land-glitch]')!;
+    const citiesG = view.querySelector<SVGGElement>('[data-chaos-cities]')!;
+    const pin = view.querySelector<SVGGElement>('[data-chaos-pin]')!;
+    const form = view.querySelector<HTMLFormElement>('[data-chaos-form]')!;
+    const input = view.querySelector<HTMLInputElement>('[data-chaos-input]')!;
+    const go = view.querySelector<HTMLButtonElement>('[data-chaos-go]')!;
+    const searchToggle = view.querySelector<HTMLButtonElement>('[data-chaos-search-toggle]')!;
+    const worldBtn = view.querySelector<HTMLButtonElement>('[data-chaos-world]')!;
+    const continentList = view.querySelector<HTMLElement>('[data-chaos-continents]')!;
+    const continentBtns = Array.from(continentList.querySelectorAll<HTMLButtonElement>('[data-continent-btn]'));
+    const solarBtn = continentList.querySelector<HTMLButtonElement>('[data-solar-btn]')!;
+    const solar = view.querySelector<HTMLElement>('[data-chaos-solar]')!;
+    const ufoBox = view.querySelector<HTMLElement>('[data-chaos-ufos]')!;
+    const ufoTemplate = view.querySelector<HTMLTemplateElement>('[data-ufo-template]')!;
+    const baseContinents: Record<string, string | null> = JSON.parse(view.dataset.baseContinents || '{}');
+    const status = view.querySelector<HTMLElement>('[data-chaos-status]')!;
+    const msg = (n: string) => view.querySelector<HTMLTemplateElement>(`[data-chaos-msg-${n}]`)!.content.textContent ?? '';
+    const lang = view.dataset.lang ?? 'en';
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const extraGroups = new Map<string, SVGGElement>();
+    let ready = false;
+    let box = { ...WORLD };
+    let frame = 0;
+
+    const isChaos = () => html.dataset.theme === 'chaos';
+    const toXY = (lat: number, lon: number) => ({ x: lon + 180, y: 90 - lat });
+    const rand = (a: number, b: number) => a + Math.random() * (b - a);
+
+    const setBox = (b: Box) => {
+      box = b;
+      map.setAttribute('viewBox', `${b.x} ${b.y} ${b.w} ${b.h}`);
+      // labels and the pin grow only gently while zooming in
+      map.style.setProperty('--inv', String(Math.sqrt(b.w / WORLD.w)));
+      window.clearTimeout(declutterTimer);
+      declutterTimer = window.setTimeout(declutter, 140);
+    };
+    /** No city name covers another: the bigger names win, the rest wait until you zoom in closer. */
+    let declutterTimer = 0;
+    function declutter() {
+      const groups = Array.from(citiesG.querySelectorAll<SVGGElement>('[data-chaos-city]'));
+      groups.forEach((g) => g.classList.remove('is-crowded'));
+      const items = groups
+        .map((g) => ({ g, r: g.getBoundingClientRect(), fs: Number(g.querySelector('text')?.style.getPropertyValue('--fs')) || 0 }))
+        .filter((it) => it.r.width > 0 && it.r.height > 0)
+        .sort((a, b) => b.fs - a.fs);
+      const kept: DOMRect[] = [];
+      const GAP = 3;
+      for (const it of items) {
+        const hit = kept.some((k) => it.r.left < k.right + GAP && it.r.right > k.left - GAP && it.r.top < k.bottom + GAP && it.r.bottom > k.top - GAP);
+        if (hit) it.g.classList.add('is-crowded');
+        else kept.push(it.r);
+      }
+    }
+    function animateTo(target: Box, duration = 900): Promise<void> {
+      cancelAnimationFrame(frame);
+      if (reduced.matches) {
+        setBox(target);
+        return Promise.resolve();
+      }
+      const from = { ...box };
+      const t0 = performance.now();
+      return new Promise((resolve) => {
+        const step = (now: number) => {
+          const p = Math.min(1, (now - t0) / duration);
+          const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+          setBox({
+            x: from.x + (target.x - from.x) * e,
+            y: from.y + (target.y - from.y) * e,
+            w: from.w + (target.w - from.w) * e,
+            h: from.h + (target.h - from.h) * e,
+          });
+          if (p < 1) frame = requestAnimationFrame(step);
+          else resolve();
+        };
+        frame = requestAnimationFrame(step);
+      });
+    }
+    /** A view box around a region, widened to the screen's shape so the map fills the screen. */
+    function fitBox(west: number, south: number, east: number, north: number): Box {
+      const pad = 0.08;
+      let w = (east - west) * (1 + 2 * pad);
+      let h = (north - south) * (1 + 2 * pad);
+      const cx = (west + east) / 2 + 180;
+      const cy = 90 - (south + north) / 2;
+      const screen = map.clientWidth / Math.max(1, map.clientHeight);
+      if (w / h < screen) w = h * screen;
+      else h = w / screen;
+      return { x: cx - w / 2, y: cy - h / 2, w, h };
+    }
+
+    function cityGroup(name: string, lat: number, lon: number, size: number, dotR: number, pop: number, continent?: string | null): SVGGElement {
+      const { x, y } = toXY(lat, lon);
+      const g = document.createElementNS(SVG_NS, 'g');
+      g.setAttribute('data-chaos-city', '');
+      if (continent) g.setAttribute('data-continent', continent);
+      g.setAttribute('transform', `translate(${x} ${y}) rotate(${rand(-22, 22).toFixed(1)})`);
+      g.style.setProperty('--pop', `${Math.round(pop)}ms`);
+      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      const dot = document.createElementNS(SVG_NS, 'circle');
+      dot.setAttribute('r', String(dotR));
+      dot.style.setProperty('--r', String(dotR));
+      dot.setAttribute('fill', color);
+      const label = document.createElementNS(SVG_NS, 'text');
+      label.setAttribute('x', '1.8');
+      label.setAttribute('y', '0.9');
+      label.setAttribute('fill', color);
+      label.style.setProperty('--fs', size.toFixed(2));
+      label.textContent = name;
+      const titleEl = document.createElementNS(SVG_NS, 'title');
+      titleEl.textContent = name;
+      g.append(titleEl, dot, label);
+      g.addEventListener('click', () => {
+        showPin(lat, lon);
+        window.dispatchEvent(new CustomEvent(FACTS_EVENT, { detail: { name, lat, lon } }));
+      });
+      return g;
+    }
+
+    async function init() {
+      if (ready) return;
+      ready = true;
+      // continents (same outline file as the page background)
+      try {
+        const svg = await (await fetch('/world-land.svg')).text();
+        const d = new DOMParser().parseFromString(svg, 'image/svg+xml').querySelector('path')?.getAttribute('d');
+        if (d) {
+          for (const g of [glitch, land]) {
+            const p = document.createElementNS(SVG_NS, 'path');
+            p.setAttribute('d', d);
+            g.replaceChildren(p);
+          }
+        }
+      } catch (err) {
+        console.error('[chaos] land', err);
+      }
+      // the always-visible cities, tilted and coloured at random
+      const base: City[] = JSON.parse(document.querySelector('[data-world-data]')?.textContent || '[]');
+      const baseNames = new Set(base.map((c) => c[0]));
+      citiesG.replaceChildren(
+        ...base.map(([name, lat, lon, rank]) =>
+          cityGroup(name, lat, lon, rank === 1 ? rand(2.6, 3.6) : rand(1.8, 2.6), rank === 1 ? 1.3 : 0.9, 600 + Math.random() * 900, baseContinents[name]),
+        ),
+      );
+      // more cities per continent, shown when the map is zoomed onto it
+      const extra: Record<string, City[]> = JSON.parse(view.querySelector('[data-chaos-extra-data]')?.textContent || '{}');
+      for (const [continent, list] of Object.entries(extra)) {
+        if (!Array.isArray(list)) continue; // skip the _comment entry
+        const g = document.createElementNS(SVG_NS, 'g');
+        g.classList.add('chaos-extra');
+        g.append(
+          ...list
+            .filter(([name]) => !baseNames.has(name))
+            .map(([name, lat, lon]) => cityGroup(name, lat, lon, rand(1.5, 2.1), 0.7, Math.random() * 700, continent)),
+        );
+        citiesG.append(g);
+        extraGroups.set(continent, g);
+      }
+      setBox({ ...WORLD });
+    }
+
+    function showPin(lat: number, lon: number) {
+      const { x, y } = toXY(lat, lon);
+      const scale = Math.sqrt(box.w / WORLD.w) * 1.2;
+      pin.setAttribute('transform', `translate(${x} ${y}) scale(${scale.toFixed(3)})`);
+      pin.classList.add('is-on');
+    }
+    const hidePin = () => pin.classList.remove('is-on');
+
+    /** Show one continent's extra cities and hide every city outside it (null = the whole world). */
+    function showContinent(id: string | null) {
+      extraGroups.forEach((g, key) => g.classList.toggle('is-shown', key === id));
+      if (id) citiesG.dataset.focus = id;
+      else delete citiesG.dataset.focus;
+      continentBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.continentBtn === id)));
+    }
+
+    // ---- solar system ----
+    let ufoTimer = 0;
+    const inSpace = () => view.classList.contains('is-space');
+    function spawnUfo() {
+      if (!inSpace()) return;
+      const svg = ufoTemplate.content.firstElementChild!.cloneNode(true) as SVGSVGElement;
+      svg.classList.add(Math.random() < 0.5 ? 'eats-pizza' : 'eats-jar');
+      ufoBox.append(svg);
+      const W = view.clientWidth;
+      const H = view.clientHeight;
+      const leftToRight = Math.random() < 0.5;
+      const y = rand(0.08, 0.7) * H;
+      const from = leftToRight ? -180 : W + 30;
+      const to = leftToRight ? W + 30 : -180;
+      const frames = Array.from({ length: 7 }, (_, i) => {
+        const p = i / 6;
+        const x = from + (to - from) * p;
+        const bob = Math.sin(p * Math.PI * 3) * 36;
+        const tilt = Math.sin(p * Math.PI * 4) * 7 * (leftToRight ? 1 : -1);
+        return { transform: `translate(${x.toFixed(0)}px, ${(y + bob).toFixed(0)}px) rotate(${tilt.toFixed(1)}deg)` };
+      });
+      const flight = svg.animate(frames, { duration: rand(9000, 14000), easing: 'linear' });
+      flight.finished.then(() => svg.remove(), () => undefined);
+      svg.addEventListener('click', () => explode(svg, flight), { once: true });
+    }
+    /** Clicked UFO: its Nutella blows up – chocolate and jars everywhere. */
+    function explode(svg: SVGSVGElement, flight: Animation) {
+      const r = svg.getBoundingClientRect();
+      const v = ufoBox.getBoundingClientRect();
+      const x = r.left - v.left + r.width * 0.45;
+      const y = r.top - v.top + r.height * 0.45;
+      flight.pause();
+      svg.animate(
+        [
+          { transform: getComputedStyle(svg).transform, opacity: 1 },
+          { transform: `translate(${x - 82}px, ${y - 55}px) scale(1.5) rotate(25deg)`, opacity: 0 },
+        ],
+        { duration: 420, easing: 'ease-out', fill: 'forwards' },
+      ).finished.then(() => svg.remove(), () => svg.remove());
+      const bit = (cls: string, html = '') => {
+        const el = document.createElement('div');
+        el.className = `boom-bit ${cls}`;
+        el.innerHTML = html;
+        ufoBox.append(el);
+        return el;
+      };
+      const flash = bit('boom-flash');
+      flash.animate([{ transform: `translate(${x}px, ${y}px) scale(0.1)`, opacity: 1 }, { transform: `translate(${x}px, ${y}px) scale(1.6)`, opacity: 0 }], { duration: 600, easing: 'ease-out' }).finished.then(() => flash.remove());
+      const word = bit('boom-word', 'NUTELLA!');
+      word.animate(
+        [
+          { transform: `translate(${x}px, ${y}px) translate(-50%, -50%) scale(0.2) rotate(-12deg)`, opacity: 1 },
+          { transform: `translate(${x}px, ${y - 60}px) translate(-50%, -50%) scale(1.3) rotate(6deg)`, opacity: 1, offset: 0.4 },
+          { transform: `translate(${x}px, ${y - 90}px) translate(-50%, -50%) scale(1.1) rotate(6deg)`, opacity: 0 },
+        ],
+        { duration: 1300, easing: 'ease-out' },
+      ).finished.then(() => word.remove());
+      for (let i = 0; i < 34; i++) {
+        const isJar = i % 4 === 0;
+        const el = bit(isJar ? 'boom-jar' : 'boom-blob', isJar ? jarSvg() : '');
+        const angle = Math.random() * Math.PI * 2;
+        const dist = rand(120, 420);
+        const dx = Math.cos(angle) * dist;
+        const dy = Math.sin(angle) * dist;
+        const s0 = isJar ? rand(0.6, 1.1) : rand(0.5, 1.6);
+        const spin = rand(-720, 720);
+        el.animate(
+          [
+            { transform: `translate(${x}px, ${y}px) scale(${s0}) rotate(0deg)`, opacity: 1 },
+            { transform: `translate(${x + dx * 0.7}px, ${y + dy * 0.7 - 40}px) scale(${s0}) rotate(${spin / 2}deg)`, opacity: 1, offset: 0.5 },
+            { transform: `translate(${x + dx}px, ${y + dy + 160}px) scale(${s0 * 0.8}) rotate(${spin}deg)`, opacity: 0 },
+          ],
+          { duration: rand(1000, 1700), easing: 'cubic-bezier(0.2, 0.7, 0.4, 1)' },
+        ).finished.then(() => el.remove());
+      }
+    }
+    function scheduleUfo(first = false) {
+      window.clearTimeout(ufoTimer);
+      if (!inSpace() || reduced.matches) return;
+      ufoTimer = window.setTimeout(() => {
+        spawnUfo();
+        scheduleUfo();
+      }, first ? 1600 : rand(5000, 11000));
+    }
+    function stars() {
+      const g = view.querySelector<SVGGElement>('[data-solar-stars]')!;
+      if (g.childElementCount) return;
+      for (let i = 0; i < 140; i++) {
+        const c = document.createElementNS(SVG_NS, 'circle');
+        c.setAttribute('class', 'solar-star');
+        c.setAttribute('cx', rand(-160, 160).toFixed(1));
+        c.setAttribute('cy', rand(-100, 100).toFixed(1));
+        c.setAttribute('r', rand(0.15, 0.55).toFixed(2));
+        c.style.animationDelay = `${rand(-3, 0).toFixed(2)}s`;
+        g.append(c);
+      }
+    }
+    function showSolar() {
+      stars();
+      hidePin();
+      showContinent(null);
+      solar.hidden = false;
+      view.classList.add('is-space');
+      solarBtn.setAttribute('aria-pressed', 'true');
+      status.textContent = solarBtn.textContent?.trim() ?? '';
+      scheduleUfo(true);
+    }
+    function hideSolar() {
+      if (!inSpace()) return;
+      view.classList.remove('is-space');
+      solarBtn.setAttribute('aria-pressed', 'false');
+      window.clearTimeout(ufoTimer);
+      ufoBox.replaceChildren();
+      solar.hidden = true;
+    }
+    solarBtn.addEventListener('click', showSolar);
+    // every other body of the solar system: "message me about it"
+    view.querySelectorAll<SVGGElement>('.solar-planet:not(.is-earth), .solar-sun').forEach((body) =>
+      body.addEventListener('click', () => {
+        const name =
+          body.dataset.solarName ?? body.querySelector('.solar-label')?.textContent?.trim() ?? view.querySelector('.solar-label--sun')?.textContent?.trim() ?? '';
+        window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail: { place: name } }));
+      }),
+    );
+    view.querySelector('.solar-planet.is-earth')!.addEventListener('click', () => {
+      hideSolar();
+      status.textContent = msg('hint');
+      animateTo({ ...WORLD });
+    });
+
+    function zoomTo(target: SearchTarget) {
+      const { x, y } = toXY(target.lat, target.lon);
+      const w = WORLD.w / ZOOM;
+      const h = WORLD.h / ZOOM;
+      const b = {
+        x: Math.min(Math.max(0, x - w / 2), WORLD.w - w),
+        y: Math.min(Math.max(0, y - h / 2), WORLD.h - h),
+        w,
+        h,
+      };
+      hideSolar();
+      showContinent(null);
+      animateTo(b).then(() => showPin(target.lat, target.lon));
+    }
+
+    // ---- search (left rail) ----
+    const setSearchOpen = (open: boolean) => {
+      form.hidden = !open;
+      searchToggle.setAttribute('aria-expanded', String(open));
+      if (open) input.focus();
+    };
+    searchToggle.addEventListener('click', () => setSearchOpen(Boolean(form.hidden)));
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const q = input.value.trim();
+      if (!q) return;
+      status.textContent = msg('searching');
+      go.disabled = true;
+      try {
+        const list = await geocode(q, lang);
+        if (!list.length) {
+          status.textContent = msg('none');
+          return;
+        }
+        const r = list[0];
+        const target = { name: r.name, lat: r.latitude, lon: r.longitude };
+        status.textContent = [r.name, r.admin1, r.country].filter(Boolean).join(', ');
+        zoomTo(target);
+        window.dispatchEvent(new CustomEvent(FACTS_EVENT, { detail: target }));
+      } catch (err) {
+        console.error('[chaos] search', err);
+        status.textContent = msg('error');
+      } finally {
+        go.disabled = false;
+      }
+    });
+
+    // ---- whole world + continents (right rail) ----
+    const setContinentsOpen = (open: boolean) => {
+      continentList.hidden = !open;
+      worldBtn.setAttribute('aria-expanded', String(open));
+    };
+    worldBtn.addEventListener('click', () => {
+      const opening = continentList.hidden;
+      setContinentsOpen(Boolean(opening));
+      // always back to the whole world; the list lets you pick a continent to zoom onto
+      hideSolar();
+      hidePin();
+      showContinent(null);
+      status.textContent = msg('hint');
+      animateTo({ ...WORLD });
+    });
+    continentBtns.forEach((b) =>
+      b.addEventListener('click', async () => {
+        const [west, south, east, north] = (b.dataset.box ?? '').split(',').map(Number);
+        hideSolar();
+        hidePin();
+        status.textContent = b.textContent?.trim() ?? '';
+        showContinent(null);
+        await animateTo(fitBox(west, south, east, north), 1100);
+        showContinent(b.dataset.continentBtn ?? null); // more cities pop up once the zoom has landed
+      }),
+    );
+
+    view.querySelector('[data-chaos-exit]')!.addEventListener('click', () => {
+      // same as picking the default theme in the palette menu (plays the rebuild animation)
+      document.querySelector<HTMLButtonElement>('[data-theme-option="violet"]')?.click();
+    });
+    view.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (!form.hidden) setSearchOpen(false);
+      if (!continentList.hidden) setContinentsOpen(false);
+    });
+
+    let wasChaos = isChaos();
+    const sync = () => {
+      const chaos = isChaos();
+      if (chaos) {
+        void init();
+        if (!wasChaos && !reduced.matches) {
+          // just switched in (after the page fell apart): play the entrance once
+          view.classList.add('is-entering');
+          window.setTimeout(() => view.classList.remove('is-entering'), 2400);
+        }
+      }
+      if (!chaos) hideSolar();
+      wasChaos = chaos;
+    };
+    window.addEventListener(THEME_EVENT, sync);
+    if (isChaos()) void init();
+  }
+</script>

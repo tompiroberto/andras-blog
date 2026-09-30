@@ -1,0 +1,20 @@
+{
+  "_comment": "Ferrero plants reported to make Nutella (checked Sep 2026: Wikipedia 'Nutella' + local/trade news). kind: spread | product (other Nutella-branded products). uncertain = sources disagree.",
+  "factories": [
+    { "city": "Alba", "country": "IT", "lat": 44.70, "lon": 8.04, "opened": 1946, "kind": "spread", "note": "Ferrero's birthplace – the first Nutella jar was made here in 1964" },
+    { "city": "Sant'Angelo dei Lombardi", "country": "IT", "lat": 40.93, "lon": 15.18, "opened": 1988, "kind": "spread", "note": "Southern Italian plant, also makes the plant-based Nutella" },
+    { "city": "Balvano", "country": "IT", "lat": 40.65, "lon": 15.51, "opened": 2019, "kind": "product", "note": "Bakes Nutella Biscuits (since 2019)" },
+    { "city": "Villers-Écalles", "country": "FR", "lat": 49.54, "lon": 0.93, "opened": 1960, "kind": "spread", "note": "The world's largest Nutella plant – about a quarter of all Nutella" },
+    { "city": "Stadtallendorf", "country": "DE", "lat": 50.83, "lon": 9.02, "opened": 1956, "kind": "spread", "note": "Ferrero's first plant abroad, for Germany and northern Europe" },
+    { "city": "Belsk Duży", "country": "PL", "lat": 51.83, "lon": 20.81, "opened": 1997, "kind": "spread", "note": "Near Warsaw – Nutella and Nutella B-ready" },
+    { "city": "Vorsha (Vladimir region)", "country": "RU", "lat": 55.99, "lon": 40.02, "opened": 2009, "kind": "spread", "note": "The Russian plant, near Sobinka" },
+    { "city": "Manisa", "country": "TR", "lat": 38.61, "lon": 27.43, "opened": 2013, "kind": "spread", "note": "Nutella for Turkey, the Middle East and North Africa" },
+    { "city": "Lithgow", "country": "AU", "lat": -33.48, "lon": 150.16, "opened": 1976, "kind": "spread", "note": "Nutella for Australia and New Zealand since the late 1970s" },
+    { "city": "Poços de Caldas", "country": "BR", "lat": -21.79, "lon": -46.56, "opened": 1997, "kind": "spread", "note": "Nutella for Brazil and Argentina" },
+    { "city": "San José Iturbide", "country": "MX", "lat": 21.00, "lon": -100.39, "opened": 2013, "kind": "spread", "note": "The first Mexican plant, for Mexico and North America" },
+    { "city": "Brantford", "country": "CA", "lat": 43.14, "lon": -80.26, "opened": 2006, "kind": "spread", "note": "The main North American plant – Nutella and Nutella & GO!" },
+    { "city": "Franklin Park", "country": "US", "lat": 41.94, "lon": -87.87, "opened": null, "kind": "product", "uncertain": true, "note": "Makes Nutella Peanut (from 2026)" },
+    { "city": "Los Cardales", "country": "AR", "lat": -34.32, "lon": -59.00, "opened": 1996, "kind": "spread", "uncertain": true, "note": "Used to make Nutella; now reportedly imported from Brazil" },
+    { "city": "Tumbaco (Quito)", "country": "EC", "lat": -0.21, "lon": -78.40, "opened": 1975, "kind": "spread", "uncertain": true, "note": "Ferrero's first plant outside Europe; Nutella there is unconfirmed" }
+  ]
+}

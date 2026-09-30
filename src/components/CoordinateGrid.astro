@@ -1,0 +1,280 @@
+---
+/**
+ * Optional latitude/longitude grid over the whole page (toggled from the header). Uses the page's
+ * coordinate system from src/lib/pageGeo.ts (shared with the continents in WorldLayer): latitude runs
+ * down the whole page, the screen is centred on Budapest, both axes use the same scale.
+ */
+---
+
+<div class="coord-grid" aria-hidden="true" data-coord-grid>
+  <div class="coord-grid__lon" data-lon-layer></div>
+  <div class="coord-grid__lat" data-lat-layer></div>
+  <div class="coord-grid__cross coord-grid__cross--x" data-cross-x></div>
+  <div class="coord-grid__cross coord-grid__cross--y" data-cross-y></div>
+  <div class="coord-grid__readout" data-readout></div>
+</div>
+
+<style>
+  .coord-grid {
+    --grid-line: color-mix(in srgb, var(--violet) 22%, transparent);
+    --grid-axis: var(--violet);
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-grid);
+    pointer-events: none;
+    overflow: hidden;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  :global(html.grid-on) .coord-grid {
+    display: block;
+  }
+  .coord-grid__lon {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    will-change: transform;
+  }
+  .coord-grid__lat {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    will-change: transform;
+  }
+  .coord-grid :global(.g-line) {
+    position: absolute;
+    background: var(--grid-line);
+  }
+  .coord-grid :global(.g-line--v) {
+    top: 0;
+    bottom: 0;
+    width: 1px;
+  }
+  .coord-grid :global(.g-line--h) {
+    left: 0;
+    right: 0;
+    height: 1px;
+  }
+  .coord-grid :global(.g-line.is-axis) {
+    background: var(--grid-axis);
+    opacity: 0.55;
+  }
+  .coord-grid :global(.g-line--v.is-axis) {
+    width: 2px;
+  }
+  .coord-grid :global(.g-line--h.is-axis) {
+    height: 2px;
+  }
+  .coord-grid :global(.g-label) {
+    position: absolute;
+    padding: 3px 6px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    color: var(--violet-dark);
+    border: 1px solid var(--grid-line);
+    white-space: nowrap;
+  }
+  .coord-grid :global(.g-line--v .g-label) {
+    top: calc(var(--header-h) + 6px);
+    left: 4px;
+  }
+  .coord-grid :global(.g-line--h .g-label) {
+    left: 6px;
+    top: 4px;
+  }
+  .coord-grid :global(.is-axis .g-label) {
+    background: var(--violet);
+    border-color: var(--violet);
+    color: #fff;
+  }
+
+  .coord-grid__cross {
+    position: absolute;
+    display: none;
+    background: color-mix(in srgb, var(--ink) 35%, transparent);
+  }
+  .coord-grid__cross--x {
+    left: 0;
+    right: 0;
+    height: 1px;
+    top: var(--cy, 0px);
+  }
+  .coord-grid__cross--y {
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    left: var(--cx, 0px);
+  }
+  .coord-grid__readout {
+    position: absolute;
+    display: none;
+    left: 0;
+    top: 0;
+    /* --cx/--cy are in the overlay's CSS px; the readout is counter-zoomed (--tz) */
+    transform: translate(calc(var(--cx, 0px) / var(--tz) + 14px), calc(var(--cy, 0px) / var(--tz) + 10px));
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: #fff;
+    box-shadow: 3px 3px 0 var(--yellow);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .coord-grid.has-pointer .coord-grid__cross,
+  .coord-grid.has-pointer .coord-grid__readout {
+    display: block;
+  }
+  .coord-grid__readout.is-flipped {
+    transform: translate(calc(var(--cx, 0px) / var(--tz) - 100% - 14px), calc(var(--cy, 0px) / var(--tz) + 10px));
+  }
+
+  @media print {
+    .coord-grid {
+      display: none !important;
+    }
+  }
+</style>
+
+<script>
+  import { FACTS_EVENT, GRID_EVENT, GRID_STORAGE_KEY, HORIZONTAL_EVENT } from '../lib/constants';
+  import { centerLon, isHorizontal, pageGeo, pageSize, type PageGeo } from '../lib/pageGeo';
+  import { pageZoom } from '../lib/zoom';
+
+  const LAT_STEP = 10; // degrees between parallels
+  const MIN_LINE_GAP = 110; // px; meridians use 10° or 30° steps to stay at least this far apart
+
+  const root = document.querySelector<HTMLElement>('[data-coord-grid]');
+  if (root) initGrid(root);
+
+  function initGrid(root: HTMLElement) {
+    const lonLayer = root.querySelector<HTMLElement>('[data-lon-layer]')!;
+    const latLayer = root.querySelector<HTMLElement>('[data-lat-layer]')!;
+    const readout = root.querySelector<HTMLElement>('[data-readout]')!;
+    const html = document.documentElement;
+    let geo: PageGeo = pageGeo(1, 1);
+    let ticking = false;
+    let pointer: { x: number; y: number } | null = null;
+
+    const isOn = () => html.classList.contains('grid-on');
+    const fmt = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(v % 1 === 0 ? 0 : 2)}° ${v === 0 ? '' : v > 0 ? pos : neg}`.trim();
+
+    function line(dir: 'v' | 'h', pos: number, label: string, axis: boolean) {
+      const el = document.createElement('div');
+      el.className = `g-line g-line--${dir}${axis ? ' is-axis' : ''}`;
+      el.style[dir === 'v' ? 'left' : 'top'] = `${pos}px`;
+      const tag = document.createElement('span');
+      tag.className = 'g-label';
+      tag.textContent = label;
+      el.append(tag);
+      return el;
+    }
+
+    function build() {
+      const { width, height } = pageSize();
+      const horiz = isHorizontal();
+      geo = pageGeo(width, height, centerLon(), horiz);
+      // horizontal page: the lines are further apart, so 5° steps where they fit
+      const steps = horiz ? [5, 10, 30] : [10, 30];
+      const lonStep = steps.find((s) => geo.k * s >= MIN_LINE_GAP) ?? 30;
+      const latStep = horiz ? lonStep : LAT_STEP;
+      const norm = (lon: number) => ((((lon + 180) % 360) + 360) % 360) - 180;
+      const meridians: HTMLElement[] = [];
+      for (let lon = Math.ceil(geo.lonMin / lonStep) * lonStep; lon <= geo.lonMax; lon += lonStep) {
+        meridians.push(line('v', geo.xOf(lon), fmt(norm(lon), 'E', 'W'), norm(lon) === 0));
+      }
+      lonLayer.replaceChildren(...meridians);
+      lonLayer.style.width = `${width}px`;
+      latLayer.style.height = `${height}px`;
+      const parallels: HTMLElement[] = [];
+      for (let lat = 90 - latStep; lat > -90; lat -= latStep) {
+        if (lat > geo.latTop || lat < geo.latBottom) continue;
+        parallels.push(line('h', geo.yOf(lat), fmt(lat, 'N', 'S'), lat === 0));
+      }
+      latLayer.replaceChildren(...parallels);
+      update();
+    }
+
+    function update() {
+      ticking = false;
+      const z = pageZoom();
+      // the grid belongs to the page (the body), which floats in the middle when zoomed out
+      const body = document.body.getBoundingClientRect();
+      latLayer.style.transform = `translateY(${body.top / z}px)`;
+      lonLayer.style.transform = `translateX(${body.left / z}px)`;
+      // no grid over the empty space around the zoomed-out page
+      const side = Math.max(0, body.left) / z;
+      root.style.clipPath = side > 1 ? `inset(0 ${side}px 0 ${side}px)` : '';
+      if (!pointer) return;
+      const lat = geo.latAt(pointer.y - body.top / z);
+      const rawLon = geo.lonAt(pointer.x - body.left / z);
+      const lon = ((((rawLon + 180) % 360) + 360) % 360) - 180;
+      const exact = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? pos : neg}`;
+      readout.textContent = `${exact(lat, 'N', 'S')} · ${exact(lon, 'E', 'W')}`;
+      root.style.setProperty('--cx', `${pointer.x}px`);
+      root.style.setProperty('--cy', `${pointer.y}px`);
+      readout.classList.toggle('is-flipped', pointer.x > window.innerWidth / z - 220);
+    }
+
+    const schedule = () => {
+      if (isOn() && !ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', () => isOn() && build());
+    new ResizeObserver(() => isOn() && build()).observe(document.body);
+
+    document.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      pointer = { x: e.clientX / pageZoom(), y: e.clientY / pageZoom() }; // CSS px
+      root.classList.add('has-pointer');
+      schedule();
+    });
+    document.documentElement.addEventListener('pointerleave', () => {
+      pointer = null;
+      root.classList.remove('has-pointer');
+    });
+    // Touch: show the coordinates of the last tap
+    document.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse') return;
+      pointer = { x: e.clientX / pageZoom(), y: e.clientY / pageZoom() }; // CSS px
+      root.classList.add('has-pointer');
+      schedule();
+    });
+
+    window.addEventListener(HORIZONTAL_EVENT, () => isOn() && requestAnimationFrame(build));
+    // Double-click (grid on): "message me about this spot" with its coordinates
+    document.addEventListener('dblclick', (e) => {
+      if (!isOn() || html.classList.contains('map-mode')) return;
+      if ((e.target as Element).closest('a, button, input, textarea, select, label, [data-chile], dialog, .fact-card')) return;
+      const z = pageZoom();
+      const body = document.body.getBoundingClientRect();
+      const lat = geo.latAt((e.clientY - body.top) / z);
+      const raw = geo.lonAt((e.clientX - body.left) / z);
+      const lon = ((((raw + 180) % 360) + 360) % 360) - 180;
+      const place = `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? 'E' : 'W'}`;
+      window.getSelection()?.removeAllRanges();
+      window.dispatchEvent(new CustomEvent(FACTS_EVENT, { detail: { name: place, lat, lon, spot: true } }));
+    });
+    window.addEventListener(GRID_EVENT, () => {
+      if (isOn()) build();
+    });
+    if (isOn()) build();
+  }
+
+  // Keep other tabs in sync
+  window.addEventListener('storage', (e) => {
+    if (e.key !== GRID_STORAGE_KEY) return;
+    document.documentElement.classList.toggle('grid-on', e.newValue === '1');
+    window.dispatchEvent(new Event(GRID_EVENT));
+  });
+</script>

@@ -1,0 +1,661 @@
+---
+/**
+ * "Route here": from any place on the site (city names, search results, map places, a double-click on
+ * the coordinate grid…) window.dispatchEvent(new CustomEvent(ROUTE_EVENT, { detail: { name, lat, lon } })).
+ * A travel animation plays (plane, train, car, hitchhiking, on foot – src/lib/trip.ts), then a map opens
+ * zoomed to the journey: every leg drawn and marked with how you travel it (src/lib/routePlanner.ts).
+ * The start is the visitor's own place if they typed one, else the capital of the page's language
+ * (English asks; Budapest if all else fails).
+ */
+import Icon from './Icon.astro';
+import { t, type Lang, type TKey } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+/** Default start: the capital that goes with the page's language (English: ask) */
+const HOME: Record<Lang, { name: string; lat: number; lon: number } | null> = {
+  hu: { name: 'Budapest', lat: 47.4979, lon: 19.0402 },
+  pt: { name: 'Lisboa', lat: 38.7223, lon: -9.1393 },
+  ro: { name: 'București', lat: 44.4268, lon: 26.1025 },
+  el: { name: 'Αθήνα', lat: 37.9838, lon: 23.7275 },
+  ka: { name: 'თბილისი', lat: 41.7151, lon: 44.8271 },
+  en: null,
+};
+const MODES = [
+  { id: 'plane', icon: 'plane' },
+  { id: 'train', icon: 'train-front' },
+  { id: 'car', icon: 'car' },
+  { id: 'hitch', icon: 'thumbs-up' },
+  { id: 'walk', icon: 'footprints' },
+] as const;
+const words = {
+  home: HOME[lang],
+  fallback: { name: 'Budapest', lat: 47.4979, lon: 19.0402 },
+  anim: {
+    plane: t(lang, 'cf.travel'),
+    train: t(lang, 'route.anim.train'),
+    car: t(lang, 'cf.byCar'),
+    hitch: t(lang, 'cf.byThumb'),
+    walk: t(lang, 'route.anim.walk'),
+  },
+  route: Object.fromEntries(
+    ['total', 'hours', 'days', 'walkNote', 'joke.water', 'joke.noRail', 'joke.noRoad', 'joke.here'].map((k) => [k, t(lang, `route.${k}` as TKey)]),
+  ),
+  looking: t(lang, 'mapmode.distLooking'),
+  none: t(lang, 'search.none'),
+  error: t(lang, 'mapmode.distError'),
+};
+---
+
+<div class="route-view" hidden data-route-view data-lang={lang} role="dialog" aria-modal="true" aria-labelledby="route-title">
+  <div class="route-map" data-route-map></div>
+  <div class="route-marks" data-route-marks></div>
+
+  <aside class="route-panel">
+    <div class="route-panel__head">
+      <h2 id="route-title"><Icon name="route" size={20} />{t(lang, 'route.title')}</h2>
+      <button type="button" class="route-close" aria-label={t(lang, 'cf.back')} title={t(lang, 'cf.back')} data-route-close><Icon name="x" size={18} /></button>
+    </div>
+    <form class="route-from" data-route-from>
+      <label for="route-from-input">{t(lang, 'route.from')}</label>
+      <p class="route-ask" hidden data-route-ask>{t(lang, 'route.askFrom')}</p>
+      <div class="route-from__row">
+        <input id="route-from-input" type="text" autocomplete="off" maxlength="80" placeholder={t(lang, 'mapmode.distPlaceholder')} />
+        <button type="submit" class="route-go">{t(lang, 'route.go')}</button>
+      </div>
+      <div class="route-from__row route-from__alt">
+        <button type="button" data-route-ip><Icon name="locate" size={14} />{t(lang, 'route.useIp')}</button>
+        <button type="button" hidden data-route-budapest>Budapest</button>
+      </div>
+    </form>
+    <p class="route-to"><span>{t(lang, 'route.to')}</span> <strong data-route-to></strong></p>
+    <div class="route-modes" role="radiogroup">
+      {
+        MODES.map((m) => (
+          <button type="button" role="radio" aria-checked="false" data-route-mode={m.id}>
+            <Icon name={m.icon} size={15} />
+            {t(lang, `route.${m.id}` as TKey)}
+          </button>
+        ))
+      }
+    </div>
+    <ol class="route-legs" data-route-legs></ol>
+    <p class="route-total" aria-live="polite" data-route-total></p>
+    <small class="route-note">{t(lang, 'route.note')}</small>
+  </aside>
+  <script type="application/json" data-route-words set:html={JSON.stringify(words)} />
+</div>
+
+<style>
+  .route-view {
+    position: fixed;
+    inset: 0;
+    z-index: 560;
+    background: #cfe6f7;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    color: var(--ink);
+    zoom: var(--inv-zoom, 1);
+  }
+  .route-view[hidden] {
+    display: none;
+  }
+  :global(html.route-open) {
+    overflow: hidden;
+  }
+  .route-map,
+  .route-map :global(svg),
+  .route-marks {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .route-marks {
+    pointer-events: none;
+  }
+  .route-map :global(.r-land) {
+    fill: #eef0e8;
+    stroke: #c3c7bb;
+    stroke-width: 0.6;
+    vector-effect: non-scaling-stroke;
+  }
+  .route-map :global(.r-line) {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .route-map :global(.r-line--case) {
+    stroke: var(--ink);
+    stroke-width: 7;
+  }
+  .route-map :global(.r-line--air) {
+    stroke: var(--violet);
+    stroke-width: 4;
+    stroke-dasharray: 12 9;
+    animation: r-march 0.9s linear infinite;
+  }
+  .route-map :global(.r-line--ground) {
+    stroke: var(--yellow);
+    stroke-width: 5;
+  }
+  .route-map :global(.r-line--rail) {
+    stroke: #d7263d;
+    stroke-width: 5;
+  }
+  .route-map :global(.r-line--foot) {
+    stroke: #19a974;
+    stroke-width: 4;
+    stroke-dasharray: 2 8;
+  }
+  .route-map :global(.r-line--none) {
+    stroke: #8a8f99;
+    stroke-width: 3;
+    stroke-dasharray: 4 10;
+  }
+  .route-map :global(.r-line--grow) {
+    stroke-dashoffset: 0;
+    animation: r-grow 1.2s ease-out both;
+  }
+  @keyframes r-march {
+    to {
+      stroke-dashoffset: -21;
+    }
+  }
+  .route-marks :global(.r-stop),
+  .route-marks :global(.r-mode) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    white-space: nowrap;
+    animation: r-pop 450ms cubic-bezier(0.34, 1.7, 0.5, 1) var(--d, 0ms) both;
+  }
+  .route-marks :global(.r-stop) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transform: translate(calc(var(--x) - 8px), calc(var(--y) - 50%));
+    font-size: 14px;
+    font-weight: 700;
+    text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff;
+  }
+  .route-marks :global(.r-stop::before) {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--yellow);
+    border: 3px solid var(--ink);
+  }
+  .route-marks :global(.r-stop.is-end::before) {
+    background: var(--violet);
+  }
+  .route-marks :global(.r-mode) {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    transform: translate(calc(var(--x) - 17px), calc(var(--y) - 17px));
+    border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid var(--ink);
+    font-size: 17px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  @keyframes r-pop {
+    from {
+      scale: 0;
+      opacity: 0;
+    }
+  }
+
+  .route-panel {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    z-index: 2;
+    display: grid;
+    gap: 10px;
+    width: min(360px, calc(100% - 32px));
+    max-height: calc(100% - 32px);
+    overflow: auto;
+    padding: 14px 16px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 18px;
+    box-shadow: 5px 5px 0 var(--yellow);
+    font-size: 14px;
+  }
+  .route-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .route-panel h2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 18px;
+    color: var(--yellow);
+  }
+  .route-close {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+    cursor: pointer;
+  }
+  .route-from {
+    display: grid;
+    gap: 6px;
+  }
+  .route-from label,
+  .route-to span {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #9fd3ff;
+  }
+  .route-ask {
+    margin: 0;
+    font-weight: 700;
+    color: var(--yellow);
+  }
+  .route-from__row {
+    display: flex;
+    gap: 6px;
+  }
+  .route-from input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+  }
+  .route-go {
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--yellow);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .route-from__alt button {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1.5px solid rgb(255 255 255 / 0.5);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .route-from__alt button[hidden] {
+    display: none;
+  }
+  .route-to {
+    margin: 0;
+    font-size: 16px;
+  }
+  .route-modes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .route-modes button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border: 1.5px solid rgb(255 255 255 / 0.5);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .route-modes button[aria-checked='true'] {
+    background: var(--yellow);
+    border-color: var(--yellow);
+    color: var(--ink);
+  }
+  .route-legs {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .route-legs:empty {
+    display: none;
+  }
+  .route-legs :global(li) {
+    display: flex;
+    gap: 8px;
+  }
+  .route-legs :global(.r-time) {
+    margin-left: auto;
+    white-space: nowrap;
+    opacity: 0.75;
+  }
+  .route-total {
+    margin: 0;
+    font-weight: 700;
+    color: var(--yellow);
+  }
+  .route-total:empty {
+    display: none;
+  }
+  .route-note {
+    opacity: 0.6;
+    font-size: 11px;
+  }
+  @media (max-width: 600px) {
+    .route-panel {
+      top: auto;
+      bottom: 12px;
+      left: 12px;
+      max-height: 50%;
+    }
+  }
+</style>
+
+<script>
+  import { ROUTE_EVENT, type SearchTarget } from '../lib/constants';
+  import { geocode } from '../lib/geocode';
+  import { findMyLocation, type MyLocation } from '../lib/myLocation';
+  import { plan, type Mode, type Plan } from '../lib/routePlanner';
+  import { playTrip, type TripVehicle } from '../lib/trip';
+
+  type Place = { name: string; lat: number; lon: number };
+  const FROM_KEY = 'andras-route-from';
+  const view = document.querySelector<HTMLElement>('[data-route-view]');
+  if (view) setup(view);
+
+  function setup(view: HTMLElement) {
+    const words: {
+      home: Place | null;
+      fallback: Place;
+      anim: Record<string, string>;
+      route: Record<string, string>;
+      looking: string;
+      none: string;
+      error: string;
+    } = JSON.parse(view.querySelector('[data-route-words]')!.textContent || '{}');
+    const lang = view.dataset.lang ?? 'en';
+    const html = document.documentElement;
+    const mapBox = view.querySelector<HTMLElement>('[data-route-map]')!;
+    const marks = view.querySelector<HTMLElement>('[data-route-marks]')!;
+    const form = view.querySelector<HTMLFormElement>('[data-route-from]')!;
+    const input = form.querySelector('input')!;
+    const ask = view.querySelector<HTMLElement>('[data-route-ask]')!;
+    const budapestBtn = view.querySelector<HTMLButtonElement>('[data-route-budapest]')!;
+    const legsEl = view.querySelector<HTMLElement>('[data-route-legs]')!;
+    const totalEl = view.querySelector<HTMLElement>('[data-route-total]')!;
+    let from: Place | null = null;
+    let to: Place | null = null;
+    let mode: Mode = 'plane';
+    let world: GeoJSON.FeatureCollection | null = null;
+    let opener: Element | null = null;
+    let run = 0;
+    let last: { p: Plan; geo: typeof import('d3-geo'); countries: GeoJSON.FeatureCollection } | null = null;
+
+    const saved = (): Place | null => {
+      try {
+        const v = JSON.parse(localStorage.getItem(FROM_KEY) ?? 'null');
+        return v && Number.isFinite(v.lat) ? v : null;
+      } catch {
+        return null;
+      }
+    };
+    const remember = (p: Place) => {
+      try {
+        localStorage.setItem(FROM_KEY, JSON.stringify(p));
+      } catch {
+        /* storage unavailable */
+      }
+    };
+    async function loadWorld() {
+      if (world) return world;
+      const [topo, w] = await Promise.all([import('topojson-client'), fetch('/data/countries-50m.json').then((r) => r.json())]);
+      world = topo.feature(w, w.objects.countries) as unknown as GeoJSON.FeatureCollection;
+      return world;
+    }
+    const fmtTime = (h: number, days = false) => {
+      if (days || h >= 48) return words.route.days.replace('{n}', String(Math.max(1, Math.round(h / 24))));
+      return words.route.hours.replace('{n}', String(h < 10 ? Math.max(0.5, Math.round(h * 2) / 2) : Math.round(h)));
+    };
+    const legIcon = (kind: 'air' | 'ground', m: Mode) =>
+      kind === 'air' ? '✈️' : m === 'train' ? '🚆' : m === 'walk' ? '🚶' : m === 'hitch' ? '👍' : m === 'bus' ? '🚌' : '🚗';
+    const vehicleOf = (m: Mode): TripVehicle => (m === 'plane' ? 'plane' : m === 'train' ? 'train' : m === 'walk' ? 'walk' : m === 'hitch' ? 'hitch' : 'car');
+
+    function open(target: SearchTarget) {
+      opener = document.activeElement;
+      to = { name: target.name, lat: target.lat, lon: target.lon };
+      view.querySelector('[data-route-to]')!.textContent = to.name;
+      from = saved() ?? words.home;
+      input.value = from?.name ?? '';
+      ask.hidden = Boolean(from);
+      budapestBtn.hidden = Boolean(from);
+      legsEl.replaceChildren();
+      totalEl.textContent = '';
+      mapBox.replaceChildren();
+      marks.replaceChildren();
+      last = null;
+      view.hidden = false;
+      html.classList.add('route-open');
+      if (!from) {
+        input.focus();
+        return;
+      }
+      mode = 'auto' as Mode;
+      go();
+    }
+
+    function close() {
+      view.hidden = true;
+      html.classList.remove('route-open');
+      run++;
+      if (opener instanceof HTMLElement && document.contains(opener)) opener.focus({ preventScroll: true });
+    }
+
+    /** Plan, play the journey, then draw it. */
+    async function go() {
+      if (!from || !to) return;
+      const id = ++run;
+      const [geo, countries] = await Promise.all([import('d3-geo'), loadWorld()]);
+      if (id !== run) return;
+      const countryAt = (p: Place) => countries.features.find((f) => geo.geoContains(f, [p.lon, p.lat]))?.id?.toString() ?? null;
+      const a = { ...from, country: countryAt(from) };
+      const b = { ...to, country: countryAt(to) };
+      if ((mode as string) === 'auto') {
+        const d = geo.geoDistance([from.lon, from.lat], [to.lon, to.lat]) * 6371;
+        mode = d > 900 ? 'plane' : d > 150 ? 'car' : 'walk';
+        // a trip that cannot go by road falls back to the plane
+        if (mode !== 'plane' && plan(mode, a, b).joke && d > 20) mode = 'plane';
+      }
+      view.querySelectorAll<HTMLButtonElement>('[data-route-mode]').forEach((btn) => btn.setAttribute('aria-checked', String(btn.dataset.routeMode === mode)));
+      const p = plan(mode, a, b);
+      legsEl.replaceChildren();
+      totalEl.textContent = '';
+      if (!p.joke) await playTrip(view, vehicleOf(p.mode), words.anim[vehicleOf(p.mode)].replace('{name}', to.name));
+      if (id !== run) return;
+      last = { p, geo, countries };
+      show(p, geo, countries);
+    }
+
+    function show(p: Plan, geo: typeof import('d3-geo'), countries: GeoJSON.FeatureCollection) {
+      if (!from || !to) return;
+      // the list
+      legsEl.replaceChildren(
+        ...p.legs.map((l) => {
+          const li = document.createElement('li');
+          const what = document.createElement('span');
+          what.textContent = `${legIcon(l.kind, p.mode)} ${l.from.name} → ${l.to.name}`;
+          const time = document.createElement('span');
+          time.className = 'r-time';
+          time.textContent = fmtTime(l.hours, p.mode === 'walk');
+          li.append(what, time);
+          return li;
+        }),
+      );
+      totalEl.textContent = p.joke
+        ? words.route[`joke.${p.joke}`]
+        : words.route.total.replace('{t}', fmtTime(p.hours, p.mode === 'walk')) + (p.mode === 'walk' ? ` – ${words.route.walkNote}` : '');
+
+      // the map, zoomed to the journey
+      const W = mapBox.clientWidth;
+      const H = mapBox.clientHeight;
+      const points: Place[] = p.legs.length ? [p.legs[0].from, ...p.legs.map((l) => l.to)] : [from, to];
+      const mid = geo.geoInterpolate([from.lon, from.lat], [to.lon, to.lat])(0.5);
+      const panelW = W > 700 ? 390 : 0;
+      const projection = geo
+        .geoMercator()
+        .rotate([-mid[0], 0])
+        .fitExtent(
+          [
+            [panelW + 60, 70],
+            [W - 60, H - (W > 700 ? 70 : H * 0.45)],
+          ],
+          { type: 'LineString', coordinates: points.map((q) => [q.lon, q.lat]) } as GeoJSON.LineString,
+        );
+      // not too close for short trips (then centred on the route again)
+      if (projection.scale() > 6000) {
+        projection.scale(6000);
+        const cx = (panelW + 60 + W - 60) / 2;
+        const cy = (70 + H - (W > 700 ? 70 : H * 0.45)) / 2;
+        const [mx, my] = projection(mid as [number, number]) ?? [cx, cy];
+        const [tx, ty] = projection.translate();
+        projection.translate([tx + cx - mx, ty + cy - my]);
+      }
+      const path = geo.geoPath(projection);
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      const add = (d: string | null, cls: string) => {
+        const el = document.createElementNS(NS, 'path');
+        el.setAttribute('d', d ?? '');
+        el.setAttribute('class', cls);
+        svg.append(el);
+        return el;
+      };
+      for (const f of countries.features) add(path(f), 'r-land');
+      const lineOf = (x: Place, y: Place) => path({ type: 'LineString', coordinates: [[x.lon, x.lat], [y.lon, y.lat]] } as GeoJSON.LineString);
+      if (p.legs.length) {
+        p.legs.forEach((l) => add(lineOf(l.from, l.to), 'r-line r-line--case'));
+        p.legs.forEach((l) =>
+          add(lineOf(l.from, l.to), `r-line ${l.kind === 'air' ? 'r-line--air' : p.mode === 'train' ? 'r-line--rail' : p.mode === 'walk' ? 'r-line--foot' : 'r-line--ground'}`),
+        );
+      } else add(lineOf(from, to), 'r-line r-line--none');
+      mapBox.replaceChildren(svg);
+
+      // stops and "how" badges
+      const at = (q: Place) => projection([q.lon, q.lat]) ?? [0, 0];
+      const els: HTMLElement[] = points.map((q, i) => {
+        const [x, y] = at(q);
+        const el = document.createElement('span');
+        el.className = `r-stop${i === points.length - 1 ? ' is-end' : ''}`;
+        el.textContent = q.name;
+        el.style.setProperty('--x', `${x.toFixed(1)}px`);
+        el.style.setProperty('--y', `${y.toFixed(1)}px`);
+        el.style.setProperty('--d', `${i * 150}ms`);
+        return el;
+      });
+      p.legs.forEach((l, i) => {
+        const m = geo.geoInterpolate([l.from.lon, l.from.lat], [l.to.lon, l.to.lat])(0.5);
+        const [x, y] = projection(m as [number, number]) ?? [0, 0];
+        const el = document.createElement('span');
+        el.className = 'r-mode';
+        el.textContent = legIcon(l.kind, p.mode);
+        el.style.setProperty('--x', `${x.toFixed(1)}px`);
+        el.style.setProperty('--y', `${y.toFixed(1)}px`);
+        el.style.setProperty('--d', `${300 + i * 150}ms`);
+        els.push(el);
+      });
+      marks.replaceChildren(...els);
+    }
+
+    async function setFrom(q: string) {
+      totalEl.textContent = words.looking;
+      try {
+        const list = await geocode(q, lang);
+        if (!list.length) return void (totalEl.textContent = words.none);
+        const r = list[0];
+        from = { name: r.name, lat: r.latitude, lon: r.longitude };
+        remember(from);
+        input.value = from.name;
+        ask.hidden = budapestBtn.hidden = true;
+        mode = 'auto' as Mode;
+        go();
+      } catch (err) {
+        console.error('[route] geocode', err);
+        totalEl.textContent = words.error;
+      }
+    }
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = input.value.trim();
+      if (!q) return;
+      if (from && q === from.name) {
+        mode = 'auto' as Mode;
+        go();
+      } else setFrom(q);
+    });
+    view.querySelector('[data-route-ip]')!.addEventListener('click', async () => {
+      totalEl.textContent = words.looking;
+      try {
+        const me: MyLocation = await findMyLocation();
+        from = me;
+        input.value = me.name;
+        ask.hidden = budapestBtn.hidden = true;
+        mode = 'auto' as Mode;
+        go();
+      } catch {
+        totalEl.textContent = words.error;
+      }
+    });
+    budapestBtn.addEventListener('click', () => {
+      from = words.fallback;
+      input.value = from.name;
+      ask.hidden = budapestBtn.hidden = true;
+      mode = 'auto' as Mode;
+      go();
+    });
+    view.querySelectorAll<HTMLButtonElement>('[data-route-mode]').forEach((b) =>
+      b.addEventListener('click', () => {
+        mode = b.dataset.routeMode as Mode;
+        go();
+      }),
+    );
+    view.querySelector('[data-route-close]')!.addEventListener('click', close);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !view.hidden && !document.querySelector('dialog[open]')) close();
+    });
+    // a new window size only redraws the map (no second journey)
+    window.addEventListener('resize', () => {
+      if (!view.hidden && last) show(last.p, last.geo, last.countries);
+    });
+    window.addEventListener(ROUTE_EVENT, (e) => open((e as CustomEvent<SearchTarget>).detail));
+  }
+</script>

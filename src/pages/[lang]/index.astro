@@ -1,0 +1,30 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Hero from '../../components/Hero.astro';
+import IconStrip from '../../components/IconStrip.astro';
+import About from '../../components/About.astro';
+import ExploreCards from '../../components/ExploreCards.astro';
+import WorldMap from '../../components/WorldMap.astro';
+import PhotoGallery from '../../components/PhotoGallery.astro';
+import PlansTimeline from '../../components/PlansTimeline.astro';
+import MessageForm from '../../components/MessageForm.astro';
+import { langStaticPaths, type Lang } from '../../i18n';
+import { getPublishedSlugs } from '../../lib/posts';
+
+export const getStaticPaths = langStaticPaths;
+
+const lang = Astro.params.lang as Lang;
+const publishedSlugs = await getPublishedSlugs();
+---
+
+<BaseLayout lang={lang}>
+  <Hero lang={lang} />
+  <IconStrip lang={lang} />
+  <About lang={lang} />
+  <ExploreCards lang={lang}>
+    <WorldMap lang={lang} publishedSlugs={publishedSlugs} />
+  </ExploreCards>
+  <PhotoGallery lang={lang} />
+  <PlansTimeline lang={lang} />
+  <MessageForm lang={lang} />
+</BaseLayout>

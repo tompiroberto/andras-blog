@@ -1,0 +1,177 @@
+---
+/**
+ * Zoomed out, the page floats in the middle of the window (html.zoomed-out). The empty space on its
+ * two sides is outer space, with floating cows, aliens and jars of Nutella drifting past – click one.
+ * Lies behind the page (z-index −1), so it only shows around it.
+ */
+import { jarSvg } from '../lib/jar';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const COW = `<svg viewBox="0 0 64 44" aria-hidden="true"><g stroke="#1b1b24" stroke-width="2" stroke-linejoin="round"><path d="M14 30 V40 M22 31 V41 M40 31 V41 M48 30 V40" stroke-linecap="round"/><rect x="10" y="12" width="42" height="21" rx="9" fill="#fff"/><path d="M18 14 q6 6 1 12 q-6 -1 -5 -9 Z M36 20 q7 -3 9 4 q-4 5 -9 1 Z" fill="#1b1b24"/><path d="M52 14 q10 -2 10 8 q0 7 -8 7 q-5 0 -6 -5 Z" fill="#fff"/><ellipse cx="58" cy="25" rx="4" ry="3" fill="#ffb3c7"/><path d="M50 13 l-2 -5 M56 12 l2 -5" stroke-linecap="round"/><path d="M28 33 q3 4 6 0" fill="#ffb3c7"/><path d="M10 18 q-6 2 -6 9" fill="none" stroke-linecap="round"/></g><circle cx="55" cy="18" r="1.4" fill="#1b1b24"/></svg>`;
+const ALIEN = `<svg viewBox="0 0 48 60" aria-hidden="true"><g stroke="#1b1b24" stroke-width="2" stroke-linejoin="round"><path d="M16 6 L12 0 M32 6 L36 0" stroke-linecap="round"/><circle cx="12" cy="1" r="2.4" fill="#c6ff00"/><circle cx="36" cy="1" r="2.4" fill="#c6ff00"/><path d="M24 4 C40 4 44 18 40 28 C36 38 30 44 24 44 C18 44 12 38 8 28 C4 18 8 4 24 4Z" fill="#8be07a"/><path d="M14 44 q10 16 20 0" fill="#8be07a"/></g><ellipse cx="16" cy="24" rx="6" ry="8.5" fill="#1b1b24" transform="rotate(-20 16 24)"/><ellipse cx="32" cy="24" rx="6" ry="8.5" fill="#1b1b24" transform="rotate(20 32 24)"/><circle cx="18" cy="21" r="1.8" fill="#fff"/><circle cx="34" cy="21" r="1.8" fill="#fff"/><path d="M20 36 q4 3 8 0" stroke="#1b1b24" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+const KINDS = [
+  { kind: 'cow', svg: COW, say: t(lang, 'space.moo') },
+  { kind: 'alien', svg: ALIEN, say: t(lang, 'space.hi') },
+  { kind: 'jar', svg: jarSvg(), say: 'Nutella!' },
+];
+---
+
+<div class="zoom-space" aria-hidden="true" data-zoom-space>
+  {KINDS.map((k) => <template data-zs-kind={k.kind} data-zs-say={k.say} set:html={k.svg} />)}
+</div>
+
+<style>
+  .zoom-space {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 20% 30%, #fff 1px, transparent 1.4px) 0 0 / 97px 97px,
+      radial-gradient(circle at 70% 60%, rgb(255 255 255 / 0.7) 1px, transparent 1.4px) 0 0 / 143px 143px,
+      radial-gradient(circle at 40% 80%, rgb(255 255 255 / 0.5) 0.8px, transparent 1.2px) 0 0 / 61px 61px,
+      linear-gradient(160deg, #1a1446, #07051a);
+    /* real screen pixels, whatever the page zoom */
+    zoom: var(--inv-zoom, 1);
+  }
+  :global(html.zoomed-out:not(.horizontal):not(.map-mode)) .zoom-space {
+    display: block;
+  }
+  .zoom-space :global(.zs-item) {
+    position: absolute;
+    top: 0;
+    width: var(--size);
+    animation: zs-drift var(--drift) linear var(--delay) infinite;
+    cursor: pointer;
+  }
+  .zoom-space :global(.zs-bob) {
+    animation: zs-bob var(--bob) ease-in-out infinite alternate;
+  }
+  .zoom-space :global(.zs-item svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 0 8px rgb(198 255 0 / 0.25));
+  }
+  .zoom-space :global(.zs-item.is-poked svg) {
+    animation: zs-spin 800ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .zoom-space :global(.zs-say) {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background: #fff;
+    color: #1b1b24;
+    font: 700 12px/1.2 'DM Sans', system-ui, sans-serif;
+    white-space: nowrap;
+    transform: translateX(-50%);
+    animation: zs-say 1.4s ease forwards;
+  }
+  @keyframes zs-drift {
+    from {
+      transform: translateY(110vh);
+    }
+    to {
+      transform: translateY(-140px);
+    }
+  }
+  @keyframes zs-bob {
+    from {
+      transform: translateX(-6px) rotate(-14deg);
+    }
+    to {
+      transform: translateX(6px) rotate(14deg);
+    }
+  }
+  @keyframes zs-spin {
+    to {
+      transform: rotate(360deg) scale(1.2);
+    }
+  }
+  @keyframes zs-say {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, 6px);
+    }
+    15%,
+    80% {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .zoom-space :global(.zs-item),
+    .zoom-space :global(.zs-bob) {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  import { ZOOM_EVENT } from '../lib/constants';
+
+  const space = document.querySelector<HTMLElement>('[data-zoom-space]');
+  if (space) {
+    const kinds = Array.from(space.querySelectorAll<HTMLTemplateElement>('[data-zs-kind]'));
+    const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+    /** Fill both side margins with floaters sized to fit them. */
+    function build() {
+      space!.querySelectorAll('.zs-item').forEach((el) => el.remove());
+      if (!document.documentElement.classList.contains('zoomed-out')) return;
+      const W = window.innerWidth;
+      const body = document.body.getBoundingClientRect();
+      const margin = Math.max(0, body.left);
+      if (margin < 36) return;
+      const size = Math.min(84, margin - 20);
+      const perSide = Math.max(3, Math.round(window.innerHeight / 170));
+      for (const side of [0, 1]) {
+        for (let i = 0; i < perSide; i++) {
+          const k = kinds[(i + side) % kinds.length];
+          const item = document.createElement('div');
+          item.className = 'zs-item';
+          const x = side === 0 ? rnd(8, Math.max(8, margin - size - 8)) : W - margin + rnd(8, Math.max(8, margin - size - 8));
+          const drift = rnd(28, 55);
+          item.style.left = `${x.toFixed(0)}px`;
+          item.style.setProperty('--size', `${(size * rnd(0.6, 1)).toFixed(0)}px`);
+          item.style.setProperty('--drift', `${drift.toFixed(1)}s`);
+          item.style.setProperty('--delay', `${(-drift * ((i + rnd(0, 0.8)) / perSide)).toFixed(1)}s`);
+          const bob = document.createElement('div');
+          bob.className = 'zs-bob';
+          bob.style.setProperty('--bob', `${rnd(2.2, 4).toFixed(1)}s`);
+          bob.innerHTML = k.innerHTML;
+          item.append(bob);
+          item.addEventListener('click', () => {
+            item.classList.remove('is-poked');
+            void item.offsetWidth;
+            item.classList.add('is-poked');
+            const say = document.createElement('span');
+            say.className = 'zs-say';
+            say.textContent = k.dataset.zsSay ?? '';
+            item.append(say);
+            window.setTimeout(() => say.remove(), 1500);
+          });
+          space!.append(item);
+        }
+      }
+    }
+    let timer = 0;
+    const schedule = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(build, 150);
+    };
+    window.addEventListener(ZOOM_EVENT, schedule);
+    window.addEventListener('resize', schedule);
+    build();
+  }
+</script>

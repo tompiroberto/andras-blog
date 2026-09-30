@@ -1,0 +1,132 @@
+---
+/** Stopwatch ring for a personal best; the ring fills to `fill` when scrolled into view. */
+import Icon from './Icon.astro';
+
+interface Props {
+  distance: string;
+  time: string;
+  /** 0…1 */
+  fill: number;
+  label: string;
+  tone: 'yellow' | 'violet';
+}
+
+const { distance, time, fill, label, tone } = Astro.props;
+
+const R = 108;
+const C = 2 * Math.PI * R;
+---
+
+<figure class:list={['stat-ring', `stat-ring--${tone}`]} style={`--circ:${C.toFixed(2)};--fill:${fill}`} data-stat-ring>
+  <svg viewBox="0 0 250 250" aria-hidden="true" focusable="false">
+    <circle cx="125" cy="125" r={R} class="stat-ring__track" />
+    <circle cx="125" cy="125" r={R} class="stat-ring__bar" transform="rotate(-90 125 125)" />
+    <circle cx="125" cy="125" r={R + 13} class="stat-ring__outline" />
+    <!-- stopwatch crown + triangle marker at 12 o'clock -->
+    <rect x="113" y="0" width="24" height="10" rx="3" class="stat-ring__crown" />
+    <path d="M125 26 L117 12 L133 12 Z" class="stat-ring__marker" />
+  </svg>
+  <figcaption class="stat-ring__content">
+    <Icon name="timer" size={22} />
+    <span class="stat-ring__distance">{distance}</span>
+    <span class="stat-ring__time">{time}</span>
+    <span class="stat-ring__label">{label}</span>
+  </figcaption>
+</figure>
+
+<style>
+  .stat-ring {
+    position: relative;
+    container-type: inline-size;
+    width: min(250px, 100%);
+    aspect-ratio: 1;
+    margin: 0;
+  }
+  .stat-ring svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .stat-ring__track {
+    fill: var(--surface);
+    stroke: var(--bg);
+    stroke-width: 18;
+  }
+  .stat-ring__bar {
+    fill: none;
+    stroke: var(--ring-color);
+    stroke-width: 18;
+    stroke-linecap: round;
+    stroke-dasharray: var(--circ);
+    stroke-dashoffset: calc(var(--circ) * (1 - var(--fill)));
+    transition: stroke-dashoffset 1.6s var(--ease);
+  }
+  :global(.js) .stat-ring:not(.is-filled) .stat-ring__bar {
+    stroke-dashoffset: var(--circ);
+  }
+  .stat-ring__outline {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2.5;
+  }
+  .stat-ring__crown {
+    fill: var(--ink);
+  }
+  .stat-ring__marker {
+    fill: var(--ring-color);
+    stroke: var(--ink);
+    stroke-width: 2;
+    stroke-linejoin: round;
+  }
+  .stat-ring--yellow {
+    --ring-color: var(--yellow);
+  }
+  .stat-ring--violet {
+    --ring-color: var(--violet);
+  }
+  .stat-ring__content {
+    position: absolute;
+    inset: 18%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.15;
+    gap: 4px;
+  }
+  /* text scales with the ring, so smaller rings on phones stay balanced */
+  .stat-ring__distance {
+    font-weight: 700;
+    font-size: max(12px, 6cqi);
+  }
+  .stat-ring__time {
+    font-family: 'Unbounded', var(--font-heading);
+    font-weight: 800;
+    font-size: 16cqi;
+    letter-spacing: -0.03em;
+  }
+  .stat-ring__label {
+    font-size: max(11px, 5.2cqi);
+    color: var(--muted);
+    font-weight: 500;
+  }
+</style>
+
+<script>
+  const rings = document.querySelectorAll<HTMLElement>('[data-stat-ring]');
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-filled');
+            io.unobserve(e.target);
+          }
+        }),
+      { threshold: 0.4 },
+    );
+    rings.forEach((r) => io.observe(r));
+  } else rings.forEach((r) => r.classList.add('is-filled'));
+</script>

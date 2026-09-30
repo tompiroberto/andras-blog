@@ -1,0 +1,48 @@
+---
+/**
+ * "/" redirects to the saved language (localStorage), else the browser language if it is one
+ * of the six, else English. Without JavaScript, a meta refresh sends visitors to /en/.
+ */
+import { LOCALES, NATIVE_NAMES, HTML_LANG, localePath, DEFAULT_LANG } from '../i18n';
+import { LANG_STORAGE_KEY } from '../lib/constants';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>András</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {LOCALES.map((l) => <link rel="alternate" hreflang={HTML_LANG[l]} href={localePath(l)} />)}
+    <link rel="alternate" hreflang="x-default" href={localePath(DEFAULT_LANG)} />
+    <script is:inline define:vars={{ locales: LOCALES, key: LANG_STORAGE_KEY, fallback: DEFAULT_LANG }}>
+      (function () {
+        var pick = null;
+        try {
+          var saved = localStorage.getItem(key);
+          if (saved && locales.indexOf(saved) !== -1) pick = saved;
+        } catch (e) {}
+        if (!pick) {
+          var prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''];
+          for (var i = 0; i < prefs.length && !pick; i++) {
+            var base = String(prefs[i]).toLowerCase().split('-')[0];
+            if (locales.indexOf(base) !== -1) pick = base;
+          }
+        }
+        location.replace('/' + (pick || fallback) + '/' + location.hash);
+      })();
+    </script>
+    <noscript><meta http-equiv="refresh" content="0; url=/en/" /></noscript>
+    <style>
+      body { font-family: system-ui, sans-serif; background: #F5F7FF; color: #141A33; padding: 40px 16px; }
+      a { color: #5A14D1; }
+    </style>
+  </head>
+  <body>
+    <ul>
+      {LOCALES.map((l) => <li><a href={localePath(l)} hreflang={HTML_LANG[l]} lang={HTML_LANG[l]}>{NATIVE_NAMES[l]}</a></li>)}
+    </ul>
+  </body>
+</html>

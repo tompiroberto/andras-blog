@@ -1,0 +1,339 @@
+---
+/**
+ * "Write to me about this place" window. Anything can open it with
+ * window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail: { place, topic? } })) – the fact
+ * card (city labels, scrollbar cities, search results, the chaos map), map mode, the country pages,
+ * the solar system and a double-click on the coordinate grid. It is a <dialog>, so it opens above every
+ * view, and it sends through the same contact form as the "Message me" section (src/lib/formHandler.ts).
+ */
+import Icon from './Icon.astro';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const LIMITS = { name: 80, contact: 120, message: 1000 };
+const TOPICS = [
+  { id: 'say', icon: 'message-circle' },
+  { id: 'host', icon: 'bed-double' },
+  { id: 'buddy', icon: 'users' },
+] as const;
+---
+
+<dialog class="place-msg" data-place-msg aria-labelledby="place-msg-title">
+  <form class="place-msg__form" novalidate data-place-msg-form>
+    <div class="place-msg__head">
+      <span class="place-msg__icon" aria-hidden="true"><Icon name="map-pin" size={22} /></span>
+      <div>
+        <p class="place-msg__kicker">{t(lang, 'pm.kicker')}</p>
+        <h2 class="place-msg__title" id="place-msg-title" data-place-msg-title></h2>
+      </div>
+      <button type="button" class="place-msg__close" aria-label={t(lang, 'facts.close')} title={t(lang, 'facts.close')} data-place-msg-close>
+        <Icon name="x" size={20} />
+      </button>
+    </div>
+
+    <input type="hidden" name="form-name" value="message" />
+    <input type="hidden" name="lang" value={lang} />
+    <input type="hidden" name="place" data-place-msg-place />
+    <p class="hp" aria-hidden="true">
+      <label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off" /></label>
+    </p>
+
+    <fieldset class="place-msg__topics">
+      <legend class="visually-hidden">{t(lang, 'pm.topic')}</legend>
+      {
+        TOPICS.map((tp, i) => (
+          <label class="place-msg__topic">
+            <input type="radio" name="topic" value={tp.id} checked={i === 0} />
+            <span>
+              <Icon name={tp.icon} size={18} />
+              {t(lang, `pm.topic.${tp.id}`)}
+            </span>
+          </label>
+        ))
+      }
+    </fieldset>
+
+    <div class="place-msg__fields">
+      <label class="place-msg__field">
+        <span>{t(lang, 'msg.name')} *</span>
+        <input name="name" type="text" required maxlength={LIMITS.name} autocomplete="name" />
+      </label>
+      <label class="place-msg__field">
+        <span>{t(lang, 'msg.contact')}</span>
+        <input name="contact" type="text" maxlength={LIMITS.contact} autocomplete="email" />
+      </label>
+      <label class="place-msg__field place-msg__field--wide">
+        <span>{t(lang, 'msg.message')} *</span>
+        <textarea name="message" required rows="4" maxlength={LIMITS.message} data-place-msg-text></textarea>
+      </label>
+    </div>
+
+    <p class="place-msg__status" role="status" aria-live="polite" data-place-msg-status></p>
+    <div class="place-msg__actions">
+      <button type="submit" class="btn btn--primary" data-place-msg-submit>
+        <Icon name="send" size={18} />
+        <span data-place-msg-send>{t(lang, 'msg.send')}</span>
+      </button>
+      <p class="place-msg__privacy">{t(lang, 'msg.privacy')}</p>
+    </div>
+  </form>
+  <template data-pm-sending>{t(lang, 'msg.sending')}</template>
+  <template data-pm-send>{t(lang, 'msg.send')}</template>
+  <template data-pm-success>{t(lang, 'msg.success')}</template>
+  <template data-pm-error>{t(lang, 'msg.error')}</template>
+  <template data-pm-required>{t(lang, 'msg.required')}</template>
+  <template data-pm-title>{t(lang, 'pm.title')}</template>
+  <template data-pm-start-say>{t(lang, 'pm.start.say')}</template>
+  <template data-pm-start-host>{t(lang, 'pm.start.host')}</template>
+  <template data-pm-start-buddy>{t(lang, 'pm.start.buddy')}</template>
+</dialog>
+
+<style>
+  .place-msg {
+    width: min(520px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+    padding: 0;
+    border: var(--border);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 6px 6px 0 var(--yellow);
+    overflow: auto;
+  }
+  .place-msg[open] {
+    animation: pm-in 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .place-msg::backdrop {
+    background: color-mix(in srgb, var(--ink) 45%, transparent);
+    backdrop-filter: blur(2px);
+  }
+  .place-msg__form {
+    display: grid;
+    gap: 14px;
+    padding: 18px 20px 20px;
+  }
+  .place-msg__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .place-msg__head > div {
+    flex: 1;
+    min-width: 0;
+  }
+  .place-msg__icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--violet);
+    color: #fff;
+    border: var(--border);
+  }
+  .place-msg__kicker {
+    margin: 0;
+    font-size: var(--fs-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--violet-dark);
+  }
+  .place-msg__title {
+    margin: 2px 0 0;
+    font-size: 21px;
+    line-height: 1.2;
+  }
+  .place-msg__close {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--touch);
+    height: var(--touch);
+    border: var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+  }
+  .place-msg__topics {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .place-msg__topic input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .place-msg__topic span {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color var(--t-fast), box-shadow var(--t-fast);
+  }
+  .place-msg__topic input:checked + span {
+    background: var(--yellow);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .place-msg__topic input:focus-visible + span {
+    outline: 3px solid var(--violet);
+    outline-offset: 2px;
+  }
+  .place-msg__fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .place-msg__field {
+    display: grid;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .place-msg__field--wide {
+    grid-column: 1 / -1;
+  }
+  .place-msg__field input,
+  .place-msg__field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    font: inherit;
+    font-weight: 400;
+    font-size: 15px;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .place-msg__field textarea {
+    resize: vertical;
+  }
+  .place-msg__status {
+    margin: 0;
+    font-weight: 700;
+    min-height: 1.2em;
+  }
+  .place-msg__status.is-error {
+    color: #c62828;
+  }
+  .place-msg__status.is-ok {
+    color: var(--violet-dark);
+  }
+  .place-msg__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+  }
+  .place-msg__privacy {
+    flex: 1 1 200px;
+    margin: 0;
+    font-size: var(--fs-tiny);
+    color: var(--muted);
+  }
+  .place-msg .hp {
+    position: absolute;
+    left: -9999px;
+  }
+  @media (max-width: 520px) {
+    .place-msg__fields {
+      grid-template-columns: 1fr;
+    }
+  }
+  @keyframes pm-in {
+    from {
+      transform: translateY(30px) scale(0.94);
+      opacity: 0;
+    }
+  }
+</style>
+
+<script>
+  import { PLACE_MESSAGE_EVENT, type PlaceMessageDetail } from '../lib/constants';
+  import { submitForm } from '../lib/formHandler';
+
+  const dialog = document.querySelector<HTMLDialogElement>('[data-place-msg]');
+  if (dialog) {
+    const form = dialog.querySelector<HTMLFormElement>('[data-place-msg-form]')!;
+    const title = dialog.querySelector<HTMLElement>('[data-place-msg-title]')!;
+    const place = dialog.querySelector<HTMLInputElement>('[data-place-msg-place]')!;
+    const text = dialog.querySelector<HTMLTextAreaElement>('[data-place-msg-text]')!;
+    const status = dialog.querySelector<HTMLElement>('[data-place-msg-status]')!;
+    const submit = dialog.querySelector<HTMLButtonElement>('[data-place-msg-submit]')!;
+    const sendLabel = dialog.querySelector<HTMLElement>('[data-place-msg-send]')!;
+    const tpl = (n: string) => dialog.querySelector<HTMLTemplateElement>(`[data-pm-${n}]`)!.content.textContent ?? '';
+    /** the start of the message follows the chosen topic until the visitor writes something */
+    let starter = '';
+
+    const setStarter = (topic: string) => {
+      const next = tpl(`start-${topic}`).replace('{place}', place.value);
+      if (!text.value.trim() || text.value === starter) text.value = next;
+      starter = next;
+    };
+
+    function open(detail: PlaceMessageDetail) {
+      place.value = detail.place;
+      title.textContent = tpl('title').replace('{place}', detail.place);
+      status.textContent = '';
+      status.className = 'place-msg__status';
+      const topic = detail.topic ?? 'say';
+      const radio = form.querySelector<HTMLInputElement>(`input[name="topic"][value="${topic}"]`);
+      if (radio) radio.checked = true;
+      text.value = '';
+      starter = '';
+      setStarter(topic);
+      if (!dialog!.open) dialog!.showModal();
+      text.focus();
+      text.setSelectionRange(text.value.length, text.value.length);
+    }
+
+    window.addEventListener(PLACE_MESSAGE_EVENT, (e) => open((e as CustomEvent<PlaceMessageDetail>).detail));
+    form.addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t.name === 'topic') setStarter(t.value);
+    });
+    dialog.querySelector('[data-place-msg-close]')!.addEventListener('click', () => dialog.close());
+    // click on the dimmed backdrop closes it
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      if (!String(data.get('name') ?? '').trim() || !String(data.get('message') ?? '').trim()) {
+        status.textContent = tpl('required');
+        status.className = 'place-msg__status is-error';
+        return;
+      }
+      submit.disabled = true;
+      sendLabel.textContent = tpl('sending');
+      try {
+        await submitForm(form);
+        status.textContent = tpl('success');
+        status.className = 'place-msg__status is-ok';
+        text.value = '';
+        starter = '';
+      } catch (err) {
+        console.error('[place message]', err);
+        status.textContent = tpl('error');
+        status.className = 'place-msg__status is-error';
+      } finally {
+        submit.disabled = false;
+        sendLabel.textContent = tpl('send');
+      }
+    });
+  }
+</script>

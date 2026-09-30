@@ -1,0 +1,54 @@
+---
+import Icon from './Icon.astro';
+
+type Variant = 'violet' | 'yellow' | 'ink';
+type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'header' | 'nav';
+
+interface Props {
+  icon: string;
+  variant?: Variant;
+  size?: Size;
+  class?: string;
+}
+
+const { icon, variant = 'violet', size = 'md', class: className } = Astro.props;
+
+// Icon glyph size as a share of the circle
+const GLYPH: Record<Size, number> = { xs: 20, sm: 26, md: 30, lg: 36, xl: 42, header: 28, nav: 22 };
+---
+
+<span class:list={['icon-circle', `icon-circle--${variant}`, `icon-circle--${size}`, className]} aria-hidden="true">
+  <Icon name={icon} size={GLYPH[size]} />
+</span>
+
+<style>
+  .icon-circle {
+    --d: var(--icon-md);
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: var(--d);
+    height: var(--d);
+    border-radius: 50%;
+    border: var(--border);
+  }
+  .icon-circle--violet {
+    background: var(--violet);
+    color: #fff;
+  }
+  .icon-circle--yellow {
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  .icon-circle--ink {
+    background: var(--ink);
+    color: var(--yellow);
+  }
+  .icon-circle--xs { --d: var(--icon-xs); }
+  .icon-circle--sm { --d: var(--icon-sm); }
+  .icon-circle--md { --d: var(--icon-md); }
+  .icon-circle--lg { --d: var(--icon-lg); }
+  .icon-circle--xl { --d: var(--icon-xl); }
+  .icon-circle--header { --d: 56px; }
+  .icon-circle--nav { --d: 44px; }
+</style>

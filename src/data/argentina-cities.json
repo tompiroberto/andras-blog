@@ -1,0 +1,77 @@
+{
+  "_comment": "North to south. position = share of the page scroll (0 = top of page, 1 = bottom). position = (lat - latSalta) / (latUshuaia - latSalta).",
+  "cities": [
+    {
+      "name": "Salta",
+      "lat": -24.79,
+      "lon": -65.41,
+      "position": 0
+    },
+    {
+      "name": "Tucumán",
+      "lat": -26.82,
+      "lon": -65.22,
+      "position": 0.068
+    },
+    {
+      "name": "Resistencia",
+      "lat": -27.45,
+      "lon": -58.99,
+      "position": 0.089
+    },
+    {
+      "name": "Córdoba",
+      "lat": -31.42,
+      "lon": -64.18,
+      "position": 0.221
+    },
+    {
+      "name": "Mendoza",
+      "lat": -32.89,
+      "lon": -68.83,
+      "position": 0.27
+    },
+    {
+      "name": "Rosario",
+      "lat": -32.95,
+      "lon": -60.64,
+      "position": 0.272
+    },
+    {
+      "name": "Buenos Aires",
+      "lat": -34.6,
+      "lon": -58.38,
+      "position": 0.327
+    },
+    {
+      "name": "Mar del Plata",
+      "lat": -38.0,
+      "lon": -57.56,
+      "position": 0.44
+    },
+    {
+      "name": "Bahía Blanca",
+      "lat": -38.72,
+      "lon": -62.27,
+      "position": 0.464
+    },
+    {
+      "name": "Bariloche",
+      "lat": -41.13,
+      "lon": -71.31,
+      "position": 0.544
+    },
+    {
+      "name": "Comodoro Rivadavia",
+      "lat": -45.86,
+      "lon": -67.48,
+      "position": 0.702
+    },
+    {
+      "name": "Ushuaia",
+      "lat": -54.8,
+      "lon": -68.3,
+      "position": 1.0
+    }
+  ]
+}

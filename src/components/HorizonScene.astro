@@ -1,0 +1,144 @@
+---
+/**
+ * Horizontal page only: a landscape behind the columns, so the space around them is not empty –
+ * a sky that turns into a sunset as you scroll to the end, the sun travelling across it, drifting
+ * clouds and two rows of hills above the roadside moving at different speeds (parallax).
+ */
+---
+
+<div class="horizon" aria-hidden="true" data-horizon>
+  <div class="horizon__sun" data-horizon-sun></div>
+  <div class="horizon__clouds">
+    {
+      [0, 1, 2, 3, 4, 5].map((i) => (
+        <svg class="horizon__cloud" viewBox="0 0 120 50" style={`--i:${i}`}>
+          <path d="M18 42 Q2 42 4 30 Q6 20 18 22 Q20 8 36 10 Q44 0 58 6 Q70 -2 80 10 Q98 6 100 22 Q116 22 116 34 Q116 42 104 42Z" />
+        </svg>
+      ))
+    }
+  </div>
+  <svg class="horizon__hills horizon__hills--far" viewBox="0 0 2400 200" preserveAspectRatio="none" data-horizon-far>
+    <path d="M0 200 V120 Q150 40 300 110 T600 90 T900 120 T1200 70 T1500 110 T1800 60 T2100 115 T2400 90 V200Z" />
+  </svg>
+  <svg class="horizon__hills horizon__hills--near" viewBox="0 0 2400 200" preserveAspectRatio="none" data-horizon-near>
+    <path d="M0 200 V150 Q200 90 400 140 T800 130 T1200 150 T1600 110 T2000 145 T2400 125 V200Z" />
+  </svg>
+</div>
+
+<style>
+  .horizon {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    background: linear-gradient(to bottom, var(--sky-top, #bfe3ff), var(--sky-bottom, #f4f9ff) 70%);
+    zoom: var(--inv-zoom, 1);
+  }
+  :global(html.horizontal:not(.map-mode)) .horizon {
+    display: block;
+  }
+  /* the landscape shows through the page on the horizontal page */
+  :global(html.horizontal) {
+    background: var(--bg);
+  }
+  :global(html.horizontal body) {
+    background: transparent;
+  }
+  .horizon__sun {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 90px;
+    height: 90px;
+    margin: -45px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff6c2 0 30%, #ffd23f 55%, rgb(255 180 60 / 0) 72%);
+    transform: translate(var(--sun-x, 10vw), var(--sun-y, 20vh));
+  }
+  .horizon__cloud {
+    position: absolute;
+    left: 0;
+    width: calc(140px + var(--i) * 18px);
+    top: calc(6% + var(--i) * 5%);
+    fill: rgb(255 255 255 / 0.85);
+    animation: cloud calc(70s + var(--i) * 17s) linear calc(var(--i) * -23s) infinite;
+  }
+  @keyframes cloud {
+    from {
+      transform: translateX(-220px);
+    }
+    to {
+      transform: translateX(105vw);
+    }
+  }
+  .horizon__hills {
+    position: absolute;
+    left: 0;
+    width: 300vw;
+    bottom: calc(var(--roadside-h, 130px) - 10px);
+  }
+  .horizon__hills--far {
+    height: 34vh;
+    fill: color-mix(in srgb, var(--violet) 14%, #dfe8f5);
+    transform: translateX(var(--far-x, 0px));
+  }
+  .horizon__hills--near {
+    height: 24vh;
+    fill: color-mix(in srgb, var(--violet) 22%, #e8f1e0);
+    transform: translateX(var(--near-x, 0px));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .horizon__cloud {
+      animation: none;
+      transform: translateX(calc(var(--i) * 16vw));
+    }
+  }
+</style>
+
+<script>
+  import { HORIZONTAL_EVENT } from '../lib/constants';
+
+  const scene = document.querySelector<HTMLElement>('[data-horizon]');
+  if (scene) {
+    // day (blue) → golden hour → sunset, along the page
+    const SKY: [number, string, string][] = [
+      [0, '#bfe3ff', '#f4f9ff'],
+      [0.6, '#cfe0ff', '#fff4dc'],
+      [1, '#ffb38a', '#ffe7c2'],
+    ];
+    const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const mix = (a: string, b: string, t: number) => `rgb(${hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t)).join(' ')})`;
+    let ticking = false;
+    function update() {
+      ticking = false;
+      if (!document.documentElement.classList.contains('horizontal')) return;
+      const max = document.documentElement.scrollWidth - window.innerWidth;
+      const p = max > 0 ? Math.min(1, Math.max(0, window.scrollX / max)) : 0;
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      // the sun rises on the left, is highest in the middle and sets on the right
+      scene!.style.setProperty('--sun-x', `${(0.06 + p * 0.88) * W}px`);
+      scene!.style.setProperty('--sun-y', `${(0.42 - Math.sin(p * Math.PI) * 0.32) * H}px`);
+      scene!.style.setProperty('--far-x', `${-p * W * 0.6}px`);
+      scene!.style.setProperty('--near-x', `${-p * W * 1.4}px`);
+      const k = SKY.findIndex(([at]) => at >= p);
+      const [a0, t0, b0] = SKY[Math.max(0, k - 1)];
+      const [a1, t1, b1] = SKY[Math.max(0, k)];
+      const f = a1 > a0 ? (p - a0) / (a1 - a0) : 0;
+      scene!.style.setProperty('--sky-top', mix(t0, t1, f));
+      scene!.style.setProperty('--sky-bottom', mix(b0, b1, f));
+    }
+    const schedule = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    window.addEventListener(HORIZONTAL_EVENT, schedule);
+    update();
+  }
+</script>

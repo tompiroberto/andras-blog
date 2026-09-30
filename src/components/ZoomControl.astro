@@ -1,0 +1,217 @@
+---
+/**
+ * Page zoom slider ("magnifier"): 25 % … 150 %, default 90 %. Zooming out keeps the letters the same
+ * size and lets the content fill the space; zooming in makes everything bigger. See src/lib/zoom.ts.
+ */
+import Icon from './Icon.astro';
+import { t, type Lang } from '../i18n';
+import { DEFAULT_ZOOM, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from '../lib/zoom';
+
+interface Props {
+  lang: Lang;
+  uid: string;
+  /** Panel opens aligned to the left edge (mobile menu) */
+  inline?: boolean;
+}
+
+const { lang, uid, inline = false } = Astro.props;
+const label = t(lang, 'zoom.label');
+const panelId = `zoom-panel-${uid}`;
+const sliderId = `zoom-slider-${uid}`;
+const ticks = [25, 50, 75, 100, 125, 150];
+---
+
+<div class:list={['zoom-control', { 'zoom-control--inline': inline }]} data-zoom-control>
+  <button type="button" class="zoom-control__btn" aria-expanded="false" aria-controls={panelId} aria-label={label} title={label} data-zoom-toggle>
+    <Icon name="zoom-in" size={18} />
+    <span data-zoom-current>{DEFAULT_ZOOM}%</span>
+  </button>
+  <div class="zoom-control__panel" id={panelId} hidden data-zoom-panel>
+    <label class="zoom-control__label" for={sliderId}>{label}: <output data-zoom-output>{DEFAULT_ZOOM}%</output></label>
+    <div class="zoom-control__row">
+      <button type="button" class="zoom-control__step" aria-label="−5%" data-zoom-step="-1"><Icon name="minus" size={18} /></button>
+      <input
+        type="range"
+        id={sliderId}
+        min={ZOOM_MIN}
+        max={ZOOM_MAX}
+        step={ZOOM_STEP}
+        value={DEFAULT_ZOOM}
+        list={`${sliderId}-ticks`}
+        data-zoom-slider
+      />
+      <button type="button" class="zoom-control__step" aria-label="+5%" data-zoom-step="1"><Icon name="plus" size={18} /></button>
+    </div>
+    <datalist id={`${sliderId}-ticks`}>
+      {ticks.map((v) => <option value={v} label={`${v}%`} />)}
+    </datalist>
+    <div class="zoom-control__ticks" aria-hidden="true">
+      {ticks.map((v) => <span>{v}%</span>)}
+    </div>
+    <button type="button" class="pill zoom-control__reset" data-zoom-reset>100%</button>
+  </div>
+</div>
+
+<style>
+  .zoom-control {
+    position: relative;
+    flex: none;
+  }
+  .zoom-control__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: var(--touch);
+    min-height: var(--touch);
+    padding: 8px 12px;
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: var(--fs-small);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  .zoom-control__btn:hover,
+  .zoom-control__btn[aria-expanded='true'] {
+    background: var(--violet-tint);
+  }
+  .zoom-control__panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    z-index: var(--z-overlay);
+    width: 300px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: var(--border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-yellow);
+  }
+  .zoom-control--inline .zoom-control__panel {
+    left: 0;
+    right: auto;
+  }
+  .zoom-control__label {
+    display: block;
+    font-weight: 700;
+    font-size: var(--fs-small);
+  }
+  .zoom-control__label output {
+    color: var(--violet-dark);
+    font-variant-numeric: tabular-nums;
+  }
+  .zoom-control__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .zoom-control__step {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border: var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+  }
+  .zoom-control__step:hover {
+    background: var(--yellow);
+  }
+  .zoom-control input[type='range'] {
+    flex: 1;
+    min-width: 0;
+    height: var(--touch);
+    accent-color: var(--violet);
+    background: transparent;
+  }
+  .zoom-control__ticks {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 44px;
+    font-size: 11px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .zoom-control__reset {
+    margin-top: 10px;
+    min-height: 36px;
+    cursor: pointer;
+  }
+  .zoom-control__reset:hover {
+    background: var(--yellow-tint);
+  }
+</style>
+
+<script>
+  import { ZOOM_EVENT, ZOOM_STORAGE_KEY } from '../lib/constants';
+  import { ZOOM_STEP, applyZoom, clampZoom, pageZoom } from '../lib/zoom';
+
+  const currentLevel = () => Math.round(pageZoom() * 100);
+  let frame = 0;
+  let saveTimer = 0;
+
+  function setZoom(level: number) {
+    const value = clampZoom(level);
+    applyZoom(value);
+    window.dispatchEvent(new Event(ZOOM_EVENT));
+    // layout-dependent parts (scrollbar, grid, background cities, map) re-measure on resize
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+    window.clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(ZOOM_STORAGE_KEY, String(value));
+      } catch {
+        /* storage unavailable */
+      }
+    }, 250);
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-zoom-control]').forEach((root) => {
+    const btn = root.querySelector<HTMLButtonElement>('[data-zoom-toggle]')!;
+    const panel = root.querySelector<HTMLElement>('[data-zoom-panel]')!;
+    const current = root.querySelector<HTMLElement>('[data-zoom-current]')!;
+    const output = root.querySelector<HTMLOutputElement>('[data-zoom-output]')!;
+    const slider = root.querySelector<HTMLInputElement>('[data-zoom-slider]')!;
+
+    const sync = () => {
+      const level = currentLevel();
+      current.textContent = output.textContent = `${level}%`;
+      slider.value = String(level);
+      slider.setAttribute('aria-valuetext', `${level}%`);
+    };
+    const open = () => {
+      panel.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      slider.focus();
+    };
+    const close = (returnFocus = false) => {
+      panel.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      if (returnFocus) btn.focus();
+    };
+
+    btn.addEventListener('click', () => (panel.hidden ? open() : close()));
+    // live while dragging
+    slider.addEventListener('input', () => setZoom(Number(slider.value)));
+    root.querySelectorAll<HTMLButtonElement>('[data-zoom-step]').forEach((b) =>
+      b.addEventListener('click', () => setZoom(currentLevel() + Number(b.dataset.zoomStep) * ZOOM_STEP)),
+    );
+    root.querySelector('[data-zoom-reset]')!.addEventListener('click', () => setZoom(100));
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !panel.hidden) {
+        e.stopPropagation();
+        close(true);
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (!panel.hidden && !root.contains(e.target as Node)) close();
+    });
+    window.addEventListener(ZOOM_EVENT, sync);
+    sync();
+  });
+</script>

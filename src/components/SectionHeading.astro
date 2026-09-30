@@ -1,0 +1,34 @@
+---
+import IconCircle from './IconCircle.astro';
+
+interface Props {
+  icon: string;
+  as?: 'h1' | 'h2';
+  id?: string;
+  class?: string;
+}
+
+const { icon, as: Tag = 'h2', id, class: className } = Astro.props;
+---
+
+<div class:list={['section-heading', className]}>
+  <IconCircle icon={icon} variant="ink" size="header" />
+  <Tag id={id}><slot /></Tag>
+</div>
+
+<style>
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: clamp(20px, 3vw, 32px);
+  }
+  .section-heading :global(h1),
+  .section-heading :global(h2) {
+    margin: 0;
+    min-width: 0;
+  }
+  .section-heading :global(h1) {
+    font-size: var(--fs-h2);
+  }
+</style>

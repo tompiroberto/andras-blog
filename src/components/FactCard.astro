@@ -1,0 +1,272 @@
+---
+/**
+ * "Random fact" card. Anything can open it with window.dispatchEvent(new CustomEvent(FACTS_EVENT,
+ * { detail: { name, lat, lon } })) – background city labels, the search pin, the chaos map.
+ * Facts come from Wikipedia (src/lib/cityFacts.ts).
+ */
+import Icon from './Icon.astro';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<aside class="fact-card" hidden data-fact-card data-lang={lang} aria-labelledby="fact-card-title">
+  <div class="fact-card__head">
+    <span class="fact-card__icon" aria-hidden="true"><Icon name="lightbulb" size={22} /></span>
+    <div>
+      <p class="fact-card__kicker">{t(lang, 'facts.title')}</p>
+      <h2 class="fact-card__title" id="fact-card-title" data-fact-title></h2>
+    </div>
+    <button type="button" class="fact-card__close" aria-label={t(lang, 'facts.close')} title={t(lang, 'facts.close')} data-fact-close>
+      <Icon name="x" size={20} />
+    </button>
+  </div>
+  <p class="fact-card__text" aria-live="polite" data-fact-text></p>
+  <div class="fact-card__actions">
+    <button type="button" class="btn btn--primary fact-card__another" data-fact-another hidden>
+      <Icon name="sparkles" size={18} />
+      {t(lang, 'facts.another')}
+    </button>
+    <a class="link-arrow fact-card__more" href="https://www.wikipedia.org/" target="_blank" rel="noopener" data-fact-more hidden>{t(lang, 'facts.more')}</a>
+  </div>
+  <button type="button" class="btn btn--yellow fact-card__route" data-fact-route>
+    <Icon name="route" size={18} />
+    {t(lang, 'route.here')}
+  </button>
+  <div class="fact-card__write">
+    <p class="fact-card__write-label">{t(lang, 'facts.write')}</p>
+    <div class="fact-card__write-btns">
+      <button type="button" class="fact-card__chip" data-fact-write="say"><Icon name="message-circle" size={16} />{t(lang, 'pm.topic.say')}</button>
+      <button type="button" class="fact-card__chip" data-fact-write="host"><Icon name="bed-double" size={16} />{t(lang, 'pm.topic.host')}</button>
+      <button type="button" class="fact-card__chip" data-fact-write="buddy"><Icon name="users" size={16} />{t(lang, 'pm.topic.buddy')}</button>
+    </div>
+  </div>
+  <p class="fact-card__source" data-fact-source hidden>{t(lang, 'facts.source')}: Wikipedia (CC BY-SA)</p>
+  <template data-fact-msg-loading>{t(lang, 'facts.loading')}</template>
+  <template data-fact-msg-none>{t(lang, 'facts.none')}</template>
+  <template data-fact-msg-spot>{t(lang, 'facts.spot')}</template>
+  <template data-fact-msg-error>{t(lang, 'facts.error')}</template>
+</aside>
+
+<style>
+  .fact-card {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 700;
+    width: min(420px, calc(100vw - 32px));
+    padding: 18px 20px;
+    background: var(--surface);
+    color: var(--ink);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-violet);
+    animation: fact-in 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .fact-card__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .fact-card__icon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--yellow);
+    border: var(--border);
+  }
+  .fact-card__head > div {
+    flex: 1;
+    min-width: 0;
+  }
+  .fact-card__kicker {
+    margin: 0;
+    font-size: var(--fs-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--violet-dark);
+  }
+  .fact-card__title {
+    margin: 2px 0 0;
+    font-size: 22px;
+  }
+  .fact-card__close {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--touch);
+    height: var(--touch);
+    border: var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+  }
+  .fact-card__text {
+    margin: 14px 0 12px;
+    font-size: 17px;
+    line-height: 1.5;
+    max-height: 40vh;
+    overflow: auto;
+  }
+  .fact-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+  }
+  .fact-card__route {
+    margin-top: 12px;
+    font-size: 15px;
+  }
+  .fact-card__write {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 2px dashed color-mix(in srgb, var(--ink) 25%, transparent);
+  }
+  .fact-card__write-label {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--violet-dark);
+  }
+  .fact-card__write-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .fact-card__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color var(--t-fast), transform var(--t-fast);
+  }
+  .fact-card__chip:hover,
+  .fact-card__chip:focus-visible {
+    background: var(--yellow);
+    transform: translateY(-1px);
+  }
+  .fact-card__source {
+    margin: 10px 0 0;
+    font-size: var(--fs-tiny);
+    color: var(--muted);
+  }
+  @keyframes fact-in {
+    from {
+      transform: translateY(24px) scale(0.96);
+      opacity: 0;
+    }
+  }
+</style>
+
+<script>
+  import { FACTS_EVENT, PLACE_MESSAGE_EVENT, ROUTE_EVENT, type PlaceMessageDetail, type SearchTarget } from '../lib/constants';
+  import { markSeen } from '../lib/seen';
+  import { getCityFacts, type CityFacts } from '../lib/cityFacts';
+
+  const card = document.querySelector<HTMLElement>('[data-fact-card]')!;
+  if (card) {
+    const title = card.querySelector<HTMLElement>('[data-fact-title]')!;
+    const text = card.querySelector<HTMLElement>('[data-fact-text]')!;
+    const another = card.querySelector<HTMLButtonElement>('[data-fact-another]')!;
+    const more = card.querySelector<HTMLAnchorElement>('[data-fact-more]')!;
+    const source = card.querySelector<HTMLElement>('[data-fact-source]')!;
+    const msg = (n: string) => card.querySelector<HTMLTemplateElement>(`[data-fact-msg-${n}]`)!.content.textContent ?? '';
+    const lang = card.dataset.lang ?? 'en';
+    const cache = new Map<string, CityFacts | null>();
+    let facts: CityFacts | null = null;
+    let shown = -1;
+    let request = 0;
+    let opener: Element | null = null;
+    let current = '';
+    let currentPlace: SearchTarget | null = null;
+
+    const showRandom = () => {
+      if (!facts) return;
+      const n = facts.sentences.length;
+      // a different sentence each time (when there is more than one)
+      let i = Math.floor(Math.random() * n);
+      if (n > 1 && i === shown) i = (i + 1 + Math.floor(Math.random() * (n - 1))) % n;
+      shown = i;
+      text.textContent = facts.sentences[i];
+      another.hidden = n < 2;
+    };
+
+    async function open(place: SearchTarget) {
+      opener = document.activeElement;
+      const id = ++request;
+      card.hidden = false;
+      title.textContent = place.name;
+      current = place.name;
+      currentPlace = place;
+      markSeen(place.name);
+      text.textContent = msg('loading');
+      another.hidden = more.hidden = source.hidden = true;
+      // a spot on the coordinate grid: no facts to look up
+      if ((place as SearchTarget & { spot?: boolean }).spot) {
+        text.textContent = msg('spot');
+        return;
+      }
+      const key = `${place.name}|${place.lat.toFixed(2)}|${place.lon.toFixed(2)}`;
+      try {
+        const result = cache.has(key) ? cache.get(key)! : await getCityFacts(place.name, place.lat, place.lon, lang);
+        cache.set(key, result);
+        if (id !== request) return; // a newer city was clicked meanwhile
+        facts = result;
+        shown = -1;
+        if (!facts) {
+          text.textContent = msg('none');
+          return;
+        }
+        showRandom();
+        more.href = facts.url;
+        more.hreflang = facts.wikiLang;
+        more.hidden = source.hidden = false;
+      } catch (err) {
+        if (id !== request) return;
+        console.error('[facts]', err);
+        text.textContent = msg('error');
+      }
+    }
+
+    const close = () => {
+      card.hidden = true;
+      request++;
+      if (opener instanceof HTMLElement && document.contains(opener)) opener.focus();
+    };
+
+    window.addEventListener(FACTS_EVENT, (e) => open((e as CustomEvent<SearchTarget>).detail));
+    another.addEventListener('click', showRandom);
+    card.querySelector('[data-fact-route]')!.addEventListener('click', () => {
+      if (!currentPlace) return;
+      window.dispatchEvent(new CustomEvent(ROUTE_EVENT, { detail: currentPlace }));
+      close();
+    });
+    // "message me about it": opens the message window for this place
+    card.querySelectorAll<HTMLButtonElement>('[data-fact-write]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const detail: PlaceMessageDetail = { place: current, topic: b.dataset.factWrite as PlaceMessageDetail['topic'] };
+        window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail }));
+      }),
+    );
+    card.querySelector('[data-fact-close]')!.addEventListener('click', close);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !card.hidden) close();
+    });
+  }
+</script>

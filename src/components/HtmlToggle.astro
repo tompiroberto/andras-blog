@@ -1,0 +1,94 @@
+---
+/**
+ * Round on/off button that toggles a class on <html> and remembers it (coordinate grid, background
+ * cities). Several buttons for the same flag (header + mobile menu) stay in sync.
+ */
+import Icon from './Icon.astro';
+
+interface Props {
+  /** Class set on <html> */
+  htmlClass: string;
+  /** 'present' = pressed while the class is set; 'absent' = pressed while it is not (on by default) */
+  pressedWhen: 'present' | 'absent';
+  storageKey: string;
+  eventName: string;
+  icon: string;
+  label: string;
+  class?: string;
+}
+
+const { htmlClass, pressedWhen, storageKey, eventName, icon, label, class: className } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={['html-toggle', className]}
+  aria-pressed="false"
+  aria-label={label}
+  title={label}
+  data-html-toggle={htmlClass}
+  data-pressed-when={pressedWhen}
+  data-storage-key={storageKey}
+  data-event={eventName}
+>
+  <Icon name={icon} size={20} />
+</button>
+
+<style>
+  .html-toggle {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--touch);
+    height: var(--touch);
+    border: var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink);
+    transition:
+      background-color var(--t-fast),
+      color var(--t-fast),
+      box-shadow var(--t-fast);
+  }
+  .html-toggle:hover {
+    background: var(--violet-tint);
+  }
+  .html-toggle[aria-pressed='true'] {
+    background: var(--violet);
+    color: #fff;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+</style>
+
+<script>
+  const html = document.documentElement;
+  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-html-toggle]'));
+
+  const isPressed = (b: HTMLButtonElement) => html.classList.contains(b.dataset.htmlToggle!) === (b.dataset.pressedWhen === 'present');
+  const sync = () => buttons.forEach((b) => b.setAttribute('aria-pressed', String(isPressed(b))));
+
+  buttons.forEach((b) =>
+    b.addEventListener('click', () => {
+      const cls = b.dataset.htmlToggle!;
+      html.classList.toggle(cls);
+      const pressed = isPressed(b);
+      try {
+        localStorage.setItem(b.dataset.storageKey!, pressed ? '1' : '0');
+      } catch {
+        /* storage unavailable */
+      }
+      window.dispatchEvent(new Event(b.dataset.event!));
+      sync();
+    }),
+  );
+  new Set(buttons.map((b) => b.dataset.event!)).forEach((ev) => window.addEventListener(ev, sync));
+  window.addEventListener('storage', (e) => {
+    const b = buttons.find((x) => x.dataset.storageKey === e.key);
+    if (!b) return;
+    const wantPressed = e.newValue === '1';
+    const presentWhenPressed = b.dataset.pressedWhen === 'present';
+    html.classList.toggle(b.dataset.htmlToggle!, wantPressed === presentWhenPressed);
+    window.dispatchEvent(new Event(b.dataset.event!));
+  });
+  sync();
+</script>

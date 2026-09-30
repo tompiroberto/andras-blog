@@ -1,0 +1,237 @@
+---
+/**
+ * Horizontal page only: a roadside along the bottom of the whole page, in the style of the country
+ * chosen for the scrollbar ribbon – its utility poles and wires, road signs, traffic light, guardrails
+ * and delineator posts (tiles drawn in src/lib/roadside.ts, repeated along the page by the script).
+ * Click it and electricity runs along the wires (src/lib/zap.ts).
+ */
+---
+
+<div class="roadside" aria-hidden="true" data-roadside></div>
+
+<style>
+  .roadside {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--roadside-h, 130px);
+    z-index: 3;
+    overflow: hidden;
+    cursor: pointer;
+    /* the verge */
+    background: linear-gradient(to bottom, transparent 94%, color-mix(in srgb, var(--ink) 80%, transparent) 94% 96%, transparent 96%);
+  }
+  :global(html.horizontal:not(.map-mode)) .roadside {
+    display: block;
+  }
+  .roadside :global(.roadside__tile) {
+    position: absolute;
+    bottom: 0;
+    overflow: visible;
+  }
+  .roadside :global(.rs-ink) {
+    fill: #111;
+  }
+  .roadside :global(.rs-rail-line) {
+    stroke: #8b93a0;
+    stroke-width: 1.5;
+  }
+  .roadside :global(.rs-bollard) {
+    fill: #fff;
+    stroke: #111;
+    stroke-width: 1.5;
+  }
+  .roadside :global(.rs-edge) {
+    stroke: #111;
+    stroke-width: 1.2;
+  }
+  .roadside :global(.rs-post) {
+    stroke: #6b7280;
+    stroke-width: 3;
+  }
+  .roadside :global(.rs-text) {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-weight: 700;
+    text-anchor: middle;
+  }
+  .roadside :global(.rs-concrete) {
+    fill: #b9b4a8;
+    stroke: #111;
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+  }
+  .roadside :global(.rs-hole) {
+    fill: var(--bg);
+  }
+  .roadside :global(.rs-arm) {
+    stroke: #111;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+  }
+  .roadside :global(.rs-insulator) {
+    stroke: #fff;
+    stroke-width: 3;
+    stroke-linecap: round;
+    paint-order: stroke;
+    filter: drop-shadow(0 0 0.6px #111) drop-shadow(0 0 0.6px #111);
+  }
+  .roadside :global(.rs-wire) {
+    fill: none;
+    stroke: #111;
+    stroke-width: 1.3;
+  }
+  .roadside :global(.rs-wire--low) {
+    stroke-width: 1.1;
+    opacity: 0.85;
+  }
+  .roadside :global(.rs-bird) {
+    stroke: var(--ink);
+    stroke-width: 1.5;
+  }
+  .roadside :global(.rs-bird--y) {
+    fill: var(--yellow);
+  }
+  .roadside :global(.rs-bird--v) {
+    fill: var(--violet);
+  }
+  /* red → red + yellow → green → yellow, like a Hungarian traffic light */
+  .roadside :global(.tl) {
+    fill: #333;
+    animation: 8s steps(1) infinite;
+  }
+  .roadside :global(.tl-r) {
+    animation-name: tl-r;
+  }
+  .roadside :global(.tl-y) {
+    animation-name: tl-y;
+  }
+  .roadside :global(.tl-g) {
+    animation-name: tl-g;
+  }
+  /* Japanese "go" lights are blue-green */
+  @keyframes tl-g-jp {
+    0% {
+      fill: #333;
+    }
+    50% {
+      fill: #19c3a6;
+    }
+    88% {
+      fill: #333;
+    }
+  }
+  .roadside :global(.tl-jp) {
+    animation-name: tl-g-jp;
+  }
+  @keyframes tl-r {
+    0% {
+      fill: #ff3b3b;
+    }
+    50% {
+      fill: #333;
+    }
+  }
+  @keyframes tl-y {
+    0% {
+      fill: #333;
+    }
+    40% {
+      fill: #ffc400;
+    }
+    50% {
+      fill: #333;
+    }
+    88% {
+      fill: #ffc400;
+    }
+  }
+  @keyframes tl-g {
+    0% {
+      fill: #333;
+    }
+    50% {
+      fill: #2ecc40;
+    }
+    88% {
+      fill: #333;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .roadside :global(.tl) {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  import { HORIZONTAL_EVENT, RIBBON_EVENT } from '../lib/constants';
+  import { zap } from '../lib/zap';
+
+  const TILE_W = 1600;
+  const DEFAULT = 'chile';
+  /** Ribbons that borrow a neighbour's roadside ('none': no road in space) */
+  const ALIAS: Record<string, string> = {
+    italy: 'portugal', greece: 'portugal', finland: 'sweden', india: 'vietnam', southkorea: 'japan', thailand: 'vietnam',
+    egypt: 'nile', madagascar: 'mozambique', southafrica: 'mozambique', usa: 'mississippi', canada: 'mississippi', cuba: 'mexico',
+    peru: 'chile', colombia: 'chile', bolivia: 'chile', png: 'newzealand', vanuatu: 'newzealand',
+    amazon: 'brazil', yangtze: 'vietnam', huanghe: 'vietnam', yenisei: 'norway', congo: 'mozambique',
+    caspian: 'georgia', superior: 'mississippi', victoria: 'mozambique', baikal: 'norway', tanganyika: 'mozambique',
+    moon: 'none', mars: 'none', solar: 'none',
+  };
+  const road = document.querySelector<HTMLElement>('[data-roadside]');
+
+  if (road) {
+    const tiles = new Map<string, Promise<SVGElement | null>>();
+    /** The country's tile (/roadside/{id}.svg), fetched once when first needed */
+    const tileFor = (id: string) => {
+      if (!tiles.has(id)) {
+        tiles.set(
+          id,
+          fetch(`/roadside/${id}.svg`)
+            .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
+            .then((text) => {
+              const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+              return document.importNode(doc.documentElement, true) as unknown as SVGElement;
+            })
+            .catch((err) => {
+              console.error('[roadside]', err);
+              tiles.delete(id);
+              return null;
+            }),
+        );
+      }
+      return tiles.get(id)!;
+    };
+    let shown = '';
+    /** Enough tiles of the current country's roadside for the whole page width */
+    const fill = async () => {
+      if (!document.documentElement.classList.contains('horizontal')) return;
+      const ribbon = document.documentElement.dataset.ribbon || DEFAULT;
+      const id = ALIAS[ribbon] ?? ribbon;
+      if (id === 'none') {
+        road.querySelectorAll('.roadside__tile').forEach((el) => el.remove());
+        shown = id;
+        return;
+      }
+      const tile = (await tileFor(id)) ?? (await tileFor(DEFAULT));
+      if (!tile || ribbon !== (document.documentElement.dataset.ribbon || DEFAULT)) return;
+      if (id !== shown) {
+        road.querySelectorAll('.roadside__tile').forEach((el) => el.remove());
+        shown = id;
+      }
+      const need = Math.ceil(road.offsetWidth / TILE_W) + 1;
+      for (let have = road.querySelectorAll('.roadside__tile').length; have < need; have++) {
+        const svg = tile.cloneNode(true) as SVGElement;
+        svg.style.left = `${have * TILE_W}px`;
+        road.append(svg);
+      }
+    };
+    road.addEventListener('click', (e) => zap(road, e.clientX));
+    new ResizeObserver(() => void fill()).observe(road);
+    window.addEventListener(HORIZONTAL_EVENT, () => requestAnimationFrame(() => void fill()));
+    window.addEventListener(RIBBON_EVENT, () => requestAnimationFrame(() => void fill()));
+    void fill();
+  }
+</script>

@@ -1,0 +1,78 @@
+---
+/**
+ * Strava activities embedded with Strava's official "Embed on blog" code (placeholder + embed.js).
+ * The script is only loaded on pages that actually show an activity.
+ */
+import IconCircle from './IconCircle.astro';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+  activities: { id: string; token: string }[];
+}
+
+const { lang, activities } = Astro.props;
+---
+
+<section class="strava" aria-labelledby="strava-title">
+  <div class="strava__head">
+    <IconCircle icon="strava" variant="violet" size="sm" />
+    <h2 id="strava-title">{t(lang, 'strava.title')}</h2>
+  </div>
+  <div class="strava__list">
+    {
+      activities.map((a) => (
+        <div
+          class="strava-embed-placeholder"
+          data-embed-type="activity"
+          data-embed-id={a.id}
+          data-style="standard"
+          data-from-embed="false"
+          data-token={a.token}
+        >
+          <a class="link-arrow" href={`https://www.strava.com/activities/${a.id}`} target="_blank" rel="noopener">
+            Strava
+          </a>
+        </div>
+      ))
+    }
+  </div>
+</section>
+<script is:inline async src="https://strava-embeds.com/embed.js"></script>
+
+<style>
+  .strava {
+    max-width: calc(70ch * var(--tz));
+    margin: 40px 0;
+  }
+  .strava__head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .strava__head h2 {
+    margin: 0;
+    font-size: clamp(24px, 3vw, 30px);
+  }
+  .strava__list {
+    display: grid;
+    gap: 20px;
+  }
+  /* the placeholder (and a plain link, if the Strava script cannot load) sits in a card frame */
+  .strava-embed-placeholder {
+    min-height: 60px;
+    padding: 8px;
+    background: var(--surface);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: 4px 4px 0 var(--ink);
+    overflow: hidden;
+  }
+  .strava-embed-placeholder :global(iframe) {
+    display: block;
+    width: 100%;
+    border: 0;
+    border-radius: 18px;
+  }
+</style>

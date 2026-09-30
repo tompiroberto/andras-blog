@@ -1,0 +1,270 @@
+---
+/**
+ * Black power-line silhouettes that sit on the top edge of the footer.
+ * One tile (TILE_W × TILE_H) is generated here and repeated with an SVG <pattern>,
+ * so nothing is ever stretched; the strip is scaled uniformly on mobile.
+ */
+const TILE_W = 1200;
+const TILE_H = 160;
+
+type Kind = 'tower' | 'pole';
+interface Structure {
+  x: number;
+  kind: Kind;
+  h: number;
+}
+
+const STRUCTURES: Structure[] = [
+  { x: 90, kind: 'tower', h: 158 },
+  { x: 318, kind: 'pole', h: 100 },
+  { x: 506, kind: 'pole', h: 116 },
+  { x: 742, kind: 'tower', h: 130 },
+  { x: 968, kind: 'pole', h: 92 },
+  { x: 1110, kind: 'pole', h: 122 },
+];
+
+const f = (n: number) => Math.round(n * 10) / 10;
+
+/** Wire attachment points (left and right cross-arm tips). */
+function tips(s: Structure): [number, number][] {
+  const top = TILE_H - s.h;
+  if (s.kind === 'tower') {
+    const y = top + s.h * 0.14 + 8;
+    return [
+      [s.x - 30, y],
+      [s.x + 30, y],
+    ];
+  }
+  const y = top + 12;
+  return [
+    [s.x - 20, y],
+    [s.x + 20, y],
+  ];
+}
+
+function towerPaths(s: Structure): string[] {
+  const top = TILE_H - s.h;
+  const half = (y: number) => 4 + 18 * ((y - top) / s.h);
+  const out: string[] = [];
+  // legs
+  out.push(`M${f(s.x - half(TILE_H))} ${TILE_H} L${f(s.x - 4)} ${f(top + 6)} L${s.x} ${f(top)} L${f(s.x + 4)} ${f(top + 6)} L${f(s.x + half(TILE_H))} ${TILE_H}`);
+  // lattice bracing
+  const levels = 7;
+  const start = top + s.h * 0.2;
+  const step = (TILE_H - start) / levels;
+  for (let i = 0; i < levels; i++) {
+    const y1 = start + i * step;
+    const y2 = y1 + step;
+    out.push(`M${f(s.x - half(y1))} ${f(y1)} L${f(s.x + half(y2))} ${f(y2)}`);
+    out.push(`M${f(s.x + half(y1))} ${f(y1)} L${f(s.x - half(y2))} ${f(y2)}`);
+    out.push(`M${f(s.x - half(y1))} ${f(y1)} L${f(s.x + half(y1))} ${f(y1)}`);
+  }
+  // two cross-arms with diagonal supports
+  const arms = [
+    { y: top + s.h * 0.14, w: 30 },
+    { y: top + s.h * 0.3, w: 23 },
+  ];
+  for (const a of arms) {
+    out.push(`M${f(s.x - a.w)} ${f(a.y)} L${f(s.x + a.w)} ${f(a.y)}`);
+    out.push(`M${f(s.x - a.w)} ${f(a.y)} L${f(s.x - half(a.y + 12))} ${f(a.y + 12)}`);
+    out.push(`M${f(s.x + a.w)} ${f(a.y)} L${f(s.x + half(a.y + 12))} ${f(a.y + 12)}`);
+    // insulators
+    out.push(`M${f(s.x - a.w + 1)} ${f(a.y)} v8 M${f(s.x + a.w - 1)} ${f(a.y)} v8`);
+  }
+  return out;
+}
+
+function polePaths(s: Structure): string[] {
+  const top = TILE_H - s.h;
+  const out = [
+    `M${s.x} ${f(top)} L${s.x} ${TILE_H}`,
+    `M${s.x - 22} ${f(top + 8)} L${s.x + 22} ${f(top + 8)}`,
+    // brace
+    `M${s.x - 12} ${f(top + 8)} L${s.x} ${f(top + 20)} L${s.x + 12} ${f(top + 8)}`,
+    // insulators
+    `M${s.x - 20} ${f(top + 8)} v4 M${s.x + 20} ${f(top + 8)} v4`,
+  ];
+  if (s.h > 110) out.push(`M${s.x - 14} ${f(top + 26)} L${s.x + 14} ${f(top + 26)}`);
+  return out;
+}
+
+interface Wire {
+  d: string;
+  a: [number, number];
+  c: [number, number];
+  b: [number, number];
+}
+
+const wires: Wire[] = [];
+for (let i = 0; i < STRUCTURES.length; i++) {
+  const s1 = STRUCTURES[i];
+  const s2 = STRUCTURES[(i + 1) % STRUCTURES.length];
+  const shift = i === STRUCTURES.length - 1 ? TILE_W : 0;
+  const t1 = tips(s1);
+  const t2 = tips(s2).map(([x, y]) => [x + shift, y] as [number, number]);
+  for (let j = 0; j < 2; j++) {
+    const a = t1[j];
+    const b = t2[j];
+    const sag = 14 + Math.abs(b[0] - a[0]) * 0.07;
+    const c: [number, number] = [(a[0] + b[0]) / 2, Math.max(a[1], b[1]) + sag];
+    const make = (dx: number) =>
+      `M${f(a[0] + dx)} ${f(a[1])} Q${f(c[0] + dx)} ${f(c[1])} ${f(b[0] + dx)} ${f(b[1])}`;
+    wires.push({ d: make(0), a, c, b });
+    // wires crossing the tile edge are drawn twice so the pattern repeats seamlessly
+    if (shift) wires.push({ d: make(-TILE_W), a, c, b });
+  }
+}
+
+/** A point on a quadratic curve. */
+const onWire = (w: Wire, t: number): [number, number] => {
+  const u = 1 - t;
+  return [u * u * w.a[0] + 2 * u * t * w.c[0] + t * t * w.b[0], u * u * w.a[1] + 2 * u * t * w.c[1] + t * t * w.b[1]];
+};
+
+// "Birds": brand circles and triangles sitting on the wires
+const birdSpots: { wire: number; t: number; shape: 'circle' | 'tri'; tone: 'yellow' | 'violet' }[] = [
+  { wire: 0, t: 0.42, shape: 'circle', tone: 'yellow' },
+  { wire: 0, t: 0.5, shape: 'tri', tone: 'violet' },
+  { wire: 3, t: 0.55, shape: 'circle', tone: 'violet' },
+  { wire: 5, t: 0.35, shape: 'tri', tone: 'yellow' },
+  { wire: 8, t: 0.6, shape: 'circle', tone: 'yellow' },
+];
+const birds = birdSpots.map((b) => {
+  const [x, y] = onWire(wires[b.wire], b.t);
+  return { ...b, x: f(x), y: f(y) };
+});
+
+const towerD = STRUCTURES.filter((s) => s.kind === 'tower').flatMap(towerPaths).join(' ');
+const poleD = STRUCTURES.filter((s) => s.kind === 'pole').flatMap(polePaths).join(' ');
+/** Enough tiles for the widest page (zoomed out to 25%); real copies instead of a <pattern> so the
+    wires can carry the electricity animation. */
+const COPIES = 6;
+// the wire crossing the left tile edge is only needed on the first copy
+const wiresFor = (i: number) => wires.filter((w) => i === 0 || !w.d.startsWith('M-'));
+---
+
+<div class="powerlines" aria-hidden="true" data-powerlines>
+  <svg class="powerlines__svg" width="100%" height="100%" focusable="false">
+    <g class="powerlines__scale">
+      <g class="powerlines__shift">
+        {
+          Array.from({ length: COPIES }, (_, i) => (
+            <g transform={`translate(${i * TILE_W - 40} 0)`}>
+              <path d={towerD} class="pl-tower" />
+              <path d={poleD} class="pl-pole" />
+              {wiresFor(i).map((w) => (
+                <>
+                  <path d={w.d} class="pl-wire" />
+                  <path d={w.d} class="spark" pathLength="1" />
+                </>
+              ))}
+              {birds.map((b) =>
+                b.shape === 'circle' ? (
+                  <circle cx={b.x} cy={b.y - 5} r="4.5" class={`pl-bird pl-bird--${b.tone} zap-hop`} />
+                ) : (
+                  <path d={`M${b.x - 5} ${b.y} L${b.x + 5} ${b.y} L${b.x} ${b.y - 10} Z`} class={`pl-bird pl-bird--${b.tone} zap-hop`} />
+                ),
+              )}
+            </g>
+          ))
+        }
+      </g>
+    </g>
+  </svg>
+</div>
+
+<style>
+  .powerlines {
+    --pl-scale: 1;
+    position: relative;
+    height: var(--powerlines-h);
+    margin-top: var(--section-space);
+    overflow: hidden;
+    /* click the lines: electricity runs along them */
+    cursor: pointer;
+    /* touch the violet footer below without a gap */
+    margin-bottom: -1px;
+  }
+  .powerlines__svg {
+    display: block;
+  }
+  .powerlines__scale {
+    transform-origin: 0 0;
+    transform: scale(var(--pl-scale));
+  }
+  .powerlines__shift {
+    transform: translateX(var(--pl-shift, 0px));
+  }
+  .pl-tower {
+    fill: none;
+    stroke: var(--black);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .pl-pole {
+    fill: none;
+    stroke: var(--black);
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .pl-wire {
+    fill: none;
+    stroke: var(--black);
+    stroke-width: 1.3;
+  }
+  .pl-bird {
+    stroke: var(--ink);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+  }
+  .pl-bird--yellow {
+    fill: var(--yellow);
+  }
+  .pl-bird--violet {
+    fill: var(--violet);
+  }
+  @media (max-width: 599px) {
+    .powerlines {
+      --pl-scale: 0.5625; /* 90 / 160 */
+    }
+  }
+</style>
+
+<script>
+  import { REDUCED_MOTION_QUERY } from '../lib/constants';
+  import { zap } from '../lib/zap';
+
+  const MAX_SHIFT = 20;
+  const strip = document.querySelector<HTMLElement>('[data-powerlines]');
+  const reduced = window.matchMedia(REDUCED_MOTION_QUERY);
+
+  if (strip) {
+    strip.addEventListener('click', (e) => zap(strip, e.clientX));
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      if (reduced.matches) {
+        strip.style.setProperty('--pl-shift', '0px');
+        return;
+      }
+      const rect = strip.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > innerHeight) return;
+      // -1 … 1 while the strip travels through the viewport
+      const p = (rect.top + rect.height / 2) / innerHeight;
+      const shift = Math.max(-1, Math.min(1, p * 2 - 1)) * MAX_SHIFT;
+      strip.style.setProperty('--pl-shift', `${shift.toFixed(1)}px`);
+    };
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(update);
+        }
+      },
+      { passive: true },
+    );
+    update();
+  }
+</script>

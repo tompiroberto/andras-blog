@@ -1,0 +1,553 @@
+---
+/**
+ * Country- or river-shaped scrollbar / reading indicator. Chile by default; RibbonSwitch picks any
+ * ribbon from src/lib/ribbon.ts. Top of the page = the northernmost city, bottom = the southernmost.
+ * Desktop (fine pointer, ≥ 900px): full ribbon with every city label, a draggable thumb and keyboard
+ * support. Touch / narrow: slim silhouette plus a city pill, shown while scrolling.
+ */
+import { getRibbons, DEFAULT_RIBBON, VB_H, VB_W } from '../lib/ribbon';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const ribbons = getRibbons().map((r) => {
+  const name = t(lang, r.nameKey);
+  const label =
+    r.id === 'chile' ? t(lang, 'scroll.label') : r.id === 'argentina' ? t(lang, 'scroll.labelArgentina') : t(lang, 'scroll.labelFor').replace('{name}', name);
+  // the planets have translated names
+  const cities = r.cities.map((c) => ({ ...c, name: c.key ? t(lang, c.key) : c.name }));
+  return { ...r, cities, label };
+});
+
+// Only the selected ribbon is displayed; html[data-ribbon] is set before first paint (Chile when unset)
+const visibility =
+  '.chile{display:none}' +
+  [`html:not([data-ribbon]) .chile[data-country='${DEFAULT_RIBBON}']`, ...ribbons.map((r) => `html[data-ribbon='${r.id}'] .chile[data-country='${r.id}']`)].join(',') +
+  '{display:block}';
+---
+
+<style is:global set:html={visibility}></style>
+
+{
+  ribbons.map(({ id, kind, d, cities, track, label, width, aspect, decor, space }) => (
+    <div
+      class:list={['chile', `chile--${kind}`]}
+      role="scrollbar"
+      aria-controls="main"
+      aria-orientation="vertical"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="0"
+      aria-valuetext={cities[0].name}
+      aria-label={label}
+      tabindex="0"
+      data-chile
+      data-country={id}
+      data-track-top={track.top}
+      data-track-bottom={track.bottom}
+      data-width={width}
+      data-aspect={aspect}
+      data-space={space ? '' : undefined}
+      style={`--ribbon-w-desktop:${width}px`}
+    >
+      <div class="chile__ribbon" data-chile-ribbon>
+        <svg class="chile__svg" viewBox={`0 0 ${VB_W} ${VB_H}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+          <defs>
+            <clipPath id={`${id}-progress-clip`}>
+              {kind !== 'river' ? <path d={d} /> : <rect x="-10" y="0" width={VB_W + 20} height="0" data-chile-progress />}
+            </clipPath>
+          </defs>
+          {kind !== 'river' ? (
+            <>
+              <path d={d} class="chile__land" />
+              {decor && <g class="chile__decor" set:html={decor} />}
+              <g clip-path={`url(#${id}-progress-clip)`}>
+                <rect x="0" y="0" width={VB_W} height="0" class="chile__progress" data-chile-progress />
+              </g>
+              <path d={d} class="chile__outline" />
+            </>
+          ) : (
+            <>
+              <path d={d} class="river__outer" />
+              <path d={d} class="river__inner" />
+              <path d={d} class="river__progress" clip-path={`url(#${id}-progress-clip)`} />
+            </>
+          )}
+        </svg>
+
+        <ul class="chile__cities" aria-hidden="true">
+          {cities.map((c, i) => (
+            <li
+              class="chile__city"
+              style={`--y:${c.y}%;--x:${c.x}%;--xf:${(c.x / 100).toFixed(3)}`}
+              data-city={i}
+              data-position={c.position}
+              data-lat={c.lat}
+              data-lon={c.lon}
+            >
+              <span class="chile__dot" />
+              <span class="chile__label" data-city-label>
+                {c.name}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <div class="chile__thumb" data-chile-thumb aria-hidden="true">
+          <span class="chile__thumb-tri" />
+        </div>
+        <div class="chile__pill" data-chile-pill aria-hidden="true">
+          {cities[0].name}
+        </div>
+      </div>
+    </div>
+  ))
+}
+
+<style>
+  .chile {
+    --ribbon-w: var(--ribbon-w-desktop, 56px);
+    --label-space: 104px;
+    position: fixed;
+    z-index: var(--z-chile);
+    right: 12px;
+    /* leaves room for the country dropdown and the stretch switch above the ribbon */
+    top: calc(var(--header-h) + 100px);
+    bottom: 24px;
+    width: calc(var(--ribbon-w) + var(--label-space));
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .chile:focus-visible {
+    outline: 3px solid var(--violet);
+    outline-offset: 4px;
+    border-radius: 16px;
+  }
+  .chile__ribbon {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: var(--ribbon-w);
+    cursor: pointer;
+  }
+  .chile__svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .chile--lake .chile__land {
+    fill: #a9d6f5;
+  }
+  .chile--lake .chile__progress {
+    fill: #1f6fd1;
+  }
+  .chile--body .chile__progress {
+    fill: var(--violet);
+    fill-opacity: 0.55;
+  }
+  .chile__land {
+    fill: var(--surface);
+  }
+  .chile__progress {
+    fill: var(--violet);
+  }
+  .river__outer,
+  .river__inner,
+  .river__progress {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .river__outer {
+    stroke: var(--ink);
+    stroke-width: 9;
+  }
+  .river__inner {
+    stroke: var(--surface);
+    stroke-width: 5;
+  }
+  .river__progress {
+    stroke: var(--violet);
+    stroke-width: 5;
+  }
+  .chile__outline {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .chile__cities {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .chile__city {
+    position: absolute;
+    top: var(--y);
+    left: var(--x);
+    width: 0;
+    height: 0;
+  }
+  .chile__dot {
+    position: absolute;
+    left: -4px;
+    top: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--muted);
+    transition:
+      background-color var(--t-fast),
+      border-color var(--t-fast),
+      transform var(--t-fast);
+  }
+  .chile__label {
+    position: absolute;
+    /* labels sit in a column to the left of the ribbon; JS nudges them apart when crowded */
+    right: calc(var(--xf) * var(--ribbon-w) + 8px);
+    top: 0;
+    transform: translateY(calc(-50% + var(--nudge, 0px)));
+    white-space: nowrap;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 12px;
+    line-height: 1.2;
+    color: var(--muted);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    padding: 1px 5px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition:
+      color var(--t-fast),
+      font-size var(--t-fast);
+  }
+  .chile__city.is-active .chile__label {
+    color: var(--violet-dark);
+    font-weight: 700;
+    font-size: 14px;
+    background: var(--surface);
+    box-shadow: 0 0 0 1.5px var(--violet);
+  }
+  .chile__city.is-active .chile__dot {
+    background: var(--violet);
+    border-color: var(--violet);
+    transform: scale(1.25);
+  }
+  .chile__city.is-active .chile__dot::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    background: var(--violet);
+    animation: pulse var(--pulse-duration) ease-out infinite;
+  }
+
+  .chile__thumb {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border-radius: 50%;
+    background: var(--violet);
+    border: 2px solid var(--ink);
+    box-shadow: 2px 2px 0 var(--ink);
+    transform: translateY(var(--thumb-y, 0px));
+    cursor: grab;
+    touch-action: none;
+  }
+  .chile__thumb:active,
+  .chile.is-dragging .chile__thumb {
+    cursor: grabbing;
+  }
+  .chile__thumb-tri {
+    position: absolute;
+    left: -11px;
+    top: 50%;
+    width: 10px;
+    height: 12px;
+    margin-top: -6px;
+    background: var(--yellow);
+    clip-path: polygon(100% 0, 0 50%, 100% 100%);
+  }
+  /* extend the thumb's hit area to the touch-target size */
+  .chile__thumb::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+  }
+
+  .chile__pill {
+    display: none;
+  }
+
+  /* ---- Touch / narrow screens: slim silhouette, no labels, fading city pill ---- */
+  @media (max-width: 899px), (pointer: coarse) {
+    .chile {
+      --ribbon-w: 20px;
+      --label-space: 0px;
+      right: 6px;
+      top: calc(var(--header-h) + 16px);
+      bottom: 16px;
+      pointer-events: none;
+      /* only visible while scrolling, together with the city pill */
+      opacity: 0;
+      transition: opacity var(--t-med) var(--ease);
+    }
+    .chile.is-scrolling {
+      opacity: 1;
+    }
+    .chile__cities,
+    .chile__thumb {
+      display: none;
+    }
+    .chile__outline {
+      stroke-width: 1.5;
+    }
+    .chile__pill {
+      display: block;
+      position: absolute;
+      right: calc(100% + 8px);
+      top: 0;
+      transform: translateY(calc(var(--thumb-y, 0px) - 50%));
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      background: var(--violet);
+      color: #fff;
+      border: 2px solid var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity var(--t-med) var(--ease);
+    }
+    .chile.is-scrolling .chile__pill {
+      opacity: 1;
+    }
+  }
+
+  @media print {
+    .chile {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { COUNTRY_EVENT, DESKTOP_POINTER_QUERY, FACTS_EVENT, HORIZONTAL_EVENT, PLACE_MESSAGE_EVENT, RIBBON_EVENT } from '../lib/constants';
+
+  /** Widest the ribbon may get in true-shape mode (wide countries such as Mexico), CSS px */
+  const TRUE_SHAPE_MAX_W = 300;
+  import { effectiveZoom } from '../lib/zoom';
+
+  const KEY_STEP = 0.1;
+  const LABEL_GAP = 15; // minimum vertical distance between labels, px
+  const PILL_HIDE_DELAY = 1000;
+
+  document.querySelectorAll<HTMLElement>('[data-chile]').forEach(initChile);
+
+  function initChile(root: HTMLElement) {
+    const ribbon = root.querySelector<HTMLElement>('[data-chile-ribbon]')!;
+    const progressRect = root.querySelector<SVGRectElement>('[data-chile-progress]')!;
+    const thumb = root.querySelector<HTMLElement>('[data-chile-thumb]')!;
+    const pill = root.querySelector<HTMLElement>('[data-chile-pill]')!;
+    const cityEls = Array.from(root.querySelectorAll<HTMLElement>('[data-city]'));
+    const cities = cityEls.map((el) => ({
+      el,
+      label: el.querySelector<HTMLElement>('[data-city-label]')!,
+      name: el.querySelector<HTMLElement>('[data-city-label]')!.textContent!.trim(),
+      position: Number(el.dataset.position),
+    }));
+    const trackTop = Number(root.dataset.trackTop) / 100; // share of ribbon height
+    const trackBottom = Number(root.dataset.trackBottom) / 100;
+    const desktop = window.matchMedia(DESKTOP_POINTER_QUERY);
+    const html = document.documentElement;
+    /** Horizontal page: the ribbon stays where it is but follows the sideways scroll. */
+    const horiz = () => html.classList.contains('horizontal');
+
+    let ribbonHeight = ribbon.clientHeight;
+    let maxScroll = 1;
+    let active = -1;
+    let ticking = false;
+    let hideTimer = 0;
+
+    const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+    const progress = () => (maxScroll > 0 ? clamp01((horiz() ? window.scrollX : window.scrollY) / maxScroll) : 0);
+    /** Scroll progress -> y (px) inside the ribbon */
+    const yOf = (p: number) => (trackTop + p * (trackBottom - trackTop)) * ribbonHeight;
+    /** y (px) inside the ribbon -> scroll progress */
+    const pOf = (y: number) => clamp01((y / ribbonHeight - trackTop) / (trackBottom - trackTop));
+
+    /** Hidden (the other country is selected): nothing to measure or draw */
+    const isShown = () => root.getClientRects().length > 0;
+
+    /** Stretched ribbon (default) or the true proportions (html.ribbon-true, desktop only). */
+    function sizeRibbon() {
+      const trueShape = html.classList.contains('ribbon-true') && desktop.matches;
+      let w = Number(root.dataset.width) || 56;
+      if (trueShape) {
+        const aspect = Number(root.dataset.aspect) || 0.2;
+        const avail = root.clientHeight;
+        w = Math.min(TRUE_SHAPE_MAX_W, avail * aspect);
+        ribbon.style.bottom = 'auto';
+        ribbon.style.height = `${Math.round(w / aspect)}px`;
+        root.style.setProperty('--ribbon-w', `${Math.round(w)}px`);
+      } else {
+        ribbon.style.removeProperty('bottom');
+        ribbon.style.removeProperty('height');
+        root.style.removeProperty('--ribbon-w');
+      }
+      // reserve exactly the room this ribbon needs next to the content
+      html.style.setProperty('--ribbon-w-current', `${Math.round(w)}px`);
+    }
+
+    function measure() {
+      if (!isShown()) return;
+      sizeRibbon();
+      ribbonHeight = ribbon.clientHeight;
+      maxScroll = horiz() ? html.scrollWidth - window.innerWidth : html.scrollHeight - window.innerHeight;
+      layoutLabels();
+      render();
+    }
+
+    /** Push labels apart where cities are close together (e.g. Valparaíso / Santiago). */
+    function layoutLabels() {
+      if (!desktop.matches) return;
+      let prev = -Infinity;
+      const ys = cities.map((c) => (parseFloat(getComputedStyle(c.el).top) || 0));
+      const placed = ys.map((y) => {
+        const target = Math.max(y, prev + LABEL_GAP);
+        prev = target;
+        return target;
+      });
+      // pull the whole overflowing tail back up if the last label ran past the bottom
+      const overflow = placed[placed.length - 1] - ribbonHeight;
+      if (overflow > 0) for (let i = placed.length - 1; i >= 0 && placed[i] > ys[i]; i--) placed[i] -= overflow;
+      cities.forEach((c, i) => c.label.style.setProperty('--nudge', `${placed[i] - ys[i]}px`));
+    }
+
+    function nearestCity(p: number) {
+      let best = 0;
+      cities.forEach((c, i) => {
+        if (Math.abs(c.position - p) < Math.abs(cities[best].position - p)) best = i;
+      });
+      return best;
+    }
+
+    function render() {
+      ticking = false;
+      if (!isShown() || ribbonHeight === 0) return;
+      const p = progress();
+      const y = yOf(p);
+      progressRect.setAttribute('height', String((y / ribbonHeight) * 1000));
+      root!.style.setProperty('--thumb-y', `${y}px`);
+      const idx = nearestCity(p);
+      if (idx !== active) {
+        if (active >= 0) cities[active].el.classList.remove('is-active');
+        cities[idx].el.classList.add('is-active');
+        active = idx;
+        pill.textContent = cities[idx].name;
+        root!.setAttribute('aria-valuetext', cities[idx].name);
+      }
+      root!.setAttribute('aria-valuenow', String(Math.round(p * 100)));
+    }
+
+    const requestRender = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(render);
+      }
+    };
+
+    const scrollToProgress = (p: number, smooth: boolean) =>
+      window.scrollTo({ [horiz() ? 'left' : 'top']: clamp01(p) * maxScroll, behavior: smooth ? 'smooth' : 'instant' });
+    /** Pointer position along the ribbon, in its own CSS px */
+    const along = (e: MouseEvent) => {
+      const rect = ribbon.getBoundingClientRect();
+      return (e.clientY - rect.top) / effectiveZoom(ribbon);
+    };
+
+    window.addEventListener(
+      'scroll',
+      () => {
+        requestRender();
+        root!.classList.add('is-scrolling');
+        window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(() => root!.classList.remove('is-scrolling'), PILL_HIDE_DELAY);
+      },
+      { passive: true },
+    );
+    window.addEventListener('resize', measure);
+    window.addEventListener(RIBBON_EVENT, () => requestAnimationFrame(measure));
+    window.addEventListener(HORIZONTAL_EVENT, () => requestAnimationFrame(measure));
+    desktop.addEventListener('change', measure);
+    new ResizeObserver(measure).observe(document.body);
+
+    // Drag the thumb: the page follows in real time
+    thumb.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      thumb.setPointerCapture(e.pointerId);
+      root.classList.add('is-dragging');
+    });
+    thumb.addEventListener('pointermove', (e) => {
+      if (!thumb.hasPointerCapture(e.pointerId)) return;
+      scrollToProgress(pOf(along(e)), false);
+    });
+    const endDrag = (e: PointerEvent) => {
+      if (thumb.hasPointerCapture(e.pointerId)) thumb.releasePointerCapture(e.pointerId);
+      root.classList.remove('is-dragging');
+    };
+    thumb.addEventListener('pointerup', endDrag);
+    thumb.addEventListener('pointercancel', endDrag);
+
+    // Click on the shape → smooth-scroll there
+    ribbon.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('[data-chile-thumb], [data-city-label]')) return;
+      scrollToProgress(pOf(along(e)), true);
+    });
+    // Double-click the shape → the country / river page
+    ribbon.addEventListener('dblclick', (e) => {
+      if ((e.target as HTMLElement).closest('[data-city-label]')) return;
+      window.getSelection()?.removeAllRanges();
+      window.dispatchEvent(new CustomEvent(COUNTRY_EVENT, { detail: root.dataset.country }));
+    });
+    // Click on a city name → smooth-scroll to that city and show a fact about it (like the map's cities)
+    cities.forEach((c) =>
+      c.label.addEventListener('click', () => {
+        scrollToProgress(c.position, true);
+        const lat = Number(c.el.dataset.lat);
+        const lon = Number(c.el.dataset.lon);
+        if (root.dataset.space !== undefined) {
+          window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail: { place: c.name } }));
+        } else if (Number.isFinite(lat) && Number.isFinite(lon)) {
+          window.dispatchEvent(new CustomEvent(FACTS_EVENT, { detail: { name: c.name, lat, lon } }));
+        }
+      }),
+    );
+
+    root.addEventListener('keydown', (e) => {
+      const p = progress();
+      let next: number | undefined;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = p + KEY_STEP;
+      else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = p - KEY_STEP;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = 1;
+      if (next === undefined) return;
+      e.preventDefault();
+      scrollToProgress(next, true);
+    });
+
+    measure();
+  }
+</script>

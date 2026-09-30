@@ -1,0 +1,1132 @@
+---
+/**
+ * Country page: double-click the scrollbar ribbon (or use the button next to the country picker) and a
+ * plane flies you to a clean page about that country or river – its map (cities and main roads, or
+ * terrain), general-knowledge facts on both sides, and "message me about it" options at the top right.
+ * Map data is loaded only when the page opens: /data/countries-50m.json, /data/country/{id}.json
+ * (roads from Natural Earth, built by scratchpad/roads_build.py) and /data/terrain.json.
+ */
+import Icon from './Icon.astro';
+import { RIBBONS, getRibbons } from '../lib/ribbon';
+import { COUNTRY_FACTS } from '../data/country-facts';
+import { t, type Lang, type TKey } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const built = Object.fromEntries(getRibbons().map((b) => [b.id, b]));
+
+/** English Wikipedia titles for the photo (countries: the tourism article first – it has a landscape) */
+const WIKI: Record<string, string[]> = Object.fromEntries(
+  RIBBONS.map((r) => {
+    const en = t('en', r.nameKey).replace(/^The /, '');
+    const own: Record<string, string> = {
+      georgia: 'Georgia (country)',
+      nile: 'Nile',
+      mississippi: 'Mississippi River',
+      amazon: 'Amazon River',
+      congo: 'Congo River',
+      yangtze: 'Yangtze',
+      huanghe: 'Yellow River',
+      yenisei: 'Yenisey',
+      moon: 'Moon',
+      solar: 'Solar System',
+      mars: 'Mars',
+    };
+    const title = own[r.id] ?? en;
+    return [r.id, r.shape.kind === 'country' ? [`Tourism in ${title.replace(' (country)', '')}`, `Geography of ${title.replace(' (country)', '')}`, title] : [title]];
+  }),
+);
+const pages = Object.fromEntries(
+  RIBBONS.map((r) => {
+    const cf = COUNTRY_FACTS[r.id];
+    const facts = (cf?.facts ?? []).map((f) => ({
+      k: f.k,
+      label: t(lang, `cf.${f.k}` as TKey),
+      value: f.k === 'drives' ? t(lang, `cf.${f.v}` as TKey) : lang === 'hu' && f.hu ? f.hu : f.v,
+    }));
+    return [
+      r.id,
+      {
+        name: t(lang, r.nameKey),
+        kind: r.shape.kind,
+        atlasId: r.shape.kind === 'country' ? r.shape.atlasId : null,
+        // the Moon, Mars, the solar system: drawn from the ribbon's own picture
+        body:
+          r.shape.kind === 'body'
+            ? {
+                d: built[r.id].d,
+                decor: built[r.id].decor,
+                aspect: built[r.id].aspect,
+                places: built[r.id].cities.map((c) => ({ name: c.key ? t(lang, c.key) : c.name, x: c.x, y: c.y })),
+              }
+            : null,
+        bbox: [r.lonWest, r.latBottom, r.lonEast, r.latTop],
+        cities: r.cities,
+        flags: cf?.flags ?? [],
+        left: facts.slice(0, Math.ceil(facts.length / 2)),
+        right: facts.slice(Math.ceil(facts.length / 2)),
+        fun: cf ? (lang === 'hu' ? cf.fun.hu : cf.fun.en) : '',
+        wiki: WIKI[r.id],
+      },
+    ];
+  }),
+);
+const words = {
+  photo: t(lang, 'cf.photo'),
+  travel: t(lang, 'cf.travel'),
+  space: t(lang, 'cf.space'),
+  car: t(lang, 'cf.byCar'),
+  hitch: t(lang, 'cf.byThumb'),
+  fun: t(lang, 'cf.fun'),
+};
+---
+
+<div class="country-view" hidden data-country-view data-lang={lang} role="dialog" aria-modal="true" aria-labelledby="country-view-title">
+  <!-- the trip: a plane flies across, then the map appears -->
+  <div class="ctry-trip" aria-hidden="true" data-ctry-trip>
+    <svg class="ctry-trip__path" viewBox="0 0 1000 600" preserveAspectRatio="none">
+      <path d="M-40 560 Q 420 40 1040 140" data-ctry-trail />
+    </svg>
+    <div class="ctry-trip__plane" data-ctry-plane><Icon name="plane" size={46} /></div>
+    <div class="ctry-trip__road" data-ctry-road></div>
+    <div class="ctry-trip__hiker" data-ctry-hiker>
+      <svg viewBox="0 0 40 60" width="48" height="72">
+        <rect x="19" y="16" width="10" height="14" rx="3" fill="#FFD60A" stroke="#1b1b24" stroke-width="1.5" />
+        <circle cx="18" cy="8" r="6" fill="#fff" stroke="#1b1b24" stroke-width="2" />
+        <path d="M18 14 V36 M18 36 L11 56 M18 36 L25 56 M18 20 L8 28 M18 20 L30 14" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none" />
+        <path d="M30 14 L31 7" stroke="#FFD60A" stroke-width="4" stroke-linecap="round" />
+      </svg>
+    </div>
+    <div class="ctry-trip__car" data-ctry-car>
+      <svg viewBox="0 0 80 40" width="112" height="56">
+        <path d="M6 28 V20 Q6 16 10 16 H22 L30 7 H54 L64 16 H72 Q76 16 76 20 V28 Z" fill="#FFD60A" stroke="#1b1b24" stroke-width="2.5" stroke-linejoin="round" />
+        <path d="M32 10 H43 V16 H27Z M46 10 H53 L59 16 H46Z" fill="#cde8ff" stroke="#1b1b24" stroke-width="1.5" />
+        <g class="car-wheel"><circle cx="22" cy="30" r="6" fill="#1b1b24" /><path d="M19 30 H25" stroke="#ddd" stroke-width="1.6" /></g>
+        <g class="car-wheel car-wheel--b"><circle cx="60" cy="30" r="6" fill="#1b1b24" /><path d="M57 30 H63" stroke="#ddd" stroke-width="1.6" /></g>
+      </svg>
+    </div>
+    <div class="ctry-trip__rocket" data-ctry-rocket>
+      <svg viewBox="0 0 40 80" width="52" height="104">
+        <path class="rocket-flame" d="M12 50 Q20 80 28 50Z" fill="#FFD60A" />
+        <path d="M20 2 Q34 16 32 50 H8 Q6 16 20 2Z" fill="#fff" stroke="#1b1b24" stroke-width="2.5" />
+        <circle cx="20" cy="26" r="6" fill="#7B2FF7" stroke="#1b1b24" stroke-width="2" />
+        <path d="M8 38 L0 58 L9 51Z M32 38 L40 58 L31 51Z" fill="#d7263d" stroke="#1b1b24" stroke-width="2" stroke-linejoin="round" />
+      </svg>
+    </div>
+    <p class="ctry-trip__text" data-ctry-trip-text></p>
+  </div>
+
+  <header class="ctry-bar">
+    <button type="button" class="ctry-btn" data-ctry-close>
+      <Icon name="arrow-left" size={18} />
+      <span>{t(lang, 'cf.back')}</span>
+    </button>
+    <div class="ctry-title">
+      <span class="ctry-flags" data-ctry-flags></span>
+      <h2 id="country-view-title" data-ctry-name></h2>
+    </div>
+    <div class="ctry-write" role="group" aria-label={t(lang, 'pm.kicker')}>
+      <span class="ctry-write__label">{t(lang, 'pm.kicker')}</span>
+      <button type="button" class="ctry-chip" data-ctry-write="say" title={t(lang, 'pm.topic.say')}><Icon name="message-circle" size={16} /><span>{t(lang, 'pm.topic.say')}</span></button>
+      <button type="button" class="ctry-chip" data-ctry-write="host" title={t(lang, 'pm.topic.host')}><Icon name="bed-double" size={16} /><span>{t(lang, 'pm.topic.host')}</span></button>
+      <button type="button" class="ctry-chip" data-ctry-write="buddy" title={t(lang, 'pm.topic.buddy')}><Icon name="users" size={16} /><span>{t(lang, 'pm.topic.buddy')}</span></button>
+    </div>
+  </header>
+
+  <div class="ctry-body">
+    <aside class="ctry-facts" data-ctry-left></aside>
+    <div class="ctry-map">
+      <div class="ctry-switch" role="radiogroup" aria-label={t(lang, 'cf.terrain')}>
+        <button type="button" role="radio" aria-checked="true" data-ctry-mode="cities"><Icon name="route" size={16} />{t(lang, 'cf.cities')}</button>
+        <button type="button" role="radio" aria-checked="false" data-ctry-mode="terrain"><Icon name="mountain" size={16} />{t(lang, 'cf.terrain')}</button>
+      </div>
+      <div class="ctry-canvas" data-ctry-canvas></div>
+      <div class="ctry-labels" data-ctry-labels></div>
+      <p class="ctry-credit">Natural Earth · flag-icons (MIT)</p>
+    </div>
+    <aside class="ctry-facts" data-ctry-right></aside>
+  </div>
+  <script type="application/json" data-ctry-data set:html={JSON.stringify(pages)} />
+  <script type="application/json" data-ctry-words set:html={JSON.stringify(words)} />
+</div>
+
+<style>
+  .country-view {
+    position: fixed;
+    inset: 0;
+    z-index: 548;
+    display: flex;
+    flex-direction: column;
+    background: #fbfaff;
+    color: var(--ink);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    zoom: var(--inv-zoom, 1);
+    animation: ctry-in 300ms ease both;
+  }
+  .country-view[hidden] {
+    display: none;
+  }
+  :global(html.country-open) {
+    overflow: hidden;
+  }
+  @keyframes ctry-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* ---- the trip ---- */
+  .ctry-trip {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(160deg, var(--violet), var(--violet-dark));
+    color: #fff;
+    pointer-events: none;
+    transition: opacity 500ms ease;
+  }
+  .ctry-trip.is-done {
+    opacity: 0;
+  }
+  .ctry-trip__path {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .ctry-trip__path path {
+    fill: none;
+    stroke: rgb(255 255 255 / 0.7);
+    stroke-width: 3;
+    stroke-dasharray: 10 12;
+    vector-effect: non-scaling-stroke;
+  }
+  .ctry-trip__plane {
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--yellow);
+    filter: drop-shadow(3px 3px 0 var(--ink));
+  }
+  .ctry-trip__road,
+  .ctry-trip__hiker,
+  .ctry-trip__car,
+  .ctry-trip__rocket {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: none;
+  }
+  .ctry-trip.is-car .ctry-trip__car,
+  .ctry-trip.is-hitch .ctry-trip__car,
+  .ctry-trip.is-hitch .ctry-trip__hiker,
+  .ctry-trip.is-car .ctry-trip__road,
+  .ctry-trip.is-hitch .ctry-trip__road,
+  .ctry-trip.is-rocket .ctry-trip__rocket {
+    display: block;
+  }
+  .ctry-trip:not(.is-plane) .ctry-trip__plane,
+  .ctry-trip:not(.is-plane) .ctry-trip__path {
+    display: none;
+  }
+  .ctry-trip__road {
+    left: 0;
+    right: 0;
+    top: 72%;
+    height: 6px;
+    background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.8) 0 28px, transparent 28px 52px);
+  }
+  .ctry-trip__car :global(.car-wheel) {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: wheel 0.35s linear infinite;
+  }
+  @keyframes wheel {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .ctry-trip.is-rocket {
+    background:
+      radial-gradient(circle at 20% 30%, #fff 1px, transparent 1.5px) 0 0 / 90px 90px,
+      radial-gradient(circle at 70% 60%, #fff 1px, transparent 1.5px) 0 0 / 130px 130px,
+      linear-gradient(160deg, #1a1446, #07051a);
+  }
+  .ctry-trip__rocket :global(.rocket-flame) {
+    transform-box: fill-box;
+    transform-origin: 50% 0;
+    animation: flame 0.12s ease-in-out infinite alternate;
+  }
+  @keyframes flame {
+    to {
+      transform: scaleY(1.35);
+    }
+  }
+  .ctry-trip__text {
+    margin: 0;
+    font-family: 'Unbounded', system-ui, sans-serif;
+    font-size: clamp(26px, 5vw, 56px);
+    font-weight: 800;
+    text-align: center;
+    padding: 0 24px;
+    animation: trip-text 1.6s ease both;
+  }
+  @keyframes trip-text {
+    0% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    25%,
+    80% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* ---- top bar ---- */
+  .ctry-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+    padding: 14px 20px;
+    border-bottom: 2px solid var(--ink);
+    background: #fff;
+  }
+  .ctry-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-pill);
+    background: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .ctry-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .ctry-title h2 {
+    margin: 0;
+    font-family: 'Unbounded', system-ui, sans-serif;
+    font-size: clamp(22px, 3vw, 34px);
+  }
+  .ctry-flags {
+    display: flex;
+    gap: 4px;
+  }
+  .ctry-flags :global(img) {
+    height: 30px;
+    width: auto;
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+  }
+  .ctry-write {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-left: auto;
+  }
+  .ctry-write__label {
+    width: 100%;
+    text-align: right;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--violet-dark);
+  }
+  .ctry-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-pill);
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .ctry-chip:hover,
+  .ctry-chip:focus-visible {
+    background: var(--yellow);
+  }
+
+  /* ---- body: facts | map | facts ---- */
+  .ctry-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(200px, 260px) 1fr minmax(200px, 260px);
+    gap: 16px;
+    padding: 16px 20px 20px;
+  }
+  .ctry-facts {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: auto;
+  }
+  .ctry-facts :global(.ctry-fact) {
+    padding: 12px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 3px 3px 0 var(--yellow);
+    animation: fact-pop 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation-delay: var(--d, 0ms);
+  }
+  .ctry-facts :global(.ctry-fact:nth-child(even)) {
+    box-shadow: 3px 3px 0 var(--violet);
+  }
+  .ctry-facts :global(.ctry-fact__label) {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--violet-dark);
+  }
+  .ctry-facts :global(.ctry-fact__value) {
+    display: block;
+    margin-top: 2px;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .ctry-facts :global(.ctry-photo) {
+    margin: 0;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 3px 3px 0 var(--violet);
+    animation: fact-pop 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .ctry-facts :global(.ctry-photo img) {
+    display: block;
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
+  }
+  .ctry-facts :global(.ctry-photo figcaption) {
+    padding: 6px 10px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .ctry-facts :global(.ctry-photo a) {
+    color: inherit;
+  }
+  .ctry-facts :global(.ctry-fact--fun) {
+    background: var(--yellow);
+    box-shadow: 3px 3px 0 var(--ink) !important;
+  }
+  .ctry-facts :global(.ctry-fact--fun .ctry-fact__value) {
+    font-size: 15px;
+    font-weight: 500;
+  }
+  @keyframes fact-pop {
+    from {
+      opacity: 0;
+      transform: translateY(16px) scale(0.95);
+    }
+  }
+  .ctry-map {
+    position: relative;
+    min-height: 0;
+    border: 2px solid var(--ink);
+    border-radius: 18px;
+    overflow: hidden;
+    background: #d9ecfa;
+  }
+  .country-view.is-terrain .ctry-map {
+    background: linear-gradient(180deg, #cfe6f7, #a9d0ee);
+  }
+  .ctry-canvas,
+  .ctry-canvas :global(svg) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .ctry-switch {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 3;
+    display: flex;
+    padding: 3px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-pill);
+    background: #fff;
+  }
+  .ctry-switch button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .ctry-switch button[aria-checked='true'] {
+    background: var(--violet);
+    color: #fff;
+  }
+  .ctry-credit {
+    position: absolute;
+    right: 8px;
+    bottom: 4px;
+    margin: 0;
+    font-size: 10px;
+    color: rgb(0 0 0 / 0.45);
+  }
+  .ctry-canvas :global(.c-other) {
+    fill: #eef0e8;
+    stroke: #c3c7bb;
+    stroke-width: 0.8;
+  }
+  .ctry-canvas :global(.c-main) {
+    fill: #fff;
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+  .country-view.is-terrain .ctry-canvas :global(.c-main),
+  .country-view.is-terrain .ctry-canvas :global(.c-other) {
+    fill: #cfe3b4;
+  }
+  .ctry-canvas :global(.c-road) {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .ctry-canvas :global(.c-road--1-case) {
+    stroke: #8a5a00;
+    stroke-width: 4.2;
+  }
+  .ctry-canvas :global(.c-road--1) {
+    stroke: #ffc94d;
+    stroke-width: 2.6;
+  }
+  .ctry-canvas :global(.c-road--2) {
+    stroke: #b9b3a8;
+    stroke-width: 1.2;
+  }
+  .ctry-canvas :global(.c-lake) {
+    fill: #8ec5ee;
+    stroke: var(--ink);
+    stroke-width: 1.8;
+  }
+  .country-view.is-body .ctry-map {
+    background:
+      radial-gradient(circle at 15% 25%, #fff 1px, transparent 1.5px) 0 0 / 80px 80px,
+      radial-gradient(circle at 60% 70%, #fff 1px, transparent 1.5px) 0 0 / 110px 110px,
+      linear-gradient(160deg, #1a1446, #07051a);
+  }
+  .country-view.is-body .ctry-switch {
+    display: none;
+  }
+  .ctry-canvas :global(.c-body-land) {
+    fill: #e9e7e1;
+  }
+  .ctry-canvas :global(.c-body-outline) {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+  }
+  .country-view.is-body .ctry-labels :global(.c-label) {
+    color: #fff;
+    text-shadow: 0 0 3px #000, 0 0 3px #000, 0 0 2px #000;
+  }
+  .ctry-canvas :global(.c-river) {
+    fill: none;
+    stroke: #2f86d6;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .ctry-canvas :global(.c-roads),
+  .ctry-canvas :global(.c-terrain) {
+    pointer-events: none;
+  }
+  .ctry-canvas :global(.c-terrain .t-range) {
+    fill: #b8926a;
+    opacity: 0.8;
+  }
+  .ctry-canvas :global(.c-terrain .t-desert) {
+    fill: #f1d9a0;
+  }
+  .ctry-canvas :global(.c-terrain .t-tundra) {
+    fill: #dfe9e4;
+  }
+  .ctry-canvas :global(.c-terrain .t-lake) {
+    fill: #8ec5ee;
+  }
+  .ctry-canvas :global(.c-terrain .t-rivers) {
+    fill: none;
+    stroke: #4a9ad8;
+    stroke-width: 1.4;
+  }
+  .ctry-labels {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .ctry-labels :global(.c-label) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 1px 6px 1px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+    text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff;
+    transform: translate(-5px, -50%);
+    pointer-events: auto;
+    cursor: pointer;
+    animation: fact-pop 400ms ease both;
+    animation-delay: var(--d, 0ms);
+  }
+  .ctry-labels :global(.c-label::before) {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--violet);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1.5px var(--ink);
+  }
+  .ctry-labels :global(.c-label.is-big) {
+    font-size: 15px;
+  }
+  .ctry-labels :global(.c-label.is-geo) {
+    transform: translate(-50%, -50%);
+    padding: 0;
+    font-style: italic;
+    color: #5b3b1a;
+  }
+  .ctry-labels :global(.c-label.is-geo::before) {
+    display: none;
+  }
+  .ctry-labels :global(.c-label.is-water) {
+    color: #1f5f99;
+  }
+  .ctry-labels :global(.c-label:hover),
+  .ctry-labels :global(.c-label:focus-visible) {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 900px) {
+    .ctry-body {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: minmax(320px, 55vh) auto;
+      overflow: auto;
+    }
+    .ctry-map {
+      grid-column: 1 / -1;
+      grid-row: 1;
+    }
+    .ctry-write {
+      width: 100%;
+      justify-content: flex-start;
+    }
+    .ctry-write__label {
+      text-align: left;
+    }
+    .ctry-chip span {
+      display: none;
+    }
+  }
+  @media (max-width: 560px) {
+    .ctry-body {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ctry-trip {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { COUNTRY_EVENT, FACTS_EVENT, PLACE_MESSAGE_EVENT, REDUCED_MOTION_QUERY, type PlaceMessageDetail } from '../lib/constants';
+  import { distanceKm, findMyLocation, loadMyLocation, type MyLocation } from '../lib/myLocation';
+  import { landOf } from '../lib/routePlanner';
+
+  type Fact = { k: string; label: string; value: string };
+  type Page = {
+    name: string;
+    kind: 'country' | 'river' | 'lake' | 'body';
+    atlasId: string | null;
+    body: { d: string; decor: string; aspect: number; places: { name: string; x: number; y: number }[] } | null;
+    bbox: [number, number, number, number];
+    cities: { name: string; lat: number; lon: number }[];
+    flags: string[];
+    left: Fact[];
+    right: Fact[];
+    fun: string;
+    wiki: string[];
+  };
+  type CountryData = {
+    roads: { k: number; c: number[][] }[];
+    cities: { n: string; lat: number; lon: number; r: number }[];
+    river?: number[][][];
+    lake?: number[][][][];
+  };
+  type Vehicle = 'plane' | 'car' | 'hitch' | 'rocket';
+  type Terrain = { areas: { k: string; c: number[][][][] }[]; rivers: number[][][]; labels: { k: string; p: [number, number]; n: Record<string, string>; z: number }[] };
+
+  const view = document.querySelector<HTMLElement>('[data-country-view]');
+  if (view) setup(view);
+
+  function setup(view: HTMLElement) {
+    const pages: Record<string, Page> = JSON.parse(view.querySelector('[data-ctry-data]')!.textContent || '{}');
+    const words: { photo: string; travel: string; space: string; car: string; hitch: string; fun: string } = JSON.parse(view.querySelector('[data-ctry-words]')!.textContent || '{}');
+    const lang = view.dataset.lang ?? 'en';
+    const html = document.documentElement;
+    const canvas = view.querySelector<HTMLElement>('[data-ctry-canvas]')!;
+    const labels = view.querySelector<HTMLElement>('[data-ctry-labels]')!;
+    const trip = view.querySelector<HTMLElement>('[data-ctry-trip]')!;
+    const plane = view.querySelector<HTMLElement>('[data-ctry-plane]')!;
+    const car = view.querySelector<HTMLElement>('[data-ctry-car]')!;
+    const hiker = view.querySelector<HTMLElement>('[data-ctry-hiker]')!;
+    const rocket = view.querySelector<HTMLElement>('[data-ctry-rocket]')!;
+    let current = '';
+    let mode: 'cities' | 'terrain' = 'cities';
+    let opener: Element | null = null;
+    let world: unknown = null;
+    let terrain: Terrain | null = null;
+    const cache = new Map<string, CountryData>();
+    const loadWorld = async () => {
+      world ??= await (await fetch('/data/countries-50m.json')).json();
+      return world;
+    };
+
+    // ---- how do we get there? From the visitor's location (IP address, looked up once per visit) ----
+    const IP_KEY = 'andras-ip-location';
+    async function whereAmI(): Promise<MyLocation | null> {
+      try {
+        const cached = sessionStorage.getItem(IP_KEY);
+        if (cached) return JSON.parse(cached);
+      } catch {
+        /* storage unavailable */
+      }
+      try {
+        const me = await findMyLocation();
+        try {
+          sessionStorage.setItem(IP_KEY, JSON.stringify(me));
+        } catch {
+          /* storage unavailable */
+        }
+        return me;
+      } catch {
+        return loadMyLocation();
+      }
+    }
+    const within = <T,>(p: Promise<T>, ms: number) => Promise.race([p, new Promise<null>((r) => window.setTimeout(() => r(null), ms))]);
+    async function chooseVehicle(page: Page): Promise<Vehicle> {
+      if (page.kind === 'body') return 'rocket';
+      const me = await within(whereAmI(), 1200);
+      if (!me) return 'plane';
+      const target = page.cities[Math.floor(page.cities.length / 2)] ?? { lat: (page.bbox[1] + page.bbox[3]) / 2, lon: (page.bbox[0] + page.bbox[2]) / 2 };
+      const d = distanceKm(me.lat, me.lon, target.lat, target.lon);
+      const [geo, topo, w] = await within(Promise.all([import('d3-geo'), import('topojson-client'), loadWorld()]), 1500) ?? [];
+      if (!geo || !topo || !w) return d < 1500 ? 'hitch' : 'plane';
+      const wt = w as Parameters<typeof topo.feature>[0] & { objects: { countries: Parameters<typeof topo.feature>[1] } };
+      const all = (topo.feature(wt, wt.objects.countries) as unknown as GeoJSON.FeatureCollection).features;
+      const countryAt = (lat: number, lon: number) => all.find((f) => geo.geoContains(f, [lon, lat]))?.id?.toString() ?? null;
+      const landA = landOf(countryAt(me.lat, me.lon), me.lat, me.lon);
+      const landB = landOf(page.atlasId ?? countryAt(target.lat, target.lon), target.lat, target.lon);
+      if (landA !== landB || landA === 'water') return 'plane';
+      return d < 1500 ? 'hitch' : d < 4000 ? 'car' : 'plane';
+    }
+
+    const fact = (label: string, value: string, i: number, fun = false) => {
+      const el = document.createElement('div');
+      el.className = `ctry-fact${fun ? ' ctry-fact--fun' : ''}`;
+      el.style.setProperty('--d', `${1500 + i * 90}ms`);
+      const l = document.createElement('span');
+      l.className = 'ctry-fact__label';
+      l.textContent = label;
+      const v = document.createElement('span');
+      v.className = 'ctry-fact__value';
+      v.textContent = value;
+      el.append(l, v);
+      return el;
+    };
+
+    async function open(id: string) {
+      const page = pages[id];
+      if (!page) return;
+      opener = document.activeElement;
+      current = id;
+      mode = 'cities';
+      view.classList.remove('is-terrain');
+      view.querySelectorAll<HTMLButtonElement>('[data-ctry-mode]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.ctryMode === mode)));
+      view.querySelector('[data-ctry-name]')!.textContent = page.name;
+      const flags = view.querySelector<HTMLElement>('[data-ctry-flags]')!;
+      flags.replaceChildren(
+        ...page.flags.map((f) => {
+          const img = document.createElement('img');
+          img.src = `/flags/${f}.svg`;
+          img.alt = '';
+          img.width = 40;
+          img.height = 30;
+          return img;
+        }),
+      );
+      view.querySelector('[data-ctry-left]')!.replaceChildren(...page.left.map((f, i) => fact(f.label, f.value, i)));
+      const right = page.right.map((f, i) => fact(f.label, f.value, i + page.left.length));
+      if (page.fun) right.push(fact(words.fun, page.fun, page.left.length + page.right.length, true));
+      view.querySelector('[data-ctry-right]')!.replaceChildren(...right);
+      canvas.replaceChildren();
+      labels.replaceChildren();
+      addPhoto(page, id);
+      view.hidden = false;
+      view.classList.toggle('is-body', page.kind === 'body');
+      html.classList.add('country-open');
+      startTrip(page);
+      view.querySelector<HTMLButtonElement>('[data-ctry-close]')!.focus({ preventScroll: true });
+      await draw();
+    }
+
+    /** The trip overlay: shown at once, the vehicle starts as soon as we know how you travel. */
+    function startTrip(page: Page) {
+      trip.className = 'ctry-trip';
+      trip.hidden = false;
+      const text = view.querySelector<HTMLElement>('[data-ctry-trip-text]')!;
+      text.textContent = (page.kind === 'body' ? words.space : words.travel).replace('{name}', page.name);
+      if (window.matchMedia(REDUCED_MOTION_QUERY).matches) {
+        trip.hidden = true;
+        return;
+      }
+      const id = current;
+      chooseVehicle(page)
+        .catch(() => 'plane' as Vehicle)
+        .then((v) => {
+          if (id !== current || view.hidden) return;
+          const say = { plane: words.travel, car: words.car, hitch: words.hitch, rocket: words.space }[v];
+          text.textContent = say.replace('{name}', page.name);
+          playTrip(v);
+        });
+    }
+
+    function playTrip(v: Vehicle) {
+      trip.classList.add(`is-${v}`);
+      const W = view.clientWidth;
+      const H = view.clientHeight;
+      let duration = 1500;
+      if (v === 'plane') {
+        // along the dashed arc (the same curve as the trail, in screen px)
+        const pts = Array.from({ length: 21 }, (_, i) => {
+          const tt = i / 20;
+          const x = ((1 - tt) ** 2 * -40 + 2 * (1 - tt) * tt * 420 + tt * tt * 1040) / 1000;
+          const y = ((1 - tt) ** 2 * 560 + 2 * (1 - tt) * tt * 40 + tt * tt * 140) / 600;
+          return [x * W, y * H];
+        });
+        const frames = pts.map(([x, y], i) => {
+          const [nx, ny] = pts[Math.min(i + 1, pts.length - 1)];
+          const [px, py] = pts[Math.max(i - 1, 0)];
+          const a = (Math.atan2(ny - py, nx - px) * 180) / Math.PI + 45; // the lucide plane points up-right
+          return { transform: `translate(${x - 23}px, ${y - 23}px) rotate(${a}deg)` };
+        });
+        plane.animate(frames, { duration, easing: 'ease-in-out', fill: 'both' });
+      } else if (v === 'car' || v === 'hitch') {
+        const y = H * 0.72 - 50;
+        const at = (x: number, r = 0) => `translate(${x}px, ${y}px) rotate(${r}deg)`;
+        if (v === 'car') {
+          car.animate([{ transform: at(-140) }, { transform: at(W * 0.5 - 56, -1) }, { transform: at(W + 40) }], { duration, easing: 'ease-in-out', fill: 'both' });
+        } else {
+          // a hitchhiker by the road, thumb up – the car stops, picks them up and drives on
+          duration = 2200;
+          const hx = W * 0.55;
+          hiker.style.transform = `translate(${hx}px, ${H * 0.72 - 78}px)`;
+          hiker.animate([{ opacity: 1 }, { opacity: 1, offset: 0.5 }, { opacity: 0, offset: 0.58 }, { opacity: 0 }], { duration, fill: 'both' });
+          car.animate(
+            [
+              { transform: at(-140), offset: 0 },
+              { transform: at(hx - 120, -1), offset: 0.45, easing: 'ease-out' },
+              { transform: at(hx - 110, 1), offset: 0.62 },
+              { transform: at(W + 40), offset: 1 },
+            ],
+            { duration, easing: 'ease-in-out', fill: 'both' },
+          );
+        }
+      } else {
+        // off into space
+        duration = 1700;
+        rocket.animate(
+          [
+            { transform: `translate(${W * 0.12}px, ${H + 40}px) rotate(38deg)` },
+            { transform: `translate(${W * 0.45}px, ${H * 0.55}px) rotate(38deg)`, offset: 0.4 },
+            { transform: `translate(${W * 0.9}px, ${-160}px) rotate(38deg)` },
+          ],
+          { duration, easing: 'ease-in', fill: 'both' },
+        );
+      }
+      window.setTimeout(() => trip.classList.add('is-done'), duration - 150);
+      window.setTimeout(() => (trip.hidden = true), duration + 400);
+    }
+
+    /** The Moon, Mars and the solar system: the ribbon's picture, big, with its places. */
+    function drawBody(page: Page) {
+      const body = page.body!;
+      const W = canvas.clientWidth;
+      const H = canvas.clientHeight;
+      const boxH = Math.min(H - 90, (W - 80) / body.aspect);
+      const boxW = boxH * body.aspect;
+      const left = (W - boxW) / 2;
+      const top = 60 + (H - 90 - boxH) / 2;
+      canvas.innerHTML = `<svg viewBox="0 0 56 1000" preserveAspectRatio="none" style="left:${left}px;top:${top}px;width:${boxW}px;height:${boxH}px;inset:auto">
+        <path d="${body.d}" class="c-body-land"/>${body.decor}<path d="${body.d}" class="c-body-outline"/></svg>`;
+      labels.replaceChildren(
+        ...body.places.map((pl, i) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = `c-label${i === 0 ? ' is-big' : ''}`;
+          b.textContent = pl.name;
+          b.style.left = `${(((left + (pl.x / 100) * boxW) / W) * 100).toFixed(3)}%`;
+          b.style.top = `${(((top + (pl.y / 100) * boxH) / H) * 100).toFixed(3)}%`;
+          b.style.setProperty('--d', `${1400 + i * 60}ms`);
+          b.addEventListener('click', () => window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail: { place: pl.name } })));
+          return b;
+        }),
+      );
+    }
+
+    /** A photo from Wikipedia in the shorter facts column (when there is room for it). */
+    const photos = new Map<string, { src: string; title: string; url: string } | null>();
+    async function addPhoto(page: Page, id: string) {
+      const left = view.querySelector<HTMLElement>('[data-ctry-left]')!;
+      const right = view.querySelector<HTMLElement>('[data-ctry-right]')!;
+      const col = left.childElementCount <= right.childElementCount ? left : right;
+      if (col.childElementCount > 5) return;
+      let photo = photos.get(id);
+      if (photo === undefined) {
+        photo = null;
+        for (const title of page.wiki) {
+          try {
+            const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, '_'))}`);
+            if (!r.ok) continue;
+            const d = (await r.json()) as { thumbnail?: { source: string }; title: string; content_urls?: { desktop?: { page?: string } } };
+            // skip flags and maps drawn as SVG – a real picture looks better next to the facts
+            if (!d.thumbnail || /\.svg/i.test(d.thumbnail.source)) continue;
+            photo = { src: d.thumbnail.source.replace(/\/(\d+)px-/, '/480px-'), title: d.title, url: d.content_urls?.desktop?.page ?? '' };
+            break;
+          } catch {
+            /* offline: no photo */
+          }
+        }
+        photos.set(id, photo);
+      }
+      if (!photo || current !== id || view.hidden) return;
+      const fig = document.createElement('figure');
+      fig.className = 'ctry-photo';
+      const img = document.createElement('img');
+      img.src = photo.src;
+      img.alt = page.name;
+      img.loading = 'lazy';
+      img.addEventListener('error', () => fig.remove());
+      const cap = document.createElement('figcaption');
+      const a = document.createElement('a');
+      a.href = photo.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = `${words.photo}: Wikipedia – ${photo.title}`;
+      cap.append(a);
+      fig.append(img, cap);
+      col.append(fig);
+    }
+
+    function close() {
+      view.hidden = true;
+      html.classList.remove('country-open');
+      if (opener instanceof HTMLElement && document.contains(opener)) opener.focus({ preventScroll: true });
+    }
+
+    async function draw() {
+      const id = current;
+      const page = pages[id];
+      const [geo, topo] = await Promise.all([import('d3-geo'), import('topojson-client')]);
+      if (page.kind === 'body') return drawBody(page);
+      await loadWorld();
+      if (!cache.has(id)) cache.set(id, await (await fetch(`/data/country/${id}.json`)).json());
+      if (mode === 'terrain' && !terrain) terrain = await (await fetch('/data/terrain.json')).json();
+      if (id !== current || view.hidden) return;
+      const data = cache.get(id)!;
+      const w = world as Parameters<typeof topo.feature>[0] & { objects: { countries: Parameters<typeof topo.feature>[1] } };
+      const all = (topo.feature(w, w.objects.countries) as unknown as GeoJSON.FeatureCollection).features;
+      const main = page.atlasId ? all.find((f) => String(f.id) === page.atlasId) : undefined;
+
+      const W = canvas.clientWidth;
+      const H = canvas.clientHeight;
+      const [w0, s0, e0, n0] = page.bbox;
+      const projection = geo.geoMercator().fitExtent(
+        [
+          [30, 60],
+          [W - 30, H - 30],
+        ],
+        { type: 'MultiPoint', coordinates: [[w0, s0], [e0, n0]] },
+      );
+      const path = geo.geoPath(projection);
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      const mk = (tag: string, attrs: Record<string, string>) => {
+        const el = document.createElementNS(NS, tag);
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+        return el;
+      };
+      const mainD = main ? (path(main) ?? '') : '';
+      const defs = mk('defs', {});
+      const clip = mk('clipPath', { id: 'ctry-clip' });
+      clip.append(mk('path', { d: mainD || `M0 0H${W}V${H}H0Z` }));
+      defs.append(clip);
+      svg.append(defs);
+      // neighbours first, the country on top
+      for (const f of all) {
+        if (f === main) continue;
+        const d = path(f);
+        if (d) svg.append(mk('path', { d, class: 'c-other' }));
+      }
+      if (main) svg.append(mk('path', { d: mainD, class: 'c-main' }));
+      // Natural Earth rings are drawn flat (not on the sphere), like in map mode
+      const flat = geo.geoPath(
+        geo.geoTransform({
+          point(x: number, y: number) {
+            const q = projection([x, y]);
+            if (q) this.stream.point(q[0], q[1]);
+          },
+        }),
+      );
+      const inside = (lon: number, lat: number) => (main ? geo.geoContains(main, [lon, lat]) : lon >= w0 && lon <= e0 && lat >= s0 && lat <= n0);
+      const taken: { l: number; r: number; t: number; b: number }[] = [];
+      const addLabel = (name: string, lon: number, lat: number, cls: string, i: number, onClick: () => void) => {
+        const p = projection([lon, lat]);
+        if (!p) return;
+        const [x, y] = p;
+        if (x < 10 || x > W - 40 || y < 56 || y > H - 12) return;
+        const wEst = name.length * 7.6 + 18;
+        const centred = cls.includes('is-geo');
+        const box = centred ? { l: x - wEst / 2, r: x + wEst / 2, t: y - 9, b: y + 9 } : { l: x - 6, r: x + wEst, t: y - 9, b: y + 9 };
+        if (taken.some((o) => box.l < o.r && box.r > o.l && box.t < o.b && box.b > o.t)) return;
+        taken.push(box);
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = `c-label ${cls}`;
+        b.textContent = name;
+        // in % of the map box: stays right whatever the page zoom does to pixel sizes
+        b.style.left = `${((x / W) * 100).toFixed(3)}%`;
+        b.style.top = `${((y / H) * 100).toFixed(3)}%`;
+        b.style.setProperty('--d', `${1400 + i * 40}ms`);
+        b.addEventListener('click', onClick);
+        labels.append(b);
+      };
+      const facts = (name: string, lat: number, lon: number) => () => window.dispatchEvent(new CustomEvent(FACTS_EVENT, { detail: { name, lat, lon } }));
+      labels.replaceChildren();
+
+      if (mode === 'terrain' && terrain) {
+        const tg = mk('g', { class: 'c-terrain', 'clip-path': main ? 'url(#ctry-clip)' : '' });
+        const byKind: Record<string, number[][][][]> = {};
+        for (const a of terrain.areas) (byKind[a.k] ??= []).push(...a.c);
+        for (const k of ['tundra', 'desert', 'range', 'lake']) {
+          if (byKind[k]) tg.append(mk('path', { class: `t-${k}`, d: flat({ type: 'MultiPolygon', coordinates: byKind[k] } as GeoJSON.MultiPolygon) ?? '' }));
+        }
+        tg.append(mk('path', { class: 't-rivers', d: flat({ type: 'MultiLineString', coordinates: terrain.rivers } as GeoJSON.MultiLineString) ?? '' }));
+        svg.append(tg);
+        if (main) svg.append(mk('path', { d: mainD, class: 'c-main', style: 'fill:none' }));
+        const k = projection.scale() / 150; // roughly the zoom level of map mode
+        terrain.labels
+          .filter((l) => l.z <= Math.max(3, k * 1.2) && l.p[0] >= w0 - 3 && l.p[0] <= e0 + 3 && l.p[1] >= s0 - 3 && l.p[1] <= n0 + 3)
+          .sort((a, b) => a.z - b.z)
+          .forEach((l, i) => {
+            const name = l.n[lang] ?? l.n.en;
+            const water = ['ocean', 'sea', 'lake'].includes(l.k);
+            addLabel(name, l.p[0], l.p[1], `is-geo${water ? ' is-water' : ''}`, i, facts(name, l.p[1], l.p[0]));
+          });
+      } else {
+        const rg = mk('g', { class: 'c-roads', 'clip-path': main ? 'url(#ctry-clip)' : '' });
+        const lines = (kind: number) => ({ type: 'MultiLineString', coordinates: data.roads.filter((r) => r.k === kind).map((r) => r.c) }) as GeoJSON.MultiLineString;
+        rg.append(mk('path', { class: 'c-road c-road--2', d: flat(lines(2)) ?? '' }));
+        rg.append(mk('path', { class: 'c-road c-road--1-case', d: flat(lines(1)) ?? '' }));
+        rg.append(mk('path', { class: 'c-road c-road--1', d: flat(lines(1)) ?? '' }));
+        svg.append(rg);
+      }
+      if (data.lake) svg.append(mk('path', { class: 'c-lake', d: flat({ type: 'MultiPolygon', coordinates: data.lake } as GeoJSON.MultiPolygon) ?? '' }));
+      if (data.river) svg.append(mk('path', { class: 'c-river', d: flat({ type: 'MultiLineString', coordinates: data.river } as GeoJSON.MultiLineString) ?? '' }));
+      canvas.replaceChildren(svg);
+
+      if (mode === 'cities') {
+        const seen = new Set<string>();
+        const list = [
+          ...page.cities.map((c) => ({ n: c.name, lat: c.lat, lon: c.lon, big: true })),
+          ...data.cities.filter((c) => inside(c.lon, c.lat)).map((c) => ({ n: c.n, lat: c.lat, lon: c.lon, big: c.r === 1 })),
+        ].filter((c) => !seen.has(c.n) && seen.add(c.n));
+        list.forEach((c, i) => addLabel(c.n, c.lon, c.lat, c.big ? 'is-big' : '', i, facts(c.n, c.lat, c.lon)));
+      }
+    }
+
+    view.querySelector('[data-ctry-close]')!.addEventListener('click', close);
+    document.addEventListener('keydown', (e) => {
+      // Escape closes the country page unless a window above it (fact card, message) is open
+      if (e.key !== 'Escape' || view.hidden) return;
+      if (document.querySelector('dialog[open]')) return;
+      const card = document.querySelector<HTMLElement>('[data-fact-card]');
+      if (card && !card.hidden) return;
+      close();
+    });
+    view.querySelectorAll<HTMLButtonElement>('[data-ctry-mode]').forEach((b) =>
+      b.addEventListener('click', () => {
+        mode = b.dataset.ctryMode as typeof mode;
+        view.querySelectorAll<HTMLButtonElement>('[data-ctry-mode]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
+        view.classList.toggle('is-terrain', mode === 'terrain');
+        draw().catch((err) => console.error('[country page]', err));
+      }),
+    );
+    view.querySelectorAll<HTMLButtonElement>('[data-ctry-write]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const detail: PlaceMessageDetail = { place: pages[current]?.name ?? '', topic: b.dataset.ctryWrite as PlaceMessageDetail['topic'] };
+        window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail }));
+      }),
+    );
+    let resizeTimer = 0;
+    window.addEventListener('resize', () => {
+      if (view.hidden) return;
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => draw().catch(() => {}), 150);
+    });
+    window.addEventListener(COUNTRY_EVENT, (e) => {
+      const id = (e as CustomEvent<string>).detail;
+      open(id).catch((err) => console.error('[country page]', err));
+    });
+  }
+</script>

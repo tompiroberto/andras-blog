@@ -1,0 +1,74 @@
+---
+import IconCircle from './IconCircle.astro';
+import { t, type Lang, type TKey } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+
+const ITEMS: { key: TKey; icon: string }[] = [
+  { key: 'icon.running', icon: 'timer' },
+  { key: 'icon.hitchhiking', icon: 'thumbs-up' },
+  { key: 'icon.maps', icon: 'map' },
+  { key: 'icon.budget', icon: 'backpack' },
+  { key: 'icon.languages', icon: 'message-square' },
+  { key: 'icon.eating', icon: 'utensils' },
+];
+---
+
+<div class="container icon-strip-wrap">
+  <ul class="icon-strip reveal">
+    {
+      ITEMS.map((item, i) => (
+        <li>
+          <IconCircle icon={item.icon} variant={i % 2 ? 'yellow' : 'violet'} size="md" />
+          <span>{t(lang, item.key)}</span>
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .icon-strip-wrap {
+    position: relative;
+    z-index: 2;
+    margin-top: calc(-1 * clamp(80px, 10vw, 120px));
+  }
+  .icon-strip {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 24px 12px;
+    margin: 0;
+    padding: clamp(24px, 3vw, 36px) clamp(16px, 2vw, 28px);
+    list-style: none;
+    background: var(--surface);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-hard);
+  }
+  .icon-strip li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+    font-weight: 700;
+    font-size: var(--fs-small);
+    line-height: 1.3;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 899px) {
+    .icon-strip {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 479px) {
+    .icon-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>

@@ -1,0 +1,199 @@
+---
+import Globe from './Globe.astro';
+import Icon from './Icon.astro';
+import PowerLines from './PowerLines.astro';
+import SupporterLogos from './SupporterLogos.astro';
+import { localePath, t, type Lang } from '../i18n';
+import site from '../data/site.json';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const year = new Date().getFullYear();
+
+const contacts = [
+  { href: `mailto:${site.email}`, icon: 'mail', label: 'E-mail', external: false },
+  { href: site.strava, icon: 'strava', label: 'Strava', external: true },
+  { href: site.instagram.url, icon: 'instagram', label: `Instagram ${site.instagram.handle}`, external: true },
+  { href: site.facebook, icon: 'facebook', label: 'Facebook', external: true },
+];
+---
+
+<PowerLines />
+<footer class="site-footer" id="contact" aria-labelledby="contact-title">
+  <div class="bg-layer">
+    <Globe size="min(90vw, 760px)" right="-18%" top="-120px" tone="footer" speed={90} direction="ccw" opacity={0.7} />
+  </div>
+  <div class="container site-footer__inner">
+    <h2 id="contact-title" class="site-footer__title">{t(lang, 'contact.title')}</h2>
+    <ul class="contact-buttons">
+      {
+        contacts.map((c) => (
+          <li>
+            <a
+              class="contact-btn"
+              href={c.href}
+              {...(c.external ? { target: '_blank', rel: 'noopener' } : {})}
+            >
+              <span class="contact-btn__icon" aria-hidden="true">
+                <Icon name={c.icon} size={22} />
+              </span>
+              <span>{c.label}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <SupporterLogos lang={lang} />
+
+    <div class="site-footer__bottom">
+      <span>© {year} {site.owner}</span>
+      <span class="legend">
+        <span class="legend__circle" aria-hidden="true"></span>
+        {t(lang, 'footer.legend')}
+        <span class="legend__tri" aria-hidden="true"></span>
+      </span>
+      <a href={localePath(lang, 'privacy')}>{t(lang, 'footer.privacy')}</a>
+    </div>
+    <!-- how many slices of bread have wiped the Nutella stains off so far (NutellaRain.astro) -->
+    <p class="bread-count" data-bread-count data-template={t(lang, 'bread.count')}>
+      <span class="bread-count__icons" data-bread-icons aria-hidden="true"></span>
+      <span data-bread-text>{t(lang, 'bread.count').replace('{n}', '0')}</span>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    position: relative;
+    isolation: isolate;
+    background: var(--violet);
+    color: #fff;
+    padding-block: clamp(56px, 8vw, 96px) 32px;
+  }
+  .site-footer__inner {
+    position: relative;
+    z-index: var(--z-content);
+  }
+  .site-footer__title {
+    color: #fff;
+  }
+  .contact-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 0 0 clamp(40px, 6vw, 64px);
+    padding: 0;
+    list-style: none;
+  }
+  .contact-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 60px;
+    padding: 8px 26px 8px 8px;
+    border-radius: var(--radius-pill);
+    background: #fff;
+    color: var(--ink);
+    border: var(--border);
+    box-shadow: 5px 5px 0 var(--ink);
+    font-weight: 700;
+    font-size: clamp(17px, 1.6vw, 20px);
+    text-decoration: none;
+    transition: transform var(--t-fast) var(--ease);
+  }
+  .contact-btn:hover {
+    transform: translate(-2px, -3px);
+  }
+  .contact-btn:focus-visible {
+    outline-color: var(--yellow);
+  }
+  .contact-btn__icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--yellow);
+    border: var(--border);
+  }
+  .site-footer__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 24px;
+    margin-top: 32px;
+    font-size: var(--fs-small);
+  }
+  .site-footer__bottom a {
+    color: #fff;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--touch);
+  }
+  .site-footer__bottom a:focus-visible {
+    outline-color: var(--yellow);
+  }
+  .bread-count {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px 12px;
+    margin: 18px 0 0;
+    padding-top: 14px;
+    border-top: 1px dashed rgb(255 255 255 / 0.35);
+    font-size: var(--fs-small);
+    font-weight: 700;
+  }
+  .bread-count__icons {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .bread-count__icons:empty {
+    display: none;
+  }
+  .bread-count__icons :global(svg) {
+    width: 20px;
+    height: 22px;
+  }
+  .bread-count__icons :global(.bread-more) {
+    align-self: center;
+    margin-left: 4px;
+  }
+  .bread-count.is-bump .bread-count__icons :global(svg:last-of-type) {
+    animation: bread-bump 500ms cubic-bezier(0.3, 1.8, 0.5, 1);
+  }
+  @keyframes bread-bump {
+    from {
+      transform: scale(0) rotate(-40deg);
+    }
+  }
+  .legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .legend__circle {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    flex: none;
+  }
+  .legend__tri {
+    width: 12px;
+    height: 11px;
+    background: var(--yellow);
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+    flex: none;
+  }
+</style>

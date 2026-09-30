@@ -1,0 +1,2255 @@
+---
+/**
+ * Map mode: the whole site as a Google-Maps-like world map. The page itself is hidden
+ * (html.map-mode rules in global.css); the content is pinned to places as cards that show more
+ * detail the further you zoom in (pin → title → full card). Visited countries are coloured like
+ * on the "Where I've been" map. The map data and d3 are only loaded when map mode is switched on.
+ */
+import Icon from './Icon.astro';
+import { HTML_LANG, localePath, t, type Lang, type TKey } from '../i18n';
+import worldCities from '../data/world-cities.json';
+import geoMetas from '../data/geo-metas.json';
+import { metaArt } from '../lib/metaArt';
+import { getPosts } from '../lib/posts';
+import { categoryMeta } from '../lib/categories';
+import site from '../data/site.json';
+import countriesData from '../data/countries.json';
+import nutella from '../data/nutella-factories.json';
+import { SPACE_ART } from '../lib/spaceArt';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const home = localePath(lang);
+
+/** Label points of the countries on the list (lat, lon). */
+const COUNTRY_POINT: Record<string, [number, number]> = {
+  HU: [46.9, 20.3],
+  LT: [55.3, 23.9],
+  PL: [52.1, 19.4],
+  SK: [48.7, 19.6],
+  RO: [45.9, 24.9],
+  SI: [46.1, 14.8],
+  HR: [45.2, 15.6],
+  BA: [44.0, 17.8],
+  AT: [47.5, 14.2],
+  GR: [40.2, 22.3],
+  DE: [51.1, 10.4],
+  CZ: [49.8, 15.5],
+  CL: [-27.0, -70.0],
+  GE: [42.2, 43.5],
+};
+/** Posts without a country: adventures and random things on land around Hungary (not in the ocean). */
+const ZONES: Record<string, [number, number][]> = {
+  adventures: [[48.2, 16.6], [46.0, 21.8], [48.1, 22.4], [45.6, 18.4]],
+  erasmus: [[50.5, 30.5], [41.5, 28.5]],
+  random: [[46.25, 20.15], [47.95, 21.72], [47.23, 16.62], [46.07, 18.23], [48.1, 20.78], [47.69, 17.63], [46.9, 19.69], [47.53, 21.63]],
+};
+
+interface Link {
+  href: string;
+  label: string;
+  external?: boolean;
+  /** leaving map mode first (links into the normal page) */
+  exit?: boolean;
+}
+interface Item {
+  id: string;
+  lat: number;
+  lon: number;
+  title: string;
+  text?: string;
+  tag?: string;
+  icon: string;
+  tone: 'violet' | 'yellow';
+  priority: number;
+  links: Link[];
+}
+
+const items: Item[] = [
+  {
+    id: 'home',
+    lat: 47.5,
+    lon: 19.04,
+    title: t(lang, 'hero.title'),
+    text: t(lang, 'hero.tagline'),
+    icon: 'house',
+    tone: 'violet',
+    priority: 10,
+    links: [
+      { href: `${home}#about`, label: t(lang, 'nav.about'), exit: true },
+      { href: site.strava, label: 'Strava', external: true },
+    ],
+  },
+  {
+    id: 'about',
+    lat: 46.8,
+    lon: 17.7,
+    title: t(lang, 'about.title'),
+    text: t(lang, 'about.text'),
+    icon: 'user',
+    tone: 'yellow',
+    priority: 8,
+    links: [{ href: `${home}#about`, label: t(lang, 'posts.readMore'), exit: true }],
+  },
+  {
+    id: 'pbs',
+    lat: 43.51,
+    lon: 16.44,
+    title: t(lang, 'mapmode.pbs'),
+    text: [...site.personalBests.map((p) => `${p.distance} · ${p.time}`), ...site.raceBadges.map((b) => b.label)].join('\n'),
+    icon: 'timer',
+    tone: 'yellow',
+    priority: 7,
+    links: [{ href: site.strava, label: 'Strava', external: true }],
+  },
+  {
+    id: 'contact',
+    lat: 37.98,
+    lon: 23.73,
+    title: t(lang, 'contact.title'),
+    text: t(lang, 'hero.status'),
+    icon: 'mail',
+    tone: 'violet',
+    priority: 9,
+    links: [
+      { href: `${home}#message`, label: t(lang, 'msg.title'), exit: true },
+      { href: `mailto:${site.email}`, label: 'E-mail' },
+      { href: site.instagram.url, label: 'Instagram', external: true },
+      { href: site.facebook, label: 'Facebook', external: true },
+    ],
+  },
+  ...([1, 2, 3, 4, 5] as const).map((n) => {
+    const where: [number, number] = ({ 1: [-37, -72], 2: [42.2, 43.5], 3: [43.6, 25.2], 4: [-47.5, -70.5], 5: [47.9, 18.9] } as const)[n] as [number, number];
+    return {
+      id: `plan${n}`,
+      lat: where[0],
+      lon: where[1],
+      title: t(lang, `plan${n}.title` as TKey),
+      text: t(lang, `plan${n}.text` as TKey),
+      tag: t(lang, `plan${n}.tag` as TKey),
+      icon: ({ 1: 'thumbs-up', 2: 'message-square', 3: 'backpack', 4: 'mountain-snow', 5: 'timer' } as const)[n],
+      tone: n === 2 || n === 4 ? ('violet' as const) : ('yellow' as const),
+      priority: 7,
+      links: [{ href: `${home}#plans`, label: t(lang, 'plans.title'), exit: true }],
+    };
+  }),
+];
+
+// Prague, the KFC night
+items.push({
+  id: 'kfc',
+  lat: 50.08,
+  lon: 14.44,
+  title: t(lang, 'mapmode.kfcTitle'),
+  text: t(lang, 'mapmode.kfcText'),
+  icon: 'utensils',
+  tone: 'yellow',
+  priority: 6,
+  links: [],
+});
+
+// the bucket list, in the empty oceans (and South America, still waiting)
+items.push(
+  { id: 'bucket', lat: -42, lon: -128, title: t(lang, 'mapmode.bucketTitle'), text: t(lang, 'mapmode.bucketText'), icon: 'list-checks', tone: 'violet', priority: 7, links: [] },
+  { id: 'sail', lat: 38.72, lon: -9.14, title: t(lang, 'mapmode.sailTitle'), text: t(lang, 'mapmode.sailText'), tag: t(lang, 'mapmode.bucketTitle'), icon: 'sailboat', tone: 'yellow', priority: 6, links: [] },
+  { id: 'extreme', lat: -52, lon: 40, title: t(lang, 'mapmode.extremeTitle'), text: t(lang, 'mapmode.extremeText'), tag: t(lang, 'mapmode.bucketTitle'), icon: 'snowflake', tone: 'violet', priority: 6, links: [] },
+  { id: 'walk', lat: -28, lon: 78, title: t(lang, 'mapmode.walkTitle'), text: t(lang, 'mapmode.walkText'), tag: t(lang, 'mapmode.bucketTitle'), icon: 'footprints', tone: 'yellow', priority: 6, links: [] },
+  { id: 'southamerica', lat: -12, lon: -60, title: t(lang, 'mapmode.saTitle'), text: t(lang, 'mapmode.saText'), tag: t(lang, 'mapmode.bucketTitle'), icon: 'mountain-snow', tone: 'violet', priority: 6, links: [] },
+);
+
+// every post, pinned to its country (or its category's zone)
+const posts = await getPosts();
+const used: Record<string, number> = {};
+for (const post of posts) {
+  const { category, countries, title, excerpt, icon } = post.data;
+  const meta = categoryMeta(category);
+  let point: [number, number];
+  const country = countries?.find((c) => COUNTRY_POINT[c]);
+  if (country) {
+    const n = (used[country] = (used[country] ?? 0) + 1);
+    const [la, lo] = COUNTRY_POINT[country];
+    point = [la - (n - 1) * 1.2, lo + (n - 1) * 1.6]; // several posts in one country step aside
+  } else {
+    const zone = ZONES[category];
+    const n = (used[category] = (used[category] ?? 0) + 1);
+    point = zone[(n - 1) % zone.length];
+  }
+  items.push({
+    id: `post-${post.id}`,
+    lat: point[0],
+    lon: point[1],
+    title,
+    text: excerpt,
+    tag: t(lang, meta.titleKey),
+    icon: icon ?? meta.icon,
+    tone: meta.tone,
+    priority: 5,
+    links: [{ href: localePath(lang, `posts/${post.id}`), label: t(lang, 'posts.readMore'), exit: true }],
+  });
+}
+
+// countries for colouring and the click tooltip
+const countryInfo = Object.fromEntries(
+  countriesData.countries
+    .filter((c) => c.isoNumeric)
+    .map((c) => {
+      const tr = c.i18n[lang as keyof typeof c.i18n] ?? c.i18n.en;
+      return [c.isoNumeric as string, { status: c.status, name: tr.name, text: tr.text }];
+    }),
+);
+// map mode only: Russia is on the wish list too
+const regionName = new Intl.DisplayNames([HTML_LANG[lang]], { type: 'region' });
+if (!countryInfo['643']) countryInfo['643'] = { status: 'planned', name: regionName.of('RU') ?? 'Russia', text: t(lang, 'mapmode.russia') };
+
+// GeoGuessr tips (own wording + own drawings), localised names; English text where there is no translation
+type MetaEntry = { a2: string; plonk: string; clues: { type: string; extra?: string; en: string; hu: string }[] };
+const metas = Object.fromEntries(
+  Object.entries(geoMetas as unknown as Record<string, MetaEntry | string>)
+    .filter((e): e is [string, MetaEntry] => typeof e[1] === 'object')
+    .map(([id, m]) => [
+      id,
+      {
+        name: regionName.of(m.a2) ?? m.a2,
+        plonk: `https://www.plonkit.net/${m.plonk}`,
+        clues: m.clues.map((c) => ({ art: metaArt(c.type, c.extra), text: lang === 'hu' ? c.hu : c.en })),
+      },
+    ]),
+);
+const cities = worldCities.cities.map((c) => [c.name, c.lat, c.lon, c.rank]);
+const factories = nutella.factories.map((f) => ({ ...f, countryName: regionName.of(f.country) ?? f.country }));
+const text = {
+  write: t(lang, 'pm.kicker'),
+  nutellaKicker: t(lang, 'mapmode.nutellaKicker'),
+  opened: t(lang, 'mapmode.nutellaOpened'),
+  uncertain: t(lang, 'mapmode.nutellaUncertain'),
+  distResult: t(lang, 'mapmode.distResult'),
+  distIp: t(lang, 'mapmode.distIp'),
+  distLooking: t(lang, 'mapmode.distLooking'),
+  distError: t(lang, 'mapmode.distError'),
+  route: Object.fromEntries(
+    ['total', 'hours', 'days', 'ground', 'walkNote', 'joke.water', 'joke.noRail', 'joke.noRoad', 'joke.here'].map((k) => [k, t(lang, `route.${k}` as TKey)]),
+  ),
+  kinds: Object.fromEntries(
+    ['ocean', 'sea', 'lake', 'range', 'desert', 'peak', 'plateau', 'tundra', 'island', 'cape', 'waterfall', 'pole'].map((k) => [k, t(lang, `mapmode.kind.${k}` as TKey)]),
+  ),
+  unexplored: t(lang, 'mapmode.unexplored'),
+  meta: t(lang, 'mapmode.meta'),
+  plonk: t(lang, 'mapmode.plonk'),
+  close: t(lang, 'facts.close'),
+};
+
+const LEGEND: { status: string; key: TKey }[] = [
+  { status: 'visited', key: 'legend.visited' },
+  { status: 'transit', key: 'legend.transit' },
+  { status: 'now', key: 'legend.now' },
+  { status: 'home', key: 'legend.home' },
+  { status: 'planned', key: 'legend.planned' },
+  { status: 'unexplored', key: 'mapmode.unexplored' },
+];
+---
+
+<div class="map-mode-view" data-map-mode-view data-lang={lang} aria-label={t(lang, 'mapmode.toggle')} role="region">
+  <!-- outer space around the globe: things float there – click them -->
+  <div class="mm-space" data-mm-space>
+    {Object.entries(SPACE_ART).map(([kind, svg]) => <template data-mm-space-kind={kind} data-say={t(lang, `mmspace.${kind}` as TKey)} set:html={svg} />)}
+  </div>
+  <div class="mm-canvas" data-mm-canvas></div>
+
+  <!-- introduction in the Pacific Ocean -->
+  <div class="mm-intro" data-mm-intro data-lat="6" data-lon="-148">
+    <p class="mm-intro__title">{t(lang, 'hero.title')}</p>
+    <p class="mm-intro__text">{t(lang, 'hero.tagline')}</p>
+    <p class="mm-intro__hint">{t(lang, 'mapmode.explore')}</p>
+  </div>
+  <div class="mm-cities" data-mm-cities></div>
+  <!-- the planned journey's stops ("distance from me" in the terrain view) -->
+  <div class="mm-route-stops" data-mm-route-stops></div>
+  <!-- Nutella factories (switch in the right bar): big jars that pop up -->
+  <div class="mm-jars" data-mm-jars></div>
+  <div class="mm-geo-labels" data-mm-geo-labels></div>
+
+  <!-- content pinned to the world -->
+  <div class="mm-items" data-mm-items>
+    {
+      items.map((it) => (
+        <article class:list={['mm-item', `mm-item--${it.tone}`]} data-mm-item data-lat={it.lat} data-lon={it.lon} data-priority={it.priority} id={`mm-${it.id}`}>
+          <button type="button" class="mm-pin" data-mm-pin aria-label={it.title}>
+            <Icon name={it.icon} size={16} />
+          </button>
+          <span class="mm-label" data-mm-label>{it.title}</span>
+          <div class="mm-card">
+            {it.tag && <span class="mm-card__tag">{it.tag}</span>}
+            <h2 class="mm-card__title">{it.title}</h2>
+            {it.text && <p class="mm-card__text">{it.text}</p>}
+            {it.links.length > 0 && (
+              <p class="mm-card__links">
+                {it.links.map((l) => (
+                  <a href={l.href} {...(l.external ? { target: '_blank', rel: 'noopener' } : {})} data-mm-exit={l.exit ? '' : undefined}>
+                    {l.label}
+                  </a>
+                ))}
+              </p>
+            )}
+          </div>
+        </article>
+      ))
+    }
+  </div>
+
+  <!-- top bar -->
+  <div class="mm-bar mm-bar--left">
+    <button type="button" class="mm-btn mm-btn--exit" data-mm-exit-mode>
+      <Icon name="arrow-left" size={18} />
+      <span>{t(lang, 'mapmode.exit')}</span>
+    </button>
+    <form class="mm-search" role="search" data-mm-search>
+      <label class="visually-hidden" for="mm-search-input">{t(lang, 'search.label')}</label>
+      <input id="mm-search-input" type="search" autocomplete="off" required maxlength="80" placeholder={t(lang, 'search.placeholder')} />
+      <button type="submit" class="mm-btn mm-btn--icon" aria-label={t(lang, 'search.go')} title={t(lang, 'search.go')}>
+        <Icon name="search" size={18} />
+      </button>
+    </form>
+  </div>
+  <div class="mm-bar mm-bar--right">
+    <button type="button" class="mm-btn mm-btn--icon" data-mm-zoom="in" aria-label={t(lang, 'map.zoomIn')} title={t(lang, 'map.zoomIn')}><Icon name="plus" size={18} /></button>
+    <button type="button" class="mm-btn mm-btn--icon" data-mm-zoom="out" aria-label={t(lang, 'map.zoomOut')} title={t(lang, 'map.zoomOut')}><Icon name="minus" size={18} /></button>
+    <button type="button" class="mm-btn mm-btn--icon" data-mm-zoom="europe" aria-label={t(lang, 'mapmode.europe')} title={t(lang, 'mapmode.europe')}><Icon name="locate" size={18} /></button>
+    <button type="button" class="mm-btn mm-btn--icon" data-mm-zoom="world" aria-label={t(lang, 'mapmode.world')} title={t(lang, 'mapmode.world')}><Icon name="globe" size={18} /></button>
+    <button type="button" class="mm-btn mm-btn--icon mm-btn--terrain" aria-pressed="false" aria-label={t(lang, 'mapmode.terrain')} title={t(lang, 'mapmode.terrain')} data-mm-terrain><Icon name="mountain" size={18} /></button>
+    <button type="button" class="mm-btn mm-btn--icon mm-btn--nutella" aria-pressed="false" aria-label={t(lang, 'mapmode.nutella')} title={t(lang, 'mapmode.nutella')} data-mm-nutella><Icon name="jar" size={20} /></button>
+  </div>
+
+  <ul class="mm-legend mm-legend--terrain" aria-label={t(lang, 'mapmode.terrain')}>
+    <li><span class="mm-swatch mm-swatch--mountain" aria-hidden="true" />{t(lang, 'mapmode.lgMountains')}</li>
+    <li><span class="mm-swatch mm-swatch--desert" aria-hidden="true" />{t(lang, 'mapmode.lgDesert')}</li>
+    <li><span class="mm-swatch mm-swatch--ice" aria-hidden="true" />{t(lang, 'mapmode.lgIce')}</li>
+    <li><span class="mm-swatch mm-swatch--water" aria-hidden="true" />{t(lang, 'mapmode.lgWater')}</li>
+  </ul>
+  <ul class="mm-legend mm-legend--travel" aria-label={t(lang, 'map.title')}>
+    {
+      LEGEND.map((l) => (
+        <li>
+          <span class:list={['mm-swatch', `mm-swatch--${l.status}`]} aria-hidden="true" />
+          {t(lang, l.key)}
+        </li>
+      ))
+    }
+  </ul>
+  <p class="mm-hint" role="status" aria-live="polite" data-mm-status>{t(lang, 'mapmode.hint')}</p>
+
+  <aside class="mm-tip" hidden data-mm-tip aria-live="polite">
+    <button type="button" class="mm-tip__close" aria-label={text.close} title={text.close} data-mm-tip-close><Icon name="x" size={16} /></button>
+    <strong class="mm-tip__name" data-mm-tip-name></strong>
+    <span class="mm-tip__text" data-mm-tip-text></span>
+    <div class="mm-tip__metas" data-mm-tip-metas></div>
+    <button type="button" class="mm-tip__route" data-mm-tip-route><Icon name="route" size={16} />{t(lang, 'route.here')}</button>
+    <button type="button" class="mm-tip__write" data-mm-tip-write><Icon name="message-circle" size={16} />{text.write}</button>
+  </aside>
+
+  <!-- terrain view: a clicked geographic name, with "distance from me" -->
+  <aside class="mm-tip mm-geo-panel" hidden data-mm-geo-panel aria-live="polite">
+    <button type="button" class="mm-tip__close" aria-label={text.close} title={text.close} data-mm-geo-close><Icon name="x" size={16} /></button>
+    <span class="mm-geo-panel__kind" data-mm-geo-kind></span>
+    <strong class="mm-tip__name" data-mm-geo-name></strong>
+    <button type="button" class="mm-geo-panel__dist" data-mm-dist><Icon name="ruler" size={16} />{t(lang, 'mapmode.dist')}</button>
+    <span class="mm-geo-panel__result" data-mm-dist-result></span>
+    <div class="mm-route" hidden data-mm-route>
+      <div class="mm-route__modes" role="radiogroup">
+        <button type="button" role="radio" aria-checked="true" data-mm-mode="plane"><Icon name="plane" size={15} />{t(lang, 'route.plane')}</button>
+        <button type="button" role="radio" aria-checked="false" data-mm-mode="train"><Icon name="train-front" size={15} />{t(lang, 'route.train')}</button>
+        <button type="button" role="radio" aria-checked="false" data-mm-mode="bus"><Icon name="bus" size={15} />{t(lang, 'route.bus')}</button>
+        <button type="button" role="radio" aria-checked="false" data-mm-mode="walk"><Icon name="footprints" size={15} />{t(lang, 'route.walk')}</button>
+      </div>
+      <ol class="mm-route__legs" data-mm-route-legs></ol>
+      <p class="mm-route__total" data-mm-route-total></p>
+      <small class="mm-route__note">{t(lang, 'route.note')}</small>
+    </div>
+    <form class="mm-geo-panel__own" data-mm-own>
+      <label for="mm-own-input">{t(lang, 'mapmode.distOwn')}</label>
+      <div>
+        <input id="mm-own-input" type="text" autocomplete="off" maxlength="80" placeholder={t(lang, 'mapmode.distPlaceholder')} />
+        <button type="submit">{t(lang, 'mapmode.distSet')}</button>
+      </div>
+    </form>
+    <small class="mm-geo-panel__note">{t(lang, 'mapmode.distNote')}</small>
+    <button type="button" class="mm-tip__route" data-mm-geo-route><Icon name="route" size={16} />{t(lang, 'route.here')}</button>
+    <button type="button" class="mm-tip__write" data-mm-geo-write><Icon name="message-circle" size={16} />{text.write}</button>
+  </aside>
+  <template data-mm-msg-searching>{t(lang, 'search.searching')}</template>
+  <template data-mm-msg-none>{t(lang, 'search.none')}</template>
+  <template data-mm-msg-error>{t(lang, 'search.error')}</template>
+  <script type="application/json" data-mm-countries set:html={JSON.stringify(countryInfo)} />
+  <script type="application/json" data-mm-metas set:html={JSON.stringify(metas)} />
+  <script type="application/json" data-mm-city-data set:html={JSON.stringify(cities)} />
+  <script type="application/json" data-mm-text set:html={JSON.stringify(text)} />
+  <script type="application/json" data-mm-factories set:html={JSON.stringify(factories)} />
+</div>
+
+<style>
+  .map-mode-view {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 550;
+    overflow: hidden;
+    /* the globe hangs in space */
+    background:
+      radial-gradient(circle at 20% 30%, #fff 1px, transparent 1.4px) 0 0 / 97px 97px,
+      radial-gradient(circle at 70% 60%, rgb(255 255 255 / 0.7) 1px, transparent 1.4px) 0 0 / 143px 143px,
+      radial-gradient(circle at 40% 80%, rgb(255 255 255 / 0.5) 0.8px, transparent 1.2px) 0 0 / 61px 61px,
+      linear-gradient(160deg, #1a1446, #07051a);
+    font-family: var(--font-body);
+    color: var(--ink);
+    /* the page zoom slider does not affect map mode */
+    zoom: var(--inv-zoom, 1);
+  }
+  :global(html.map-mode) .map-mode-view {
+    display: block;
+  }
+  .mm-canvas,
+  .mm-canvas :global(svg) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+    touch-action: none;
+  }
+  .mm-canvas :global(svg:active) {
+    cursor: grabbing;
+  }
+  .mm-canvas :global(.mm-land) {
+    fill: var(--land);
+    stroke: #fff;
+    stroke-width: 0.6;
+    vector-effect: non-scaling-stroke;
+  }
+  .mm-canvas :global(.c-unexplored) {
+    fill: url(#mm-stripes);
+    cursor: pointer;
+  }
+  .mm-canvas :global(.mm-land.is-data) {
+    cursor: pointer;
+  }
+  .mm-canvas :global(.c-visited) {
+    fill: var(--yellow);
+    stroke: var(--ink);
+    stroke-width: 1;
+  }
+  .mm-canvas :global(.c-transit) {
+    fill: var(--surface);
+    stroke: var(--violet);
+    stroke-width: 1.4;
+    stroke-dasharray: 3 2;
+  }
+  .mm-canvas :global(.c-now) {
+    fill: var(--violet);
+    stroke: var(--ink);
+    stroke-width: 1;
+  }
+  .mm-canvas :global(.c-home) {
+    fill: var(--ink);
+    stroke: var(--yellow);
+    stroke-width: 1.5;
+  }
+  .mm-canvas :global(.c-planned) {
+    fill: url(#mm-hatch);
+    stroke: var(--violet-dark);
+    stroke-width: 1;
+  }
+  .mm-canvas :global(.mm-land.is-data:hover) {
+    stroke: var(--ink);
+    stroke-width: 2.5;
+  }
+  .mm-canvas :global(.mm-search-pin) {
+    fill: var(--violet);
+    stroke: var(--ink);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* ---- pinned content: pin → title → full card, depending on the zoom ---- */
+  .mm-items {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .mm-item {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: none;
+    transform: translate(var(--x), var(--y));
+  }
+  .mm-item.is-dot,
+  .mm-item.is-label,
+  .mm-item.is-card {
+    display: block;
+  }
+  .mm-pin {
+    position: absolute;
+    left: -15px;
+    top: -15px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    background: var(--violet);
+    color: #fff;
+    box-shadow: 2px 2px 0 var(--ink);
+    pointer-events: auto;
+    transition: transform var(--t-fast);
+  }
+  .mm-item--yellow .mm-pin {
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  .mm-pin:hover {
+    transform: scale(1.15);
+  }
+  .mm-label {
+    display: none;
+    position: absolute;
+    left: 20px;
+    top: -12px;
+    max-width: 220px;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    border: 2px solid var(--ink);
+    font-weight: 700;
+    font-size: 13px;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .mm-item.is-flip .mm-label {
+    left: auto;
+    right: 20px;
+  }
+  .mm-item.is-flip .mm-card {
+    left: auto;
+    right: 22px;
+  }
+  .mm-item.is-label .mm-label {
+    display: block;
+  }
+  .mm-card {
+    display: none;
+    position: absolute;
+    left: 22px;
+    top: -20px;
+    width: 260px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 2px solid var(--ink);
+    border-radius: 18px;
+    box-shadow: 4px 4px 0 var(--yellow);
+    pointer-events: auto;
+  }
+  .mm-item--violet .mm-card {
+    box-shadow: 4px 4px 0 var(--violet);
+  }
+  .mm-item.is-card .mm-card {
+    display: block;
+  }
+  .mm-item.is-card {
+    z-index: 2;
+  }
+  .mm-card__tag {
+    display: inline-block;
+    margin-bottom: 4px;
+    padding: 1px 8px;
+    border-radius: var(--radius-pill);
+    background: var(--yellow-tint);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .mm-card__title {
+    margin: 0 0 4px;
+    font-size: 16px;
+    line-height: 1.2;
+  }
+  .mm-card__text {
+    margin: 0 0 8px;
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-line;
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .mm-card__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  /* ---- controls ---- */
+  .mm-bar {
+    position: absolute;
+    top: 14px;
+    z-index: 3;
+    display: flex;
+    gap: 8px;
+  }
+  .mm-bar--left {
+    left: 14px;
+    flex-wrap: wrap;
+    max-width: calc(100% - 90px);
+  }
+  .mm-bar--right {
+    right: 14px;
+    flex-direction: column;
+  }
+  .mm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--touch);
+    padding: 0 16px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 15px;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .mm-btn:hover {
+    background: var(--yellow-tint);
+  }
+  .mm-btn--icon {
+    justify-content: center;
+    width: var(--touch);
+    padding: 0;
+  }
+  .mm-btn--exit {
+    background: var(--violet);
+    color: #fff;
+  }
+  .mm-btn--exit:hover {
+    background: var(--violet-dark);
+  }
+  .mm-search {
+    display: flex;
+    gap: 6px;
+  }
+  .mm-search input {
+    width: min(280px, 60vw);
+    min-height: var(--touch);
+    padding: 8px 16px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    font-size: 15px;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .mm-legend {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    max-width: calc(100% - 28px);
+    margin: 0;
+    padding: 8px 14px;
+    list-style: none;
+    background: var(--surface);
+    border: 2px solid var(--ink);
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .mm-legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .mm-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    border: 2px solid var(--ink);
+  }
+  .mm-swatch--visited {
+    background: var(--yellow);
+  }
+  .mm-swatch--transit {
+    background: var(--surface);
+    border-style: dashed;
+    border-color: var(--violet);
+  }
+  .mm-swatch--now {
+    background: var(--violet);
+    border-radius: 50%;
+  }
+  .mm-swatch--home {
+    background: var(--ink);
+    border-color: var(--yellow);
+  }
+  .mm-swatch--unexplored {
+    background: repeating-linear-gradient(45deg, #c9cfe4 0 2px, var(--land) 2px 6px);
+    border-color: #9aa3c4;
+  }
+  .mm-swatch--planned {
+    background: repeating-linear-gradient(45deg, var(--violet) 0 2px, var(--violet-tint) 2px 6px);
+  }
+  .mm-hint {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    z-index: 3;
+    max-width: min(360px, calc(100% - 28px));
+    margin: 0;
+    padding: 6px 12px;
+    border-radius: 12px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .mm-tip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: min(300px, calc(100% - 28px));
+    max-height: calc(100% - 120px);
+    overflow: auto;
+    padding: 12px 14px;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 16px;
+    box-shadow: 4px 4px 0 var(--yellow);
+    font-size: 14px;
+  }
+  .mm-tip__name {
+    padding-right: 34px;
+    color: var(--yellow);
+    font-family: var(--font-heading);
+    font-size: 17px;
+  }
+  .mm-tip__close {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+  }
+  .mm-tip__text {
+    white-space: pre-line;
+  }
+  .mm-tip__metas:empty {
+    display: none;
+  }
+  .mm-tip__metas {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid rgb(255 255 255 / 0.2);
+  }
+  .mm-tip__metas :global(.mm-meta__kicker) {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--yellow);
+  }
+  .mm-tip__metas :global(.mm-meta) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    line-height: 1.35;
+  }
+  .mm-tip__metas :global(.mm-meta svg) {
+    flex: none;
+    border-radius: 8px;
+    border: 2px solid #fff;
+    background: #fff;
+  }
+  .mm-tip__metas :global(a) {
+    color: var(--yellow);
+    font-weight: 700;
+  }
+
+  .mm-tip__write {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 6px 12px;
+    border: 2px solid var(--yellow);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--yellow);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mm-tip__route {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 7px 14px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--yellow);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mm-tip__write:hover,
+  .mm-tip__write:focus-visible {
+    background: var(--yellow);
+    color: var(--ink);
+  }
+
+  /* ---- geographic name panel (terrain view) ---- */
+  .mm-geo-panel__kind {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #9fd3ff;
+  }
+  .mm-geo-panel__dist {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 7px 14px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--yellow);
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mm-geo-panel__result {
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .mm-geo-panel__result:empty {
+    display: none;
+  }
+  .mm-geo-panel__own {
+    display: grid;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .mm-geo-panel__own div {
+    display: flex;
+    gap: 6px;
+  }
+  .mm-geo-panel__own input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 400;
+  }
+  .mm-geo-panel__own button {
+    padding: 6px 12px;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mm-geo-panel__note {
+    opacity: 0.7;
+    font-size: 11px;
+  }
+
+  /* ---- journey planner ---- */
+  .mm-route {
+    display: grid;
+    gap: 6px;
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid rgb(255 255 255 / 0.2);
+  }
+  .mm-route[hidden] {
+    display: none;
+  }
+  .mm-route__modes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .mm-route__modes button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 9px;
+    border: 1.5px solid rgb(255 255 255 / 0.5);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mm-route__modes button[aria-checked='true'] {
+    background: var(--yellow);
+    border-color: var(--yellow);
+    color: var(--ink);
+  }
+  .mm-route__legs {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 3px;
+    font-size: 13px;
+  }
+  .mm-route__legs:empty {
+    display: none;
+  }
+  .mm-route__legs :global(li) {
+    display: flex;
+    gap: 6px;
+  }
+  .mm-route__legs :global(.mm-leg__time) {
+    margin-left: auto;
+    white-space: nowrap;
+    opacity: 0.75;
+  }
+  .mm-route__total {
+    margin: 0;
+    font-weight: 700;
+    color: var(--yellow);
+  }
+  .mm-route__note {
+    opacity: 0.6;
+    font-size: 11px;
+  }
+  .mm-canvas :global(.mm-route-line) {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    pointer-events: none;
+  }
+  .mm-canvas :global(.mm-route-line--case) {
+    stroke: var(--ink);
+    stroke-width: 6;
+  }
+  .mm-canvas :global(.mm-route-line--air) {
+    stroke: var(--violet);
+    stroke-width: 3.5;
+    stroke-dasharray: 10 8;
+    animation: route-march 0.9s linear infinite;
+  }
+  .mm-canvas :global(.mm-route-line--ground) {
+    stroke: var(--yellow);
+    stroke-width: 4;
+  }
+  @keyframes route-march {
+    to {
+      stroke-dashoffset: -18;
+    }
+  }
+  .mm-route-stops {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .mm-route-stops :global(.mm-stop) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transform: translate(calc(var(--x) - 7px), calc(var(--y) - 50%));
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--ink);
+    text-shadow: 0 0 3px #fff, 0 0 3px #fff;
+    animation: stop-in 500ms cubic-bezier(0.34, 1.7, 0.5, 1) var(--d, 0ms) both;
+  }
+  @keyframes stop-in {
+    from {
+      scale: 0;
+      opacity: 0;
+    }
+  }
+  .mm-route-stops :global(.mm-stop::before) {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--yellow);
+    border: 2.5px solid var(--ink);
+  }
+
+  /* ---- Nutella factories ---- */
+  .mm-jars {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .mm-jars :global(.mm-jar) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: none;
+    width: 46px;
+    height: 56px;
+    padding: 0;
+    border: 0;
+    background: none;
+    transform: translate(calc(var(--x) - 50%), calc(var(--y) - 100%));
+    pointer-events: auto;
+    cursor: pointer;
+    filter: drop-shadow(3px 3px 0 rgb(0 0 0 / 0.25));
+  }
+  .mm-jars :global(.mm-jar.is-on) {
+    display: block;
+  }
+  .mm-jars :global(.mm-jar svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform-origin: 50% 100%;
+    animation: jar-pop 700ms cubic-bezier(0.34, 1.7, 0.5, 1) var(--pop-delay, 0ms) both;
+  }
+  .mm-jars :global(.mm-jar:hover svg),
+  .mm-jars :global(.mm-jar:focus-visible svg) {
+    animation: jar-wiggle 500ms ease-in-out;
+  }
+  .mm-jars :global(.mm-jar.is-uncertain) {
+    opacity: 0.6;
+  }
+  @keyframes jar-pop {
+    0% {
+      transform: translateY(-60px) scale(0) rotate(-40deg);
+    }
+    60% {
+      transform: translateY(0) scale(1.25, 0.85) rotate(8deg);
+    }
+    100% {
+      transform: none;
+    }
+  }
+  @keyframes jar-wiggle {
+    30% {
+      transform: rotate(-12deg) scale(1.1);
+    }
+    65% {
+      transform: rotate(10deg) scale(1.1);
+    }
+  }
+  .mm-btn--nutella[aria-pressed='true'] {
+    background: #5a3217;
+    color: #fff;
+  }
+  /* terrain view: only the land itself and its names */
+  .map-mode-view.is-terrain .mm-items,
+  .map-mode-view.is-terrain .mm-intro,
+  .map-mode-view.is-terrain .mm-jars,
+  .map-mode-view.is-terrain .mm-btn--nutella {
+    display: none;
+  }
+
+  /* ---- introduction in the Pacific ---- */
+  .mm-intro {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 1;
+    width: min(440px, 80vw);
+    transform: translate(calc(var(--x) - 50%), calc(var(--y) - 50%));
+    text-align: center;
+    pointer-events: none;
+  }
+  .mm-intro__title {
+    margin: 0 0 8px;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: clamp(30px, 3.4vw, 46px);
+    line-height: 1.05;
+    color: var(--ink);
+    text-shadow: 3px 3px 0 var(--yellow);
+  }
+  .mm-intro__text {
+    margin: 0 0 10px;
+    font-size: 16px;
+    line-height: 1.45;
+    color: var(--ink);
+  }
+  .mm-intro__hint {
+    display: inline-block;
+    margin: 0;
+    padding: 4px 14px;
+    border-radius: var(--radius-pill);
+    background: var(--violet);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  /* ---- terrain view ---- */
+  .mm-canvas :global(.mm-sphere) {
+    fill: color-mix(in srgb, var(--violet-tint) 70%, #fff);
+    stroke: rgb(255 255 255 / 0.6);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 30px rgb(123 47 247 / 0.55));
+  }
+  .map-mode-view.is-terrain .mm-canvas :global(.mm-sphere) {
+    fill: #b5d8f2;
+  }
+  .mm-canvas :global(.mm-graticule) {
+    fill: none;
+    stroke: color-mix(in srgb, var(--violet) 18%, transparent);
+    stroke-width: 0.6;
+    pointer-events: none;
+  }
+  .mm-space {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .mm-space :global(.mm-floater) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--size);
+    transform: translate(var(--x), var(--y));
+    pointer-events: auto;
+    cursor: pointer;
+    transition: opacity 300ms ease;
+  }
+  .mm-space :global(.mm-floater.is-behind) {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .mm-space :global(.mm-floater > div) {
+    animation: mm-float var(--bob) ease-in-out infinite alternate;
+  }
+  .mm-space :global(.mm-floater svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: drop-shadow(0 0 10px rgb(198 255 0 / 0.25));
+  }
+  .mm-space :global(.mm-floater.is-poked svg) {
+    animation: mm-spin 800ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .mm-space :global(.mm-say) {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    width: max-content;
+    max-width: 220px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+    box-shadow: 3px 3px 0 var(--yellow);
+    transform: translateX(-50%);
+    animation: mm-say 2.6s ease forwards;
+  }
+  @keyframes mm-float {
+    from {
+      transform: translateY(-8px) rotate(-10deg);
+    }
+    to {
+      transform: translateY(8px) rotate(10deg);
+    }
+  }
+  @keyframes mm-spin {
+    to {
+      transform: rotate(360deg) scale(1.2);
+    }
+  }
+  @keyframes mm-say {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, 8px);
+    }
+    10%,
+    85% {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  .mm-legend--terrain,
+  .map-mode-view.is-terrain .mm-legend--travel,
+  .map-mode-view.is-terrain .mm-cities {
+    display: none;
+  }
+  .map-mode-view.is-terrain .mm-legend--terrain {
+    display: flex;
+  }
+  .mm-btn--terrain[aria-pressed='true'] {
+    background: var(--violet);
+    color: #fff;
+  }
+  .map-mode-view.is-terrain .mm-canvas :global(.mm-land) {
+    fill: #cfe3b4 !important;
+    stroke: rgb(255 255 255 / 0.7) !important;
+    stroke-width: 0.5 !important;
+    stroke-dasharray: none !important;
+  }
+  .map-mode-view.is-terrain .mm-canvas :global(.mm-land[data-iso='010']),
+  .map-mode-view.is-terrain .mm-canvas :global(.mm-land[data-iso='304']) {
+    fill: #f5f9fd !important; /* Antarctica and Greenland: ice */
+  }
+  .mm-canvas :global(.mm-terrain) {
+    display: none;
+    pointer-events: none;
+  }
+  .map-mode-view.is-terrain .mm-canvas :global(.mm-terrain) {
+    display: inline;
+  }
+  .mm-canvas :global(.t-range) {
+    fill: #b8926a;
+    opacity: 0.7;
+  }
+  .mm-canvas :global(.t-desert) {
+    fill: #ecd49a;
+    opacity: 0.85;
+  }
+  .mm-canvas :global(.t-tundra) {
+    fill: #dde6df;
+    opacity: 0.8;
+  }
+  .mm-canvas :global(.t-lake) {
+    fill: #a9d0ee;
+    stroke: #6aa5d8;
+    stroke-width: 0.6;
+    vector-effect: non-scaling-stroke;
+  }
+  .mm-canvas :global(.t-rivers) {
+    fill: none;
+    stroke: #6aa5d8;
+    stroke-width: 0.9;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .mm-swatch--mountain {
+    background: #b8926a;
+  }
+  .mm-swatch--desert {
+    background: #ecd49a;
+  }
+  .mm-swatch--ice {
+    background: #f5f9fd;
+  }
+  .mm-swatch--water {
+    background: #a9d0ee;
+  }
+  .mm-geo-labels {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .mm-geo-labels :global(.mm-geo) {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    line-height: 1.2;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .mm-geo-labels :global(.mm-geo:hover),
+  .mm-geo-labels :global(.mm-geo:focus-visible) {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+  }
+  .mm-geo-labels :global(.mm-geo) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: none;
+    transform: translate(calc(var(--x) - 50%), calc(var(--y) - 50%));
+    white-space: nowrap;
+    font-weight: 700;
+    text-shadow: 0 0 3px rgb(255 255 255 / 0.9), 0 0 2px rgb(255 255 255 / 0.9);
+  }
+  .mm-geo-labels :global(.mm-geo.is-on) {
+    display: block;
+  }
+  .mm-geo-labels :global(.mm-geo--ocean) {
+    font-size: 17px;
+    font-style: italic;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #1f5f99;
+  }
+  .mm-geo-labels :global(.mm-geo--sea) {
+    font-size: 12px;
+    font-style: italic;
+    color: #2b6cb0;
+  }
+  .mm-geo-labels :global(.mm-geo--lake) {
+    font-size: 11px;
+    font-style: italic;
+    color: #2b6cb0;
+  }
+  .mm-geo-labels :global(.mm-geo--range) {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6b4526;
+  }
+  .mm-geo-labels :global(.mm-geo--desert),
+  .mm-geo-labels :global(.mm-geo--plateau),
+  .mm-geo-labels :global(.mm-geo--tundra) {
+    font-size: 11px;
+    font-style: italic;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a6420;
+  }
+  .mm-geo-labels :global(.mm-geo--peak) {
+    font-size: 11px;
+    color: #3b2a1a;
+  }
+  .mm-geo-labels :global(.mm-geo--peak::before) {
+    content: '▲ ';
+    color: #6b4526;
+  }
+
+  /* ---- world cities (more appear as you zoom in) ---- */
+  .mm-cities {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .mm-cities :global(.mm-city) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: none;
+    align-items: center;
+    gap: 5px;
+    padding: 0;
+    border: 0;
+    background: none;
+    transform: translate(calc(var(--x) - 4px), calc(var(--y) - 7px));
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    white-space: nowrap;
+    pointer-events: auto;
+    text-shadow: 0 0 3px #fff, 0 0 3px #fff;
+  }
+  .mm-cities :global(.mm-city.is-on) {
+    display: inline-flex;
+  }
+  .mm-cities :global(.mm-city::before) {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--ink);
+    box-shadow: 0 0 0 1.5px #fff;
+  }
+  .mm-cities :global(.mm-city:hover) {
+    color: var(--violet-dark);
+    text-decoration: underline;
+  }
+  @media (max-width: 599px) {
+    .mm-btn--exit span {
+      display: none;
+    }
+    .mm-legend {
+      display: none;
+    }
+    .mm-bar--left {
+      max-width: calc(100% - 80px);
+    }
+  }
+</style>
+
+<script>
+  import { FACTS_EVENT, MAP_MODE_EVENT, MAP_MODE_STORAGE_KEY, PLACE_MESSAGE_EVENT, ROUTE_EVENT } from '../lib/constants';
+  import { applySeen, markSeen } from '../lib/seen';
+  import { jarSvg } from '../lib/jar';
+  import { distanceKm, findMyLocation, loadMyLocation, saveMyLocation } from '../lib/myLocation';
+  import { plan, type Mode, type Plan } from '../lib/routePlanner';
+  import { geocode } from '../lib/geocode';
+
+  /** Zoom levels where more detail appears */
+  const LABEL_AT = 2.2;
+  const CARD_AT = 4.5;
+  const CARD_W = 290;
+  const CARD_H = 190;
+
+  const view = document.querySelector<HTMLElement>('[data-map-mode-view]');
+  if (view) setup(view);
+
+  function setup(view: HTMLElement) {
+    const html = document.documentElement;
+    const isOn = () => html.classList.contains('map-mode');
+    let started = false;
+
+    // links into the normal page (and the exit button) leave map mode first
+    const leave = () => {
+      html.classList.remove('map-mode');
+      try {
+        localStorage.setItem(MAP_MODE_STORAGE_KEY, '0');
+      } catch {
+        /* storage unavailable */
+      }
+      window.dispatchEvent(new Event(MAP_MODE_EVENT));
+    };
+    view.querySelectorAll('[data-mm-exit]').forEach((a) => a.addEventListener('click', leave));
+    view.querySelector('[data-mm-exit-mode]')!.addEventListener('click', leave);
+
+    const start = () => {
+      if (!isOn() || started) return;
+      started = true;
+      initMap(view).catch((err) => console.error('[map mode]', err));
+    };
+    window.addEventListener(MAP_MODE_EVENT, start);
+    start();
+  }
+
+  async function initMap(view: HTMLElement) {
+    const [geo, z, sel, topo, world] = await Promise.all([
+      import('d3-geo'),
+      import('d3-zoom'),
+      import('d3-selection'),
+      import('topojson-client'),
+      fetch('/data/countries-110m.json').then((r) => r.json()),
+    ]);
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const canvas = view.querySelector<HTMLElement>('[data-mm-canvas]')!;
+    const status = view.querySelector<HTMLElement>('[data-mm-status]')!;
+    const tip = view.querySelector<HTMLElement>('[data-mm-tip]')!;
+    const msg = (n: string) => view.querySelector<HTMLTemplateElement>(`[data-mm-msg-${n}]`)!.content.textContent ?? '';
+    const info: Record<string, { status: string; name: string; text: string }> = JSON.parse(
+      view.querySelector('[data-mm-countries]')!.textContent || '{}',
+    );
+    const metas: Record<string, { name: string; plonk: string; clues: { art: string; text: string }[] }> = JSON.parse(
+      view.querySelector('[data-mm-metas]')!.textContent || '{}',
+    );
+    const words: {
+      unexplored: string;
+      meta: string;
+      plonk: string;
+      write: string;
+      nutellaKicker: string;
+      opened: string;
+      uncertain: string;
+      distResult: string;
+      distIp: string;
+      distLooking: string;
+      distError: string;
+      route: Record<string, string>;
+      kinds: Record<string, string>;
+    } = JSON.parse(view.querySelector('[data-mm-text]')!.textContent || '{}');
+    type Factory = { city: string; country: string; countryName: string; lat: number; lon: number; opened: number | null; note: string; uncertain?: boolean };
+    const factories: Factory[] = JSON.parse(view.querySelector('[data-mm-factories]')!.textContent || '[]');
+    const writeAbout = (place: string) => window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail: { place } }));
+    const cityData: [string, number, number, number][] = JSON.parse(view.querySelector('[data-mm-city-data]')!.textContent || '[]');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    let W = canvas.clientWidth;
+    let H = canvas.clientHeight;
+    // The map is a globe: drag to spin it, wheel / buttons to zoom (orthographic projection)
+    const view3d = { k: 1, lon: 15, lat: 30 };
+    let base = Math.min(W, H) * 0.46;
+    const projection = geo.geoOrthographic().clipAngle(90).precision(0.5);
+    const fit = () => {
+      base = Math.min(W, H) * 0.46;
+      projection.scale(base * view3d.k).translate([W / 2, H / 2]).rotate([-view3d.lon, -view3d.lat]);
+    };
+    fit();
+    const path = geo.geoPath(projection);
+    /** Screen position of a place – far off-screen when it is on the back of the globe */
+    const OFF: [number, number] = [-99999, -99999];
+    const screenP = (p: [number, number]): [number, number] =>
+      geo.geoDistance(p, [view3d.lon, view3d.lat]) > Math.PI / 2 - 0.03 ? OFF : ((projection(p) as [number, number] | null) ?? OFF);
+    const graticule = geo.geoGraticule10();
+    const countries = topo.feature(world, world.objects.countries) as unknown as GeoJSON.FeatureCollection;
+
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.innerHTML = `<defs><pattern id="mm-hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+      <rect width="6" height="6" style="fill:var(--violet-tint)"/><line x1="0" y1="0" x2="0" y2="6" stroke-width="3" style="stroke:var(--violet)"/></pattern>
+      <pattern id="mm-stripes" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
+      <rect width="7" height="7" style="fill:var(--land)"/><line x1="0" y1="0" x2="0" y2="7" stroke-width="2" stroke="#c9cfe4"/></pattern></defs>`;
+    const g = document.createElementNS(SVG_NS, 'g');
+    svg.append(g);
+    canvas.append(svg);
+
+    const paths: { el: SVGPathElement; f: GeoJSON.Feature }[] = [];
+    let searchPin: SVGCircleElement | null = null;
+    // terrain layer (loaded the first time the terrain view is switched on)
+    type TerrainData = {
+      areas: { k: string; c: number[][][][] }[];
+      rivers: number[][][];
+      labels: { k: string; p: [number, number]; n: Record<string, string>; z: number }[];
+    };
+    let terrain: TerrainData | null = null;
+    let terrainOn = false;
+    // terrain shapes on the sphere
+    const terrainEls: { el: SVGPathElement; geo: GeoJSON.Geometry }[] = [];
+    function drawTerrain() {
+      if (!terrain) return;
+      const tg = document.createElementNS(SVG_NS, 'g');
+      tg.setAttribute('class', 'mm-terrain');
+      const byKind: Record<string, number[][][][]> = {};
+      // ring direction differs between the source files: a shape "bigger than half the globe" is inside out
+      const rightWay = (poly: number[][][]) =>
+        geo.geoArea({ type: 'Polygon', coordinates: poly } as GeoJSON.Polygon) > 2 * Math.PI ? poly.map((ring) => [...ring].reverse()) : poly;
+      for (const a of terrain.areas) (byKind[a.k] ??= []).push(...a.c.map(rightWay));
+      for (const k of ['tundra', 'desert', 'range', 'lake']) {
+        if (!byKind[k]) continue;
+        const el = document.createElementNS(SVG_NS, 'path');
+        el.setAttribute('class', `t-${k}`);
+        const gm = { type: 'MultiPolygon', coordinates: byKind[k] } as GeoJSON.MultiPolygon;
+        el.setAttribute('d', path(gm) ?? '');
+        terrainEls.push({ el, geo: gm });
+        tg.append(el);
+      }
+      const rv = document.createElementNS(SVG_NS, 'path');
+      rv.setAttribute('class', 't-rivers');
+      const rg = { type: 'MultiLineString', coordinates: terrain.rivers } as GeoJSON.MultiLineString;
+      rv.setAttribute('d', path(rg) ?? '');
+      terrainEls.push({ el: rv, geo: rg });
+      tg.append(rv);
+      g.append(tg);
+    }
+    const sphereEl = document.createElementNS(SVG_NS, 'path');
+    sphereEl.setAttribute('class', 'mm-sphere');
+    const gratEl = document.createElementNS(SVG_NS, 'path');
+    gratEl.setAttribute('class', 'mm-graticule');
+    function drawCountries() {
+      g.replaceChildren(sphereEl, gratEl);
+      sphereEl.setAttribute('d', path({ type: 'Sphere' }) ?? '');
+      gratEl.setAttribute('d', path(graticule) ?? '');
+      paths.length = 0;
+      for (const f of countries.features) {
+        const d = path(f) ?? '';
+        const el = document.createElementNS(SVG_NS, 'path');
+        el.setAttribute('d', d);
+        el.classList.add('mm-land');
+        el.dataset.iso = String(f.id);
+        el.dataset.name = (f.properties as { name?: string } | null)?.name ?? '';
+        const c = info[String(f.id)];
+        if (c) el.classList.add('is-data', `c-${c.status}`);
+        else el.classList.add('c-unexplored'); // not visited yet: "waiting to be explored" stripes
+        g.append(el);
+        paths.push({ el, f });
+      }
+      // data countries on top so their outlines show
+      paths.filter((p) => p.el.classList.contains('is-data')).forEach((p) => g.append(p.el));
+      drawTerrain();
+    }
+    /** Everything follows the globe: land, terrain (at most every 120 ms while moving), route, pin, labels */
+    let lastTerrain = 0;
+    let pinAt: [number, number] | null = null;
+    function redraw(final = false) {
+      projection.scale(base * view3d.k).translate([W / 2, H / 2]).rotate([-view3d.lon, -view3d.lat]);
+      sphereEl.setAttribute('d', path({ type: 'Sphere' }) ?? '');
+      gratEl.setAttribute('d', path(graticule) ?? '');
+      for (const q of paths) q.el.setAttribute('d', path(q.f) ?? '');
+      const now = performance.now();
+      if (terrainOn && terrainEls.length && (final || now - lastTerrain > 120)) {
+        lastTerrain = now;
+        for (const te of terrainEls) te.el.setAttribute('d', path(te.geo) ?? '');
+      }
+      routeLayer?.querySelectorAll<SVGPathElement>('path[data-geo]').forEach((el) => el.setAttribute('d', path(JSON.parse(el.dataset.geo!)) ?? ''));
+      if (searchPin && pinAt) {
+        const [x, y] = screenP(pinAt);
+        searchPin.setAttribute('cx', String(x));
+        searchPin.setAttribute('cy', String(y));
+      }
+      renderItems();
+      renderSpace();
+    }
+    drawCountries();
+    window.setTimeout(applySeen, 0);
+
+    // ---- content items ----
+    const items = Array.from(view.querySelectorAll<HTMLElement>('[data-mm-item]')).map((el) => ({
+      el,
+      lat: Number(el.dataset.lat),
+      lon: Number(el.dataset.lon),
+      priority: Number(el.dataset.priority),
+    }));
+    const t = view3d; // the zoom level (t.k) decides how much detail shows
+    const intro = view.querySelector<HTMLElement>('[data-mm-intro]')!;
+    const cityBox = view.querySelector<HTMLElement>('[data-mm-cities]')!;
+    /** zoom level from which cities of each rank appear */
+    const CITY_AT: Record<number, number> = { 1: 1.6, 2: 3.2, 3: 6 };
+    type MapCity = { name: string; lat: number; lon: number; at: number; el?: HTMLButtonElement };
+    const cityEls: MapCity[] = cityData.map(([name, lat, lon, rank]) => ({ name, lat, lon, at: CITY_AT[rank] ?? 99 }));
+    const cityEl = (c: MapCity) => {
+      if (c.el) return c.el;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'mm-city';
+      b.textContent = c.name;
+      b.addEventListener('click', () => {
+        markSeen(c.name);
+        window.dispatchEvent(new CustomEvent(FACTS_EVENT, { detail: { name: c.name, lat: c.lat, lon: c.lon } }));
+      });
+      cityBox.append(b);
+      c.el = b;
+      return b;
+    };
+    // zooming in: thousands more towns (Natural Earth populated places, loaded once)
+    let placesLoaded = false;
+    async function loadPlaces() {
+      placesLoaded = true;
+      try {
+        const rows: [string, number, number, number][] = await (await fetch('/data/places.json')).json();
+        const known = new Set(cityEls.map((c) => c.name));
+        for (const [name, lat, lon, rank] of rows) {
+          if (known.has(name)) continue;
+          known.add(name);
+          cityEls.push({ name, lat, lon, at: 2.2 + rank * 1.15 });
+        }
+        cityEls.sort((a, b) => a.at - b.at);
+        renderItems();
+        applySeen();
+      } catch (err) {
+        console.error('[map mode] places', err);
+      }
+    }
+
+    function renderItems() {
+      const [ix, iy] = screenP([Number(intro.dataset.lon), Number(intro.dataset.lat)]);
+      intro.style.setProperty('--x', `${ix.toFixed(1)}px`);
+      intro.style.setProperty('--y', `${iy.toFixed(1)}px`);
+      const introBox = intro.getBoundingClientRect();
+      const viewBox = view.getBoundingClientRect();
+      const level = t.k >= CARD_AT ? 'card' : t.k >= LABEL_AT ? 'label' : 'dot';
+      // highest priority first; cards/labels that would overlap a more important one fall back
+      const taken: { l: number; r: number; t: number; b: number }[] = [];
+      const order = [...items].sort((a, b) => b.priority - a.priority);
+      for (const it of order) {
+        const [px, py] = screenP([it.lon, it.lat]);
+        const x = px;
+        const y = py;
+        it.el.classList.remove('is-dot', 'is-label', 'is-card');
+        // near the right edge the card / title opens to the left of its pin
+        const flip = x + (level === 'card' ? CARD_W : 200) > W - 70;
+        it.el.classList.toggle('is-flip', flip);
+        if (x < -300 || x > W + 40 || y < -220 || y > H + 40) continue;
+        it.el.style.setProperty('--x', `${x.toFixed(1)}px`);
+        it.el.style.setProperty('--y', `${y.toFixed(1)}px`);
+        let shown = level;
+        if (shown !== 'dot') {
+          const w = shown === 'card' ? CARD_W : 190;
+          const h = shown === 'card' ? CARD_H : 28;
+          const box = flip ? { l: x - w, r: x + 16, t: y - 22, b: y - 22 + h } : { l: x - 16, r: x + w, t: y - 22, b: y - 22 + h };
+          const hit = taken.some((o) => box.l < o.r && box.r > o.l && box.t < o.b && box.b > o.t);
+          if (hit && shown === 'card') {
+            const small = flip ? { l: x - 190, r: x + 16, t: y - 14, b: y + 14 } : { l: x - 16, r: x + 190, t: y - 14, b: y + 14 };
+            shown = taken.some((o) => small.l < o.r && small.r > o.l && small.t < o.b && small.b > o.t) ? 'dot' : 'label';
+            if (shown === 'label') taken.push(small);
+          } else if (hit) shown = 'dot';
+          else taken.push(box);
+        }
+        it.el.classList.add(`is-${shown}`);
+      }
+      // cities: only where they do not cover the content cards, titles or the intro
+      const blocked = [...taken, { l: introBox.left - viewBox.left, r: introBox.right - viewBox.left, t: introBox.top - viewBox.top, b: introBox.bottom - viewBox.top }];
+      if (!placesLoaded && t.k > 2) loadPlaces();
+      let shown = 0;
+      for (const c of cityEls) {
+        c.el?.classList.remove('is-on');
+        if (terrainOn || t.k < c.at || shown > 160) continue;
+        const [x, y] = screenP([c.lon, c.lat]);
+        if (x < 0 || x > W - 60 || y < 60 || y > H - 20) continue;
+        const box = { l: x - 6, r: x + 8 + c.name.length * 7, t: y - 9, b: y + 9 };
+        if (blocked.some((o) => box.l < o.r && box.r > o.l && box.t < o.b && box.b > o.t)) continue;
+        blocked.push(box);
+        const el = cityEl(c);
+        el.style.setProperty('--x', `${x.toFixed(1)}px`);
+        el.style.setProperty('--y', `${y.toFixed(1)}px`);
+        el.classList.add('is-on');
+        shown++;
+      }
+      renderGeoLabels(blocked);
+      renderJars();
+      renderStops();
+    }
+
+    // ---- Nutella factories: big jars popping up one after the other ----
+    const jarBox = view.querySelector<HTMLElement>('[data-mm-jars]')!;
+    const nutellaBtn = view.querySelector<HTMLButtonElement>('[data-mm-nutella]')!;
+    let nutellaOn = false;
+    const jarEls = factories.map((f, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `mm-jar${f.uncertain ? ' is-uncertain' : ''}`;
+      b.setAttribute('aria-label', `${words.nutellaKicker}: ${f.city}`);
+      b.style.setProperty('--pop-delay', `${i * 90}ms`);
+      b.innerHTML = jarSvg();
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const opened = f.opened ? words.opened.replace('{year}', String(f.opened)) : '';
+        showTip(e, `${f.city} · ${f.countryName}`, [f.note, opened, f.uncertain ? words.uncertain : ''].filter(Boolean).join('\n'), `${f.city}, ${f.countryName}`, words.nutellaKicker, [f.lat, f.lon]);
+      });
+      jarBox.append(b);
+      return { el: b, lat: f.lat, lon: f.lon };
+    });
+    function renderJars() {
+      for (const j of jarEls) {
+        if (!nutellaOn || terrainOn) {
+          j.el.classList.remove('is-on');
+          continue;
+        }
+        const [px, py] = screenP([j.lon, j.lat]);
+        j.el.style.setProperty('--x', `${px.toFixed(1)}px`);
+        j.el.style.setProperty('--y', `${py.toFixed(1)}px`);
+        j.el.classList.add('is-on');
+      }
+    }
+    nutellaBtn.addEventListener('click', () => {
+      nutellaOn = !nutellaOn;
+      nutellaBtn.setAttribute('aria-pressed', String(nutellaOn));
+      // show the whole world so every factory can be seen popping up
+      if (nutellaOn && t.k > 2) flyTo({ k: 1, lon: 10, lat: 25 });
+      renderItems();
+    });
+
+    // ---- terrain labels: oceans, seas, mountain ranges, deserts, lakes, peaks (more as you zoom in) ----
+    const geoBox = view.querySelector<HTMLElement>('[data-mm-geo-labels]')!;
+    const lang = view.dataset.lang ?? 'en';
+    const KIND_ORDER: Record<string, number> = { ocean: 0, range: 1, desert: 2, sea: 3, lake: 4, tundra: 5, plateau: 6, peak: 7, island: 8, cape: 9, waterfall: 10, pole: 11 };
+    let geoEls: { el: HTMLElement; lon: number; lat: number; z: number; w: number; order: number }[] = [];
+    function buildGeoLabels() {
+      if (!terrain) return;
+      geoBox.replaceChildren();
+      geoEls = terrain.labels
+        .map((l) => {
+          const el = document.createElement('button');
+          el.type = 'button';
+          el.className = `mm-geo mm-geo--${l.k}`;
+          el.textContent = l.n[lang] ?? l.n.en;
+          el.addEventListener('click', (e) => openGeoPanel(e, el.textContent!, l.k, l.p[1], l.p[0]));
+          geoBox.append(el);
+          const size = l.k === 'ocean' ? 13 : 7.2;
+          return { el, lon: l.p[0], lat: l.p[1], z: l.z, w: el.textContent.length * size + 10, order: KIND_ORDER[l.k] ?? 9 };
+        })
+        .sort((a, b) => a.z - b.z || a.order - b.order);
+    }
+    function renderGeoLabels(blocked: { l: number; r: number; t: number; b: number }[]) {
+      if (!terrainOn) return;
+      const used = [...blocked];
+      for (const g0 of geoEls) {
+        g0.el.classList.remove('is-on');
+        if (t.k < g0.z) continue;
+        const [px, py] = screenP([g0.lon, g0.lat]);
+        const x = px;
+        const y = py;
+        if (x < 20 || x > W - 20 || y < 70 || y > H - 50) continue;
+        const box = { l: x - g0.w / 2, r: x + g0.w / 2, t: y - 10, b: y + 10 };
+        if (used.some((o) => box.l < o.r && box.r > o.l && box.t < o.b && box.b > o.t)) continue;
+        used.push(box);
+        g0.el.style.setProperty('--x', `${x.toFixed(1)}px`);
+        g0.el.style.setProperty('--y', `${y.toFixed(1)}px`);
+        g0.el.classList.add('is-on');
+      }
+    }
+    // ---- a clicked geographic name: its kind, "distance from me" (by IP address or a place typed in), a message ----
+    const geoPanel = view.querySelector<HTMLElement>('[data-mm-geo-panel]')!;
+    const distResult = geoPanel.querySelector<HTMLElement>('[data-mm-dist-result]')!;
+    let geoTarget: { name: string; lat: number; lon: number } | null = null;
+    const place = (el: HTMLElement, e: MouseEvent) => {
+      const r = view.getBoundingClientRect();
+      el.hidden = false;
+      const x = Math.min(e.clientX - r.left + 12, W - el.offsetWidth - 14);
+      const y = Math.max(70, Math.min(e.clientY - r.top + 12, H - el.offsetHeight - 14));
+      el.style.transform = `translate(${x}px, ${y}px)`;
+    };
+    // ---- journey planner: route + time estimate, drawn on the map ----
+    const routeBox = geoPanel.querySelector<HTMLElement>('[data-mm-route]')!;
+    const routeLegs = geoPanel.querySelector<HTMLElement>('[data-mm-route-legs]')!;
+    const routeTotal = geoPanel.querySelector<HTMLElement>('[data-mm-route-total]')!;
+    const stopBox = view.querySelector<HTMLElement>('[data-mm-route-stops]')!;
+    let me: { name: string; lat: number; lon: number } | null = null;
+    let routeMode: Mode = 'plane';
+    let routeLayer: SVGGElement | null = null;
+    let stops: { el: HTMLElement; lat: number; lon: number }[] = [];
+    const countryAt = (lon: number, lat: number) => countries.features.find((f) => geo.geoContains(f, [lon, lat]))?.id?.toString() ?? null;
+    const fmtTime = (h: number, days = false) => {
+      if (days || h >= 48) return words.route.days.replace('{n}', String(Math.max(1, Math.round(h / 24))));
+      return words.route.hours.replace('{n}', String(h < 10 ? Math.max(0.5, Math.round(h * 2) / 2) : Math.round(h)));
+    };
+    function clearRoute() {
+      routeLayer?.remove();
+      routeLayer = null;
+      stops = [];
+      stopBox.replaceChildren();
+    }
+    function drawRoute(p: Plan) {
+      clearRoute();
+      if (!p.legs.length) return;
+      routeLayer = document.createElementNS(SVG_NS, 'g') as SVGGElement;
+      const line = (cls: string, leg: (typeof p.legs)[number]) => {
+        const el = document.createElementNS(SVG_NS, 'path');
+        el.setAttribute('class', `mm-route-line ${cls}`);
+        const gm = { type: 'LineString', coordinates: [[leg.from.lon, leg.from.lat], [leg.to.lon, leg.to.lat]] } as GeoJSON.LineString;
+        el.setAttribute('d', path(gm) ?? '');
+        el.dataset.geo = JSON.stringify(gm);
+        routeLayer!.append(el);
+      };
+      p.legs.forEach((l) => line('mm-route-line--case', l));
+      p.legs.forEach((l) => line(l.kind === 'air' ? 'mm-route-line--air' : 'mm-route-line--ground', l));
+      g.append(routeLayer);
+      const points = [p.legs[0].from, ...p.legs.map((l) => l.to)];
+      stops = points.map((pt, i) => {
+        const el = document.createElement('span');
+        el.className = 'mm-stop';
+        el.textContent = pt.name;
+        el.style.setProperty('--d', `${i * 120}ms`);
+        stopBox.append(el);
+        return { el, lat: pt.lat, lon: pt.lon };
+      });
+      // show the whole journey
+      const lons = points.map((q) => q.lon);
+      const lats = points.map((q) => q.lat);
+      const w = Math.min(...lons);
+      const e = Math.max(...lons);
+      if (e - w > 200) flyTo(WORLD);
+      else flyTo(boxTransform(w - 4, Math.max(-60, Math.min(...lats) - 4), e + 4, Math.min(80, Math.max(...lats) + 4), 0.7));
+      renderItems();
+    }
+    function renderStops() {
+      for (const s0 of stops) {
+        const [px, py] = screenP([s0.lon, s0.lat]);
+        s0.el.style.setProperty('--x', `${px.toFixed(1)}px`);
+        s0.el.style.setProperty('--y', `${py.toFixed(1)}px`);
+      }
+    }
+    function showRoute() {
+      if (!me || !geoTarget) return;
+      routeBox.hidden = false;
+      routeBox.querySelectorAll<HTMLButtonElement>('[data-mm-mode]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mmMode === routeMode)));
+      const p = plan(
+        routeMode,
+        { ...me, country: countryAt(me.lon, me.lat) },
+        { ...geoTarget, country: countryAt(geoTarget.lon, geoTarget.lat) },
+      );
+      routeLegs.replaceChildren(
+        ...p.legs.map((l) => {
+          const li = document.createElement('li');
+          const what = document.createElement('span');
+          what.textContent = `${l.kind === 'air' ? '✈' : routeMode === 'train' ? '🚆' : routeMode === 'walk' ? '🚶' : '🚌'} ${l.from.name} → ${l.to.name}`;
+          const time = document.createElement('span');
+          time.className = 'mm-leg__time';
+          time.textContent = fmtTime(l.hours, routeMode === 'walk');
+          li.append(what, time);
+          return li;
+        }),
+      );
+      if (p.joke) routeTotal.textContent = words.route[`joke.${p.joke}`];
+      else {
+        routeTotal.textContent = words.route.total.replace('{t}', fmtTime(p.hours, p.mode === 'walk')) + (p.mode === 'walk' ? ` – ${words.route.walkNote}` : '');
+      }
+      drawRoute(p);
+    }
+    routeBox.querySelectorAll<HTMLButtonElement>('[data-mm-mode]').forEach((b) =>
+      b.addEventListener('click', () => {
+        routeMode = b.dataset.mmMode as Mode;
+        showRoute();
+      }),
+    );
+
+    const showDistance = (from: { name: string; lat: number; lon: number }, byIp: boolean) => {
+      if (!geoTarget) return;
+      me = from;
+      const d = distanceKm(from.lat, from.lon, geoTarget.lat, geoTarget.lon);
+      const km = Math.round(d).toLocaleString(view.dataset.lang);
+      const label = byIp ? `${from.name} – ${words.distIp}` : from.name;
+      distResult.textContent = words.distResult.replace('{km}', km).replace('{from}', label);
+      routeMode = d > 900 ? 'plane' : d > 60 ? 'train' : 'walk';
+      showRoute();
+    };
+    function openGeoPanel(e: MouseEvent, name: string, kind: string, lat: number, lon: number) {
+      e.stopPropagation();
+      tip.hidden = true;
+      geoTarget = { name, lat, lon };
+      markSeen(name);
+      geoPanel.querySelector('[data-mm-geo-name]')!.textContent = name;
+      geoPanel.querySelector('[data-mm-geo-kind]')!.textContent = words.kinds[kind] ?? '';
+      distResult.textContent = '';
+      routeBox.hidden = true;
+      clearRoute();
+      const saved = loadMyLocation();
+      if (saved) showDistance(saved, false);
+      place(geoPanel, e);
+    }
+    geoPanel.querySelector('[data-mm-geo-close]')!.addEventListener('click', () => {
+      geoPanel.hidden = true;
+      clearRoute();
+    });
+    geoPanel.querySelector('[data-mm-geo-write]')!.addEventListener('click', () => geoTarget && writeAbout(geoTarget.name));
+    geoPanel.querySelector('[data-mm-geo-route]')!.addEventListener('click', () => geoTarget && routeTo(geoTarget.name, geoTarget.lat, geoTarget.lon));
+    geoPanel.querySelector('[data-mm-dist]')!.addEventListener('click', async () => {
+      distResult.textContent = words.distLooking;
+      try {
+        const me = await findMyLocation();
+        showDistance(me, true);
+      } catch (err) {
+        console.error('[map mode] location', err);
+        distResult.textContent = words.distError;
+        geoPanel.querySelector<HTMLInputElement>('#mm-own-input')?.focus();
+      }
+    });
+    const ownForm = geoPanel.querySelector<HTMLFormElement>('[data-mm-own]')!;
+    ownForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const q = ownForm.querySelector('input')!.value.trim();
+      if (!q) return;
+      distResult.textContent = words.distLooking;
+      try {
+        const list = await geocode(q, view.dataset.lang ?? 'en');
+        if (!list.length) return void (distResult.textContent = msg('none'));
+        const r = list[0];
+        const me = { name: [r.name, r.country].filter(Boolean).join(', '), lat: r.latitude, lon: r.longitude };
+        saveMyLocation(me);
+        showDistance(me, false);
+      } catch (err) {
+        console.error('[map mode] own location', err);
+        distResult.textContent = msg('error');
+      }
+    });
+
+    const terrainBtn = view.querySelector<HTMLButtonElement>('[data-mm-terrain]')!;
+    terrainBtn.addEventListener('click', async () => {
+      terrainOn = !terrainOn;
+      terrainBtn.setAttribute('aria-pressed', String(terrainOn));
+      view.classList.toggle('is-terrain', terrainOn);
+      if (terrainOn && !terrain) {
+        try {
+          terrain = (await (await fetch('/data/terrain.json')).json()) as TerrainData;
+          // more names that appear as you zoom in: islands, capes, waterfalls, peaks
+          try {
+            const extra = (await (await fetch('/data/terrain-extra.json')).json()) as { labels: TerrainData['labels'] };
+            terrain.labels.push(...extra.labels);
+          } catch {
+            /* the basic names are enough */
+          }
+          drawTerrain();
+          buildGeoLabels();
+        } catch (err) {
+          console.error('[map mode] terrain', err);
+        }
+      }
+      if (!terrainOn) geoEls.forEach((g0) => g0.el.classList.remove('is-on'));
+      tip.hidden = true;
+      geoPanel.hidden = true;
+      clearRoute();
+      redraw(true);
+    });
+
+    // ---- spin & zoom the globe ----
+    type View = { k: number; lon: number; lat: number };
+    const WORLD: View = { k: 1, lon: 15, lat: 25 };
+    let prevT = { x: 0, y: 0, k: 1 };
+    let idle = 0;
+    const zoom = z
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.8, 60])
+      .on('zoom', (e: { transform: { x: number; y: number; k: number }; sourceEvent: Event | null }) => {
+        const tr = e.transform;
+        const se = e.sourceEvent;
+        if (se) {
+          // dragging spins the globe; the wheel / a pinch only zooms
+          if (se.type !== 'wheel') {
+            const S = base * view3d.k;
+            view3d.lon -= ((tr.x - prevT.x) / S) * (180 / Math.PI);
+            view3d.lat = Math.max(-85, Math.min(85, view3d.lat + ((tr.y - prevT.y) / S) * (180 / Math.PI)));
+          }
+          view3d.k = tr.k;
+        }
+        prevT = tr;
+        redraw();
+        window.clearTimeout(idle);
+        idle = window.setTimeout(() => redraw(true), 160);
+        // only the visitor's own dragging / zooming closes the panels (not the globe turning by itself)
+        if (!se) return;
+        tip.hidden = true;
+        if (!stops.length) geoPanel.hidden = true;
+      });
+    const svgSel = sel.select(svg as SVGSVGElement);
+    svgSel.call(zoom).on('dblclick.zoom', null);
+    const setView = (v: View) => {
+      view3d.k = v.k;
+      view3d.lon = v.lon;
+      view3d.lat = v.lat;
+      zoom.transform(svgSel, z.zoomIdentity.scale(v.k));
+    };
+    // like a map app: the wheel zooms the map even when the pointer is over a card or pin
+    view.querySelector<HTMLElement>('[data-mm-items]')!.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        svg.dispatchEvent(new WheelEvent('wheel', e));
+      },
+      { passive: false },
+    );
+
+    /** Centre and zoom that show a box of the world */
+    const boxTransform = (w: number, s0: number, e: number, n: number, pad = 0.9): View => {
+      const lat = (s0 + n) / 2;
+      const lon = (w + e) / 2;
+      const span = (Math.max((e - w) * Math.cos((lat * Math.PI) / 180), n - s0) * Math.PI) / 180;
+      const k = (pad * Math.min(W, H)) / (2 * base * Math.sin(Math.min(Math.PI / 2, span / 2)));
+      return { k: Math.min(60, Math.max(1, k)), lon, lat };
+    };
+    const europe = () => boxTransform(-12, 34, 44, 62);
+    const flyTo = (target: View) => {
+      if (reduced.matches) return setView(target);
+      const from = { ...view3d };
+      const along = geo.geoInterpolate([from.lon, from.lat], [target.lon, target.lat]);
+      const t0 = performance.now();
+      const D = 1000;
+      const step = (now: number) => {
+        const p = Math.min(1, (now - t0) / D);
+        const q = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+        const [lon, lat] = along(q);
+        // zoom out a little on long flights, like a plane climbing
+        const dip = Math.sin(Math.PI * q) * Math.min(0.5, geo.geoDistance([from.lon, from.lat], [target.lon, target.lat]) / 3);
+        const k = Math.exp(Math.log(from.k) + (Math.log(target.k) - Math.log(from.k)) * q) * (1 - dip);
+        setView({ k: Math.max(0.8, k), lon, lat });
+        if (p < 1) requestAnimationFrame(step);
+        else redraw(true);
+      };
+      requestAnimationFrame(step);
+    };
+    const flyToPoint = (lat: number, lon: number, k = 7) => flyTo({ k, lon, lat });
+
+    view.querySelectorAll<HTMLButtonElement>('[data-mm-zoom]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const mode = b.dataset.mmZoom;
+        if (mode === 'europe') return flyTo(europe());
+        if (mode === 'world') return flyTo(WORLD);
+        const factor = mode === 'in' ? 1.7 : 1 / 1.7;
+        flyTo({ ...view3d, k: Math.min(60, Math.max(0.8, view3d.k * factor)) });
+      }),
+    );
+    // a pin or title zooms in on its place and opens the card
+    items.forEach((it) => {
+      const go = () => flyToPoint(it.lat, it.lon, Math.max(CARD_AT + 1.5, t.k));
+      it.el.querySelector('[data-mm-pin]')!.addEventListener('click', go);
+      it.el.querySelector('[data-mm-label]')!.addEventListener('click', go);
+    });
+
+    // ---- country tooltip ----
+    const tipMetas = tip.querySelector<HTMLElement>('[data-mm-tip-metas]')!;
+    tip.querySelector('[data-mm-tip-close]')!.addEventListener('click', () => (tip.hidden = true));
+    const tipName = tip.querySelector<HTMLElement>('[data-mm-tip-name]')!;
+    const tipText = tip.querySelector<HTMLElement>('[data-mm-tip-text]')!;
+    let tipPlace = '';
+    let tipAt: [number, number] | null = null; // lat, lon
+    tip.querySelector('[data-mm-tip-write]')!.addEventListener('click', () => tipPlace && writeAbout(tipPlace));
+    const routeTo = (name: string, lat: number, lon: number) => window.dispatchEvent(new CustomEvent(ROUTE_EVENT, { detail: { name, lat, lon } }));
+    tip.querySelector('[data-mm-tip-route]')!.addEventListener('click', () => tipPlace && tipAt && routeTo(tipPlace, tipAt[0], tipAt[1]));
+    const placeTip = (e: MouseEvent) => {
+      const r = view.getBoundingClientRect();
+      tip.hidden = false;
+      const x = Math.min(e.clientX - r.left + 12, W - tip.offsetWidth - 14);
+      const y = Math.max(70, Math.min(e.clientY - r.top + 12, H - tip.offsetHeight - 14));
+      tip.style.transform = `translate(${x}px, ${y}px)`;
+    };
+    function showTip(e: MouseEvent, name: string, body: string, placeName: string, kicker?: string, at?: [number, number]) {
+      tipAt = at ?? null;
+      geoPanel.hidden = true;
+      tipName.textContent = name;
+      tipText.textContent = body;
+      tipMetas.replaceChildren();
+      if (kicker) {
+        const k = document.createElement('span');
+        k.className = 'mm-meta__kicker';
+        k.textContent = kicker;
+        tipMetas.append(k);
+      }
+      tipPlace = placeName;
+      placeTip(e);
+    }
+    svg.addEventListener('click', (e) => {
+      // terrain view: the countries say nothing, only the geographic names are clickable
+      if (terrainOn) return void (tip.hidden = true);
+      const p = (e.target as Element).closest<SVGPathElement>('path.mm-land');
+      if (!p) return (tip.hidden = true);
+      geoPanel.hidden = true;
+      const id = p.dataset.iso!;
+      const c = info[id];
+      const m = metas[id];
+      tipName.textContent = c?.name ?? m?.name ?? p.dataset.name ?? '';
+      tipText.textContent = c?.text ?? words.unexplored;
+      tipPlace = tipName.textContent;
+      const feat = paths.find((q) => q.el === p)?.f;
+      const cen = feat ? geo.geoCentroid(feat) : null;
+      tipAt = cen ? [cen[1], cen[0]] : null;
+      markSeen(tipPlace);
+      tipMetas.replaceChildren();
+      if (m) {
+        const kicker = document.createElement('span');
+        kicker.className = 'mm-meta__kicker';
+        kicker.textContent = words.meta;
+        tipMetas.append(kicker);
+        for (const clue of m.clues) {
+          const row = document.createElement('div');
+          row.className = 'mm-meta';
+          row.innerHTML = clue.art; // own static drawing from the build
+          const span = document.createElement('span');
+          span.textContent = clue.text;
+          row.append(span);
+          tipMetas.append(row);
+        }
+        const a = document.createElement('a');
+        a.href = m.plonk;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = `${words.plonk} ↗`;
+        tipMetas.append(a);
+      }
+      placeTip(e);
+    });
+
+    // ---- search ----
+    const form = view.querySelector<HTMLFormElement>('[data-mm-search]')!;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const q = (form.querySelector('input') as HTMLInputElement).value.trim();
+      if (!q) return;
+      status.textContent = msg('searching');
+      try {
+        const list = await geocode(q, view.dataset.lang ?? 'en');
+        if (!list.length) return void (status.textContent = msg('none'));
+        const r = list[0];
+        status.textContent = [r.name, r.admin1, r.country].filter(Boolean).join(', ');
+        searchPin?.remove();
+        searchPin = document.createElementNS(SVG_NS, 'circle');
+        searchPin.setAttribute('class', 'mm-search-pin');
+        searchPin.setAttribute('r', '7');
+        pinAt = [r.longitude, r.latitude];
+        g.append(searchPin);
+        flyToPoint(r.latitude, r.longitude, 9);
+        window.dispatchEvent(new CustomEvent(FACTS_EVENT, { detail: { name: r.name, lat: r.latitude, lon: r.longitude } }));
+      } catch (err) {
+        console.error('[map mode] search', err);
+        status.textContent = msg('error');
+      }
+    });
+
+    // ---- resize: refit the map, keep the view centre ----
+    new ResizeObserver(() => {
+      if (!canvas.clientWidth) return;
+      W = canvas.clientWidth;
+      H = canvas.clientHeight;
+      fit();
+      buildSpace();
+      redraw(true);
+    }).observe(canvas);
+
+    // ---- outer space: floaters around the globe (hidden behind it), each says something when clicked ----
+    const spaceBox = view.querySelector<HTMLElement>('[data-mm-space]')!;
+    const spaceKinds = Array.from(spaceBox.querySelectorAll<HTMLTemplateElement>('[data-mm-space-kind]'));
+    let floaters: { el: HTMLElement; x: number; y: number; size: number }[] = [];
+    function buildSpace() {
+      floaters.forEach((f) => f.el.remove());
+      floaters = [];
+      const n = 14;
+      for (let i = 0; i < n; i++) {
+        const k = spaceKinds[i % spaceKinds.length];
+        const size = k.dataset.mmSpaceKind === 'chile' ? 26 : 44 + Math.random() * 26;
+        // around the edges of the screen, where the globe does not reach at first
+        const angle = (i / n) * Math.PI * 2 + Math.random() * 0.3;
+        const x = W / 2 + Math.cos(angle) * W * (0.42 + Math.random() * 0.06) - size / 2;
+        const y = H / 2 + Math.sin(angle) * H * (0.4 + Math.random() * 0.06) - size / 2;
+        const el = document.createElement('div');
+        el.className = 'mm-floater';
+        el.style.setProperty('--x', `${x.toFixed(0)}px`);
+        el.style.setProperty('--y', `${y.toFixed(0)}px`);
+        el.style.setProperty('--size', `${size.toFixed(0)}px`);
+        const bob = document.createElement('div');
+        bob.style.setProperty('--bob', `${(2.4 + Math.random() * 2).toFixed(1)}s`);
+        bob.innerHTML = k.innerHTML;
+        el.append(bob);
+        el.addEventListener('click', () => {
+          el.classList.remove('is-poked');
+          void el.offsetWidth;
+          el.classList.add('is-poked');
+          el.querySelector('.mm-say')?.remove();
+          const say = document.createElement('span');
+          say.className = 'mm-say';
+          say.textContent = k.dataset.say ?? '';
+          el.append(say);
+          window.setTimeout(() => say.remove(), 2700);
+        });
+        spaceBox.append(el);
+        floaters.push({ el, x: x + size / 2, y: y + size / 2, size });
+      }
+      renderSpace();
+    }
+    /** A floater in front of the globe would hide the map: those wait behind it */
+    function renderSpace() {
+      const R = base * view3d.k + 20;
+      for (const f of floaters) f.el.classList.toggle('is-behind', Math.hypot(f.x - W / 2, f.y - H / 2) < R + f.size / 2);
+    }
+    buildSpace();
+    // start above Europe
+    setView(europe());
+  }
+</script>

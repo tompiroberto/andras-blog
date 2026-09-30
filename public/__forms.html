@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>Form definitions</title>
+  </head>
+  <body>
+    <!--
+      Static copy of the contact form so Netlify detects it at deploy time.
+      The field names must match src/components/MessageForm.astro.
+      The site submits to this file with fetch (see src/lib/formHandler.ts).
+    -->
+    <form name="message" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
+      <input type="hidden" name="form-name" value="message" />
+      <input name="bot-field" />
+      <input name="lang" />
+      <input name="name" />
+      <input name="contact" />
+      <input name="place" />
+      <input name="topic" />
+      <textarea name="message"></textarea>
+    </form>
+  </body>
+</html>

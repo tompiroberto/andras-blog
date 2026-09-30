@@ -1,0 +1,81 @@
+---
+import Globe from './Globe.astro';
+import IconCircle from './IconCircle.astro';
+import SectionHeading from './SectionHeading.astro';
+import { localePath, t, type Lang } from '../i18n';
+import { CATEGORY_META } from '../lib/categories';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<section class="section explore" id="explore" aria-labelledby="explore-title">
+  <div class="bg-layer">
+    <Globe size="min(720px, 110vw)" right="-20%" top="0" speed={70} />
+  </div>
+  <div class="container">
+    <SectionHeading icon="compass" id="explore-title">{t(lang, 'explore.title')}</SectionHeading>
+    <ul class="explore__grid">
+      {
+        CATEGORY_META.map((c, i) => (
+          <li class:list={['card', 'card--hover', 'explore-card', 'reveal', { 'card--violet': i % 2 === 1 }]}>
+            <IconCircle icon={c.icon} variant={c.tone} size="lg" />
+            <h3>{t(lang, c.titleKey)}</h3>
+            <div class="explore-card__small" aria-hidden="true">
+              {c.smallIcons.map((ic, j) => (
+                <IconCircle icon={ic} size="xs" variant={j % 2 ? c.tone : c.tone === 'violet' ? 'yellow' : 'violet'} />
+              ))}
+            </div>
+            <p>{t(lang, c.textKey)}</p>
+            <a class="link-arrow explore-card__link" href={localePath(lang, c.slug)}>
+              {t(lang, c.linkKey)}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <!-- "Where I've been" lives here, as part of Explore -->
+    <slot />
+  </div>
+</section>
+
+<style>
+  .explore__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(24px, 3vw, 36px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .explore-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .explore-card h3 {
+    margin: 4px 0 0;
+    padding-right: 32px;
+  }
+  .explore-card p {
+    margin: 0;
+    color: var(--muted);
+  }
+  .explore-card__small {
+    display: flex;
+    gap: 8px;
+  }
+  .explore-card__link {
+    margin-top: auto;
+  }
+  @media (max-width: 1023px) {
+    .explore__grid {
+      grid-template-columns: minmax(0, 1fr);
+      max-width: calc(640px * var(--tz));
+    }
+  }
+</style>

@@ -1,0 +1,149 @@
+---
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import { HTML_LANG, localePath, t, NATIVE_NAMES, type Lang } from '../i18n';
+import { categoryMeta } from '../lib/categories';
+import { formatDate, type Post } from '../lib/posts';
+
+interface Props {
+  post: Post;
+  lang: Lang;
+  index?: number;
+}
+
+const { post, lang, index = 0 } = Astro.props;
+const { title, date, datePrecision, category, excerpt, cover, coverAlt, draft, icon, lang: postLang } = post.data;
+const meta = categoryMeta(category);
+const href = localePath(lang, `posts/${post.id}`);
+const titleId = `post-${post.id}`;
+const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEnglish') : NATIVE_NAMES[postLang]) : undefined;
+---
+
+<article class:list={['card', 'card--hover', 'post-card', { 'card--violet': index % 2 === 1 }]} aria-labelledby={titleId}>
+  <div class="post-card__cover">
+    {
+      cover ? (
+        <Image src={cover} alt={coverAlt ?? ''} widths={[400, 800]} sizes="(max-width: 700px) 100vw, 400px" loading="lazy" />
+      ) : (
+        <div class:list={['post-card__placeholder', `is-${meta.tone}`]} aria-hidden="true">
+          <span class="ph-circle">{icon && <Icon name={icon} size={52} />}</span>
+          <span class="ph-tri" />
+        </div>
+      )
+    }
+  </div>
+  <div class="post-card__body">
+    <div class="post-card__meta">
+      <span class:list={['pill', 'post-card__tag', `is-${meta.tone}`]}>{t(lang, meta.titleKey)}</span>
+      {draft && <span class="pill post-card__draft">DRAFT</span>}
+      {langNote && <span class="pill post-card__lang">{langNote}</span>}
+    </div>
+    <h3 id={titleId} lang={HTML_LANG[postLang]}>{title}</h3>
+    {date && <time datetime={date.toISOString().slice(0, datePrecision === 'month' ? 7 : 10)}>{formatDate(date, lang, datePrecision)}</time>}
+    <p class="post-card__excerpt" lang={HTML_LANG[postLang]}>{excerpt}</p>
+    <a class="link-arrow post-card__link" href={href}>
+      {t(lang, 'posts.readMore')}<span class="visually-hidden">: {title}</span>
+    </a>
+  </div>
+</article>
+
+<style>
+  .post-card {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  .post-card__cover {
+    aspect-ratio: 16 / 9;
+    border-bottom: var(--border);
+    background: var(--violet-tint);
+  }
+  .post-card__cover :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .post-card__placeholder {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .post-card__placeholder.is-yellow {
+    background: var(--yellow-tint);
+  }
+  .ph-circle {
+    position: absolute;
+    left: 14%;
+    top: 22%;
+    width: 38%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: var(--border);
+    background: var(--violet);
+    color: #fff;
+    display: grid;
+    place-items: center;
+  }
+  .is-violet .ph-circle {
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  .ph-tri {
+    position: absolute;
+    right: 14%;
+    bottom: 16%;
+    width: 30%;
+    aspect-ratio: 1;
+    background: var(--ink);
+    clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  }
+  .post-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px clamp(20px, 2.5vw, 28px) 20px;
+    flex: 1;
+  }
+  .post-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .post-card__tag,
+  .post-card__draft,
+  .post-card__lang {
+    font-size: var(--fs-tiny);
+    padding: 3px 10px;
+  }
+  .post-card__tag.is-yellow {
+    background: var(--yellow);
+  }
+  .post-card__tag.is-violet {
+    background: var(--violet-tint);
+    color: var(--violet-dark);
+  }
+  .post-card__draft {
+    background: var(--ink);
+    color: #fff;
+  }
+  .post-card h3 {
+    margin: 6px 0 0;
+  }
+  .post-card time {
+    font-size: var(--fs-small);
+    color: var(--muted);
+  }
+  .post-card__excerpt {
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .post-card__link {
+    margin-top: auto;
+  }
+</style>

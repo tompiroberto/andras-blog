@@ -1,0 +1,202 @@
+---
+/** Colour-theme picker: a round palette button with a small menu of swatches. */
+import Icon from './Icon.astro';
+import { t, type Lang, type TKey } from '../i18n';
+import { THEMES } from '../lib/themes';
+
+interface Props {
+  lang: Lang;
+  /** Unique suffix so the header and the mobile menu can each have one */
+  uid: string;
+  /** Menu opens in place (mobile menu) instead of as a dropdown */
+  inline?: boolean;
+}
+
+const { lang, uid, inline = false } = Astro.props;
+const label = t(lang, 'theme.label');
+const menuId = `theme-menu-${uid}`;
+---
+
+<div class:list={['theme-switch', { 'theme-switch--inline': inline }]} data-theme-switch>
+  <button type="button" class="theme-switch__btn" aria-expanded="false" aria-controls={menuId} aria-label={label} title={label} data-theme-toggle>
+    <Icon name="palette" size={20} />
+  </button>
+  <ul class="theme-switch__menu" id={menuId} hidden data-theme-menu aria-label={label}>
+    {
+      THEMES.map((th) => (
+        <li>
+          <button type="button" aria-pressed={th.id === 'violet' ? 'true' : 'false'} data-theme-option={th.id} data-primary={th.primary}>
+            <span class="swatch" style={`--p:${th.primary};--s:${th.secondary}`} aria-hidden="true" />
+            {t(lang, `theme.${th.id}` as TKey)}
+          </button>
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .theme-switch {
+    position: relative;
+    flex: none;
+  }
+  .theme-switch__btn {
+    display: grid;
+    place-items: center;
+    width: var(--touch);
+    height: var(--touch);
+    border: var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .theme-switch__btn:hover,
+  .theme-switch__btn[aria-expanded='true'] {
+    background: var(--violet-tint);
+  }
+  .theme-switch__menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    z-index: var(--z-overlay);
+    min-width: 190px;
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+    background: var(--surface);
+    border: var(--border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-yellow);
+  }
+  .theme-switch--inline .theme-switch__menu {
+    position: absolute;
+    left: 0;
+    right: auto;
+    top: calc(100% + 10px);
+  }
+  .theme-switch__menu button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: var(--touch);
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--ink);
+    font-weight: 500;
+    text-align: left;
+  }
+  .theme-switch__menu button:hover,
+  .theme-switch__menu button:focus-visible {
+    background: var(--violet-tint);
+    outline-offset: -3px;
+  }
+  .theme-switch__menu button[aria-pressed='true'] {
+    font-weight: 700;
+    background: var(--yellow-tint);
+  }
+  .swatch {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    /* primary circle with a secondary-colour triangle: the brand shapes */
+    background:
+      linear-gradient(135deg, transparent 55%, var(--s) 55%),
+      var(--p);
+  }
+</style>
+
+<script>
+  import { THEME_EVENT, THEME_STORAGE_KEY } from '../lib/constants';
+  import { playChaosIntro, playChaosOutro } from '../lib/chaosIntro';
+
+  const html = document.documentElement;
+  let switching = false;
+
+  const current = () => html.dataset.theme || 'violet';
+  function apply(id: string) {
+    if (id === 'violet') delete html.dataset.theme;
+    else html.dataset.theme = id;
+    const opt = document.querySelector<HTMLElement>(`[data-theme-option="${id}"]`);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', opt?.dataset.primary ?? '#7B2FF7');
+    window.dispatchEvent(new Event(THEME_EVENT));
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-theme-switch]').forEach((root) => {
+    const btn = root.querySelector<HTMLButtonElement>('[data-theme-toggle]')!;
+    const menu = root.querySelector<HTMLElement>('[data-theme-menu]')!;
+    const options = Array.from(menu.querySelectorAll<HTMLButtonElement>('[data-theme-option]'));
+    const sync = () => options.forEach((o) => o.setAttribute('aria-pressed', String(o.dataset.themeOption === current())));
+
+    const open = (focus = false) => {
+      menu.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      if (focus) (options.find((o) => o.getAttribute('aria-pressed') === 'true') ?? options[0]).focus();
+    };
+    const close = (returnFocus = false) => {
+      menu.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      if (returnFocus) btn.focus();
+    };
+
+    btn.addEventListener('click', () => (menu.hidden ? open() : close()));
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        open(true);
+      }
+    });
+    menu.addEventListener('keydown', (e) => {
+      const i = options.indexOf(document.activeElement as HTMLButtonElement);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        options[(i + 1) % options.length].focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        options[(i - 1 + options.length) % options.length].focus();
+      } else if (e.key === 'Tab') close();
+    });
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !menu.hidden) {
+        e.stopPropagation();
+        close(true);
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (!menu.hidden && !root.contains(e.target as Node)) close();
+    });
+    options.forEach((o) =>
+      o.addEventListener('click', async () => {
+        const id = o.dataset.themeOption ?? 'violet';
+        if (switching || id === current()) return close(true);
+        try {
+          localStorage.setItem(THEME_STORAGE_KEY, id);
+        } catch {
+          /* storage unavailable */
+        }
+        const entering = id === 'chaos';
+        const leaving = current() === 'chaos';
+        close(!entering && !leaving);
+        switching = true;
+        try {
+          // into chaos: the page falls apart first; out of chaos: it builds itself back up
+          if (entering) await playChaosIntro();
+          apply(id);
+          if (leaving) await playChaosOutro();
+        } finally {
+          switching = false;
+        }
+      }),
+    );
+    window.addEventListener(THEME_EVENT, sync);
+    sync();
+  });
+  window.addEventListener('storage', (e) => {
+    if (e.key === THEME_STORAGE_KEY) apply(e.newValue || 'violet');
+  });
+  if (current() !== 'violet') apply(current());
+</script>

@@ -1,0 +1,399 @@
+---
+/**
+ * A little jar of chocolate spread in the corner. Click it: jars rain down over the whole page and a
+ * few leave chocolate stains behind (they stay until the page is reloaded – click one to wipe it off).
+ * The bread button next to it sends a slice of bread to every stain to wipe it off; the slices used are
+ * counted at the very bottom of the page (in the footer, remembered in this browser).
+ */
+import { jarSvg } from '../lib/jar';
+import { breadSvg } from '../lib/bread';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<button type="button" class="nutella-btn" data-nutella-btn aria-label={t(lang, 'nutella.button')} title={t(lang, 'nutella.button')}>
+  <span set:html={jarSvg()} />
+</button>
+<button type="button" class="bread-btn" data-bread-btn aria-label={t(lang, 'bread.button')} title={t(lang, 'bread.button')}>
+  <span set:html={breadSvg()} />
+</button>
+<div class="nutella-rain" aria-hidden="true" data-nutella-rain></div>
+<div class="nutella-stains" data-nutella-stains></div>
+<template data-nutella-wipe>{t(lang, 'nutella.wipe')}</template>
+
+<style>
+  .nutella-btn {
+    position: fixed;
+    left: 14px;
+    bottom: 14px;
+    z-index: 520;
+    width: 50px;
+    height: 60px;
+    padding: 2px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    filter: drop-shadow(3px 3px 0 var(--violet));
+    transform-origin: 50% 100%;
+    animation: nutella-idle 4s ease-in-out infinite;
+    /* the page zoom slider does not shrink it */
+    zoom: var(--inv-zoom, 1);
+  }
+  .nutella-btn :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .nutella-btn:hover,
+  .nutella-btn:focus-visible {
+    animation: nutella-shake 400ms ease-in-out infinite;
+  }
+  /* horizontal page: above the roadside */
+  :global(html.horizontal) .nutella-btn {
+    bottom: calc(var(--roadside-h, 130px) + 12px);
+  }
+  :global(html.map-mode) .nutella-btn,
+  :global(html.cv-mode) .nutella-btn,
+  :global(html.map-mode) .bread-btn,
+  :global(html.cv-mode) .bread-btn {
+    display: none;
+  }
+  .bread-btn {
+    position: fixed;
+    left: 70px;
+    bottom: 14px;
+    z-index: 520;
+    width: 44px;
+    height: 50px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    filter: drop-shadow(3px 3px 0 var(--yellow));
+    zoom: var(--inv-zoom, 1);
+    transition: transform var(--t-fast);
+  }
+  .bread-btn :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .bread-btn:hover,
+  .bread-btn:focus-visible {
+    transform: rotate(-12deg) scale(1.08);
+  }
+  .bread-btn.is-empty {
+    animation: bread-no 400ms ease;
+  }
+  @keyframes bread-no {
+    25% {
+      transform: translateX(-5px);
+    }
+    75% {
+      transform: translateX(5px);
+    }
+  }
+  :global(html.horizontal) .bread-btn {
+    bottom: calc(var(--roadside-h, 130px) + 12px);
+  }
+  .nutella-stains :global(.flying-bread) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 64px;
+    height: 72px;
+    margin: -36px 0 0 -32px;
+    pointer-events: none;
+    z-index: 2;
+    filter: drop-shadow(3px 4px 0 rgb(0 0 0 / 0.2));
+  }
+  .nutella-stains :global(.flying-bread svg) {
+    width: 100%;
+    height: 100%;
+  }
+  @keyframes nutella-idle {
+    0%,
+    86%,
+    100% {
+      transform: none;
+    }
+    90% {
+      transform: rotate(-10deg);
+    }
+    95% {
+      transform: rotate(8deg);
+    }
+  }
+  @keyframes nutella-shake {
+    25% {
+      transform: rotate(-10deg) scale(1.08);
+    }
+    75% {
+      transform: rotate(10deg) scale(1.08);
+    }
+  }
+  .nutella-rain {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .nutella-rain :global(.falling-jar) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40px;
+    height: 48px;
+    will-change: transform;
+  }
+  .nutella-rain :global(.falling-jar svg) {
+    width: 100%;
+    height: 100%;
+  }
+  .nutella-stains {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    z-index: 40;
+  }
+  .nutella-stains :global(.stain) {
+    position: absolute;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+    animation: stain-splat 380ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  }
+  .nutella-stains :global(.stain svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .nutella-stains :global(.stain.is-wiped) {
+    animation: stain-wipe 450ms ease-in forwards;
+  }
+  @keyframes stain-splat {
+    from {
+      transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(0.2);
+    }
+  }
+  @keyframes stain-wipe {
+    to {
+      transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scale(1.3, 0.2);
+      opacity: 0;
+    }
+  }
+  @media print {
+    .nutella-btn,
+    .bread-btn,
+    .nutella-rain,
+    .nutella-stains {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { jarSvg } from '../lib/jar';
+  import { breadSvg } from '../lib/bread';
+  import { REDUCED_MOTION_QUERY } from '../lib/constants';
+  import { pageZoom } from '../lib/zoom';
+
+  const btn = document.querySelector<HTMLButtonElement>('[data-nutella-btn]');
+  const rain = document.querySelector<HTMLElement>('[data-nutella-rain]');
+  const stains = document.querySelector<HTMLElement>('[data-nutella-stains]');
+  const wipeLabel = document.querySelector<HTMLTemplateElement>('[data-nutella-wipe]')?.content.textContent ?? '';
+  const JARS = 90;
+  const STAINS = 9;
+  const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+
+  /** A blob of chocolate with a few drips, a little different every time. */
+  function stainSvg(): string {
+    const n = 11;
+    const pts = Array.from({ length: n }, (_, i) => {
+      const a = (i / n) * Math.PI * 2;
+      const r = rnd(30, 44);
+      return [50 + Math.cos(a) * r, 50 + Math.sin(a) * r];
+    });
+    // smooth closed curve through the points
+    let d = `M${((pts[0][0] + pts[n - 1][0]) / 2).toFixed(1)} ${((pts[0][1] + pts[n - 1][1]) / 2).toFixed(1)}`;
+    pts.forEach((p, i) => {
+      const q = pts[(i + 1) % n];
+      d += ` Q${p[0].toFixed(1)} ${p[1].toFixed(1)} ${((p[0] + q[0]) / 2).toFixed(1)} ${((p[1] + q[1]) / 2).toFixed(1)}`;
+    });
+    const drips = Array.from({ length: 3 }, () => {
+      const x = rnd(32, 68);
+      const len = rnd(14, 34);
+      return `<path d="M${x - 4} 78 V${78 + len} a4 4 0 0 0 8 0 V78 Z" fill="#4a2812"/>`;
+    }).join('');
+    const dots = Array.from({ length: 4 }, () => `<circle cx="${rnd(5, 95).toFixed(0)}" cy="${rnd(5, 95).toFixed(0)}" r="${rnd(2, 5).toFixed(1)}" fill="#4a2812"/>`).join('');
+    return `<svg viewBox="0 0 100 120" aria-hidden="true"><path d="${d} Z" fill="#4a2812"/>${drips}${dots}<ellipse cx="40" cy="38" rx="9" ry="5" fill="#fff" opacity="0.18" transform="rotate(-30 40 38)"/></svg>`;
+  }
+
+  function addStain(vx: number, vy: number, delay: number) {
+    if (!stains) return;
+    const z = pageZoom();
+    const s = document.createElement('button');
+    s.type = 'button';
+    s.className = 'stain';
+    s.setAttribute('aria-label', wipeLabel);
+    s.title = wipeLabel;
+    const size = rnd(60, 130);
+    s.style.width = `${size}px`;
+    s.style.height = `${size * 1.2}px`;
+    // document coordinates (the stains stay where they landed while you scroll)
+    s.style.left = `${(window.scrollX + vx) / z}px`;
+    s.style.top = `${(window.scrollY + vy) / z}px`;
+    s.style.setProperty('--rot', `${rnd(-40, 40).toFixed(0)}deg`);
+    s.style.animationDelay = `${delay}ms`;
+    s.innerHTML = stainSvg();
+    s.addEventListener('click', () => {
+      s.style.animationDelay = '0ms'; // (the splat's delay must not hold up the wipe)
+      s.classList.add('is-wiped');
+      s.addEventListener('animationend', () => s.remove(), { once: true });
+    });
+    stains.append(s);
+  }
+
+  function pour() {
+    if (!rain) return;
+    const reduced = window.matchMedia(REDUCED_MOTION_QUERY).matches;
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    if (!reduced) {
+      for (let i = 0; i < JARS; i++) {
+        const el = document.createElement('div');
+        el.className = 'falling-jar';
+        el.innerHTML = jarSvg();
+        const x = rnd(-20, W);
+        const s = rnd(0.6, 1.4);
+        const spin = rnd(-540, 540);
+        const drift = rnd(-120, 120);
+        rain.append(el);
+        const anim = el.animate(
+          [
+            { transform: `translate(${x}px, -80px) scale(${s}) rotate(0deg)` },
+            { transform: `translate(${x + drift}px, ${H + 80}px) scale(${s}) rotate(${spin}deg)` },
+          ],
+          { duration: rnd(1300, 2600), delay: rnd(0, 1600), easing: 'cubic-bezier(0.45, 0, 0.9, 0.6)', fill: 'both' },
+        );
+        anim.onfinish = () => el.remove();
+      }
+    }
+    // a few of them hit the page
+    for (let i = 0; i < STAINS; i++) addStain(rnd(W * 0.05, W * 0.95), rnd(H * 0.12, H * 0.92), reduced ? 0 : 900 + i * 220);
+  }
+
+  btn?.addEventListener('click', pour);
+
+  // ---- bread: wipes every stain, one slice each, counted in the footer ----
+  const BREAD_KEY = 'andras-bread-count';
+  const breadBtn = document.querySelector<HTMLButtonElement>('[data-bread-btn]');
+  const counter = document.querySelector<HTMLElement>('[data-bread-count]');
+  let breads = 0;
+  try {
+    breads = Number(localStorage.getItem(BREAD_KEY)) || 0;
+  } catch {
+    /* storage unavailable */
+  }
+  function showCount(bump = false) {
+    if (!counter) return;
+    const icons = counter.querySelector<HTMLElement>('[data-bread-icons]')!;
+    const shown = Math.min(breads, 12);
+    icons.innerHTML = breadSvg(true).repeat(shown) + (breads > shown ? `<span class="bread-more">+${breads - shown}</span>` : '');
+    counter.querySelector('[data-bread-text]')!.textContent = (counter.dataset.template ?? '{n}').replace('{n}', String(breads));
+    if (bump) {
+      counter.classList.remove('is-bump');
+      void counter.offsetWidth;
+      counter.classList.add('is-bump');
+    }
+  }
+  function countBread() {
+    breads++;
+    try {
+      localStorage.setItem(BREAD_KEY, String(breads));
+    } catch {
+      /* storage unavailable */
+    }
+    showCount(true);
+  }
+  showCount();
+
+  function wipeWithBread(stain: HTMLElement, delay: number, from: { x: number; y: number }) {
+    const done = () => {
+      stain.style.animationDelay = '0ms';
+      stain.classList.add('is-wiped');
+      stain.addEventListener('animationend', () => stain.remove(), { once: true });
+      countBread();
+    };
+    if (window.matchMedia(REDUCED_MOTION_QUERY).matches || !stains) {
+      window.setTimeout(done, delay);
+      return;
+    }
+    stain.classList.add('is-wiped-soon'); // taken: a second click does not send another slice
+    const to = { x: parseFloat(stain.style.left), y: parseFloat(stain.style.top) };
+    const bread = document.createElement('div');
+    bread.className = 'flying-bread';
+    bread.innerHTML = breadSvg();
+    stains.append(bread);
+    const at = (x: number, y: number, r = 0, s = 1) => `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`;
+    // fly in on an arc, rub the stain off, then drop away with the chocolate on it
+    const fly = bread.animate(
+      [
+        { transform: at(from.x, from.y, -30, 0.6) },
+        { transform: at((from.x + to.x) / 2, Math.min(from.y, to.y) - 140, 200, 1.1) },
+        { transform: at(to.x, to.y, 360) },
+      ],
+      { duration: 700, delay, easing: 'ease-in-out', fill: 'both' },
+    );
+    fly.onfinish = () => {
+      const rub = bread.animate(
+        [
+          { transform: at(to.x, to.y, 0) },
+          { transform: at(to.x - 18, to.y - 6, -18) },
+          { transform: at(to.x + 18, to.y + 6, 18) },
+          { transform: at(to.x - 14, to.y + 4, -14) },
+          { transform: at(to.x + 12, to.y - 4, 12) },
+          { transform: at(to.x, to.y, 0) },
+        ],
+        { duration: 650, easing: 'ease-in-out', fill: 'both' },
+      );
+      window.setTimeout(done, 250);
+      rub.onfinish = () => {
+        bread.innerHTML = breadSvg(true);
+        const drop = bread.animate(
+          [
+            { transform: at(to.x, to.y, 0), opacity: 1 },
+            { transform: at(to.x + 60, to.y + 260, 120, 0.8), opacity: 0 },
+          ],
+          { duration: 700, easing: 'ease-in', fill: 'both' },
+        );
+        drop.onfinish = () => bread.remove();
+      };
+    };
+  }
+
+  breadBtn?.addEventListener('click', () => {
+    const list = Array.from(document.querySelectorAll<HTMLElement>('.stain:not(.is-wiped):not(.is-wiped-soon)'));
+    if (!list.length) {
+      breadBtn.classList.remove('is-empty');
+      void breadBtn.offsetWidth;
+      breadBtn.classList.add('is-empty');
+      return;
+    }
+    // start where the button is (in the same page coordinates as the stains)
+    const z = pageZoom();
+    const r = breadBtn.getBoundingClientRect();
+    const from = { x: (window.scrollX + r.left + r.width / 2) / z, y: (window.scrollY + r.top + r.height / 2) / z };
+    list.forEach((s, i) => wipeWithBread(s, i * 380, from));
+  });
+</script>

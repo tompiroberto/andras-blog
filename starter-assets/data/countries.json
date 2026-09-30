@@ -1,0 +1,475 @@
+{
+  "_comment": "isoNumeric matches the feature ids in world-atlas countries-50m.json (3-digit strings). status: home | visited | transit | now | planned",
+  "countries": [
+    {
+      "id": "HU",
+      "isoNumeric": "348",
+      "status": "home",
+      "i18n": {
+        "en": {
+          "name": "Hungary",
+          "text": "Home – training, trips and hikes"
+        },
+        "hu": {
+          "name": "Magyarország",
+          "text": "Otthon – edzések, utak és túrák"
+        },
+        "pt": {
+          "name": "Hungria",
+          "text": "Casa – treinos, viagens e caminhadas"
+        },
+        "ro": {
+          "name": "Ungaria",
+          "text": "Acasă – antrenamente, excursii și drumeții"
+        },
+        "el": {
+          "name": "Ουγγαρία",
+          "text": "Σπίτι – προπονήσεις, εκδρομές και πεζοπορίες"
+        },
+        "ka": {
+          "name": "უნგრეთი",
+          "text": "სახლი – ვარჯიშები, გასვლები და ლაშქრობები"
+        }
+      }
+    },
+    {
+      "id": "LT",
+      "isoNumeric": "440",
+      "status": "visited",
+      "i18n": {
+        "en": {
+          "name": "Lithuania",
+          "text": "August 2026 – Erasmus+"
+        },
+        "hu": {
+          "name": "Litvánia",
+          "text": "2026. augusztus – Erasmus+"
+        },
+        "pt": {
+          "name": "Lituânia",
+          "text": "agosto de 2026 – Erasmus+"
+        },
+        "ro": {
+          "name": "Lituania",
+          "text": "august 2026 – Erasmus+"
+        },
+        "el": {
+          "name": "Λιθουανία",
+          "text": "Αύγουστος 2026 – Erasmus+"
+        },
+        "ka": {
+          "name": "ლიტვა",
+          "text": "2026 წლის აგვისტო – Erasmus+"
+        }
+      }
+    },
+    {
+      "id": "PL",
+      "isoNumeric": "616",
+      "status": "visited",
+      "i18n": {
+        "en": {
+          "name": "Poland",
+          "text": "November 2025 – Kraków · August 2026 – Warsaw airport"
+        },
+        "hu": {
+          "name": "Lengyelország",
+          "text": "2025. november – Krakkó · 2026. augusztus – varsói reptér"
+        },
+        "pt": {
+          "name": "Polónia",
+          "text": "novembro de 2025 – Cracóvia · agosto de 2026 – aeroporto de Varsóvia"
+        },
+        "ro": {
+          "name": "Polonia",
+          "text": "noiembrie 2025 – Cracovia · august 2026 – aeroportul din Varșovia"
+        },
+        "el": {
+          "name": "Πολωνία",
+          "text": "Νοέμβριος 2025 – Κρακοβία · Αύγουστος 2026 – αεροδρόμιο Βαρσοβίας"
+        },
+        "ka": {
+          "name": "პოლონეთი",
+          "text": "2025 წლის ნოემბერი – კრაკოვი · 2026 წლის აგვისტო – ვარშავის აეროპორტი"
+        }
+      }
+    },
+    {
+      "id": "SK",
+      "isoNumeric": "703",
+      "status": "visited",
+      "i18n": {
+        "en": {
+          "name": "Slovakia",
+          "text": "Frequent trips – e.g. cycling to my classmate"
+        },
+        "hu": {
+          "name": "Szlovákia",
+          "text": "Gyakori utak – pl. biciklizés az évfolyamtársamhoz"
+        },
+        "pt": {
+          "name": "Eslováquia",
+          "text": "Viagens frequentes – p. ex. de bicicleta até casa de um colega"
+        },
+        "ro": {
+          "name": "Slovacia",
+          "text": "Drumuri frecvente – de ex. cu bicicleta la un coleg"
+        },
+        "el": {
+          "name": "Σλοβακία",
+          "text": "Συχνά ταξίδια – π.χ. με ποδήλατο σε έναν συμμαθητή μου"
+        },
+        "ka": {
+          "name": "სლოვაკეთი",
+          "text": "ხშირი მოგზაურობები – მაგ. ველოსიპედით კლასელთან"
+        }
+      },
+      "link": {
+        "url": "/{lang}/posts/cycling-to-my-classmate/",
+        "note": "Link from the Slovakia tooltip to the (draft) post “Cycling to my classmate”."
+      }
+    },
+    {
+      "id": "RO",
+      "isoNumeric": "642",
+      "status": "visited",
+      "i18n": {
+        "en": {
+          "name": "Romania",
+          "text": "Summer 2018 – a wedding"
+        },
+        "hu": {
+          "name": "Románia",
+          "text": "2018 nyara – esküvő"
+        },
+        "pt": {
+          "name": "Roménia",
+          "text": "verão de 2018 – um casamento"
+        },
+        "ro": {
+          "name": "România",
+          "text": "vara lui 2018 – o nuntă"
+        },
+        "el": {
+          "name": "Ρουμανία",
+          "text": "Καλοκαίρι 2018 – ένας γάμος"
+        },
+        "ka": {
+          "name": "რუმინეთი",
+          "text": "2018 წლის ზაფხული – ქორწილი"
+        }
+      }
+    },
+    {
+      "id": "SI",
+      "isoNumeric": "705",
+      "status": "visited",
+      "i18n": {
+        "en": {
+          "name": "Slovenia",
+          "text": "April 2026 – EPAS"
+        },
+        "hu": {
+          "name": "Szlovénia",
+          "text": "2026. április – EPAS"
+        },
+        "pt": {
+          "name": "Eslovénia",
+          "text": "abril de 2026 – EPAS"
+        },
+        "ro": {
+          "name": "Slovenia",
+          "text": "aprilie 2026 – EPAS"
+        },
+        "el": {
+          "name": "Σλοβενία",
+          "text": "Απρίλιος 2026 – EPAS"
+        },
+        "ka": {
+          "name": "სლოვენია",
+          "text": "2026 წლის აპრილი – EPAS"
+        }
+      }
+    },
+    {
+      "id": "HR",
+      "isoNumeric": "191",
+      "status": "visited",
+      "i18n": {
+        "en": {
+          "name": "Croatia",
+          "text": "February & May 2026 – Split 21k and Youth Skyrunning World Championships"
+        },
+        "hu": {
+          "name": "Horvátország",
+          "text": "2026. február és május – Split 21k és Youth Skyrunning World Championships"
+        },
+        "pt": {
+          "name": "Croácia",
+          "text": "fevereiro e maio de 2026 – Split 21k e Campeonato do Mundo Jovem de Skyrunning"
+        },
+        "ro": {
+          "name": "Croația",
+          "text": "februarie și mai 2026 – Split 21k și Campionatul Mondial de Skyrunning pentru Tineret"
+        },
+        "el": {
+          "name": "Κροατία",
+          "text": "Φεβρουάριος και Μάιος 2026 – Split 21k και Παγκόσμιο Πρωτάθλημα Skyrunning Νέων"
+        },
+        "ka": {
+          "name": "ხორვატია",
+          "text": "2026 წლის თებერვალი და მაისი – Split 21k და ახალგაზრდული სკაირანინგის მსოფლიო ჩემპიონატი"
+        }
+      }
+    },
+    {
+      "id": "BA",
+      "isoNumeric": "070",
+      "status": "transit",
+      "i18n": {
+        "en": {
+          "name": "Bosnia and Herzegovina",
+          "text": "May 2026 – passing through"
+        },
+        "hu": {
+          "name": "Bosznia-Hercegovina",
+          "text": "2026. május – átutazóban"
+        },
+        "pt": {
+          "name": "Bósnia e Herzegovina",
+          "text": "maio de 2026 – de passagem"
+        },
+        "ro": {
+          "name": "Bosnia și Herțegovina",
+          "text": "mai 2026 – în tranzit"
+        },
+        "el": {
+          "name": "Βοσνία-Ερζεγοβίνη",
+          "text": "Μάιος 2026 – περαστικός"
+        },
+        "ka": {
+          "name": "ბოსნია და ჰერცეგოვინა",
+          "text": "2026 წლის მაისი – ტრანზიტით"
+        }
+      }
+    },
+    {
+      "id": "AT",
+      "isoNumeric": "040",
+      "status": "visited",
+      "i18n": {
+        "en": {
+          "name": "Austria",
+          "text": "Frequent visits – spontaneous train trips, a 300 km bike tour"
+        },
+        "hu": {
+          "name": "Ausztria",
+          "text": "Gyakori látogatások – spontán vonatozások, 300 km-es biciklitúra"
+        },
+        "pt": {
+          "name": "Áustria",
+          "text": "Visitas frequentes – viagens de comboio espontâneas, uma volta de 300 km de bicicleta"
+        },
+        "ro": {
+          "name": "Austria",
+          "text": "Vizite frecvente – călătorii spontane cu trenul, o tură de 300 km cu bicicleta"
+        },
+        "el": {
+          "name": "Αυστρία",
+          "text": "Συχνές επισκέψεις – αυθόρμητα ταξίδια με τρένο, ποδηλατάδα 300 χλμ."
+        },
+        "ka": {
+          "name": "ავსტრია",
+          "text": "ხშირი ვიზიტები – სპონტანური მოგზაურობა მატარებლით, 300 კმ-იანი ველოტური"
+        }
+      }
+    },
+    {
+      "id": "GR",
+      "isoNumeric": "300",
+      "status": "now",
+      "i18n": {
+        "en": {
+          "name": "Greece",
+          "text": "September 2026 – Erasmus+ (I'm here now)"
+        },
+        "hu": {
+          "name": "Görögország",
+          "text": "2026. szeptember – Erasmus+ (most itt vagyok)"
+        },
+        "pt": {
+          "name": "Grécia",
+          "text": "setembro de 2026 – Erasmus+ (estou aqui agora)"
+        },
+        "ro": {
+          "name": "Grecia",
+          "text": "septembrie 2026 – Erasmus+ (sunt aici acum)"
+        },
+        "el": {
+          "name": "Ελλάδα",
+          "text": "Σεπτέμβριος 2026 – Erasmus+ (είμαι εδώ τώρα)"
+        },
+        "ka": {
+          "name": "საბერძნეთი",
+          "text": "2026 წლის სექტემბერი – Erasmus+ (ახლა აქ ვარ)"
+        }
+      }
+    },
+    {
+      "id": "DE",
+      "isoNumeric": "276",
+      "status": "transit",
+      "i18n": {
+        "en": {
+          "name": "Germany",
+          "text": "August 2026 – passing through"
+        },
+        "hu": {
+          "name": "Németország",
+          "text": "2026. augusztus – átutazóban"
+        },
+        "pt": {
+          "name": "Alemanha",
+          "text": "agosto de 2026 – de passagem"
+        },
+        "ro": {
+          "name": "Germania",
+          "text": "august 2026 – în tranzit"
+        },
+        "el": {
+          "name": "Γερμανία",
+          "text": "Αύγουστος 2026 – περαστικός"
+        },
+        "ka": {
+          "name": "გერმანია",
+          "text": "2026 წლის აგვისტო – ტრანზიტით"
+        }
+      }
+    },
+    {
+      "id": "CZ",
+      "isoNumeric": "203",
+      "status": "visited",
+      "i18n": {
+        "en": {
+          "name": "Czechia",
+          "text": "September 2026 – class trip"
+        },
+        "hu": {
+          "name": "Csehország",
+          "text": "2026. szeptember – osztálykirándulás"
+        },
+        "pt": {
+          "name": "Chéquia",
+          "text": "setembro de 2026 – visita de estudo"
+        },
+        "ro": {
+          "name": "Cehia",
+          "text": "septembrie 2026 – excursie cu clasa"
+        },
+        "el": {
+          "name": "Τσεχία",
+          "text": "Σεπτέμβριος 2026 – σχολική εκδρομή"
+        },
+        "ka": {
+          "name": "ჩეხეთი",
+          "text": "2026 წლის სექტემბერი – კლასის ექსკურსია"
+        }
+      }
+    },
+    {
+      "id": "NW-EUROPE-2017",
+      "isoNumeric": null,
+      "status": "visited",
+      "i18n": {
+        "en": {
+          "name": "North-West Europe",
+          "text": "Summer 2017"
+        },
+        "hu": {
+          "name": "Északnyugat-Európa",
+          "text": "2017 nyara"
+        },
+        "pt": {
+          "name": "Noroeste da Europa",
+          "text": "verão de 2017"
+        },
+        "ro": {
+          "name": "Europa de Nord-Vest",
+          "text": "vara lui 2017"
+        },
+        "el": {
+          "name": "Βορειοδυτική Ευρώπη",
+          "text": "Καλοκαίρι 2017"
+        },
+        "ka": {
+          "name": "ჩრდილო-დასავლეთ ევროპა",
+          "text": "2017 წლის ზაფხული"
+        }
+      },
+      "todo": "List the actual countries visited in summer 2017 (e.g. NL, BE, FR…). Not drawn on the map until filled in."
+    },
+    {
+      "id": "CL",
+      "isoNumeric": "152",
+      "status": "planned",
+      "i18n": {
+        "en": {
+          "name": "Chile",
+          "text": "Planned – hitchhiking"
+        },
+        "hu": {
+          "name": "Chile",
+          "text": "Tervben – stoppolás"
+        },
+        "pt": {
+          "name": "Chile",
+          "text": "Planeado – boleia"
+        },
+        "ro": {
+          "name": "Chile",
+          "text": "Planificat – autostop"
+        },
+        "el": {
+          "name": "Χιλή",
+          "text": "Στα σχέδια – ωτοστόπ"
+        },
+        "ka": {
+          "name": "ჩილე",
+          "text": "დაგეგმილი – ავტოსტოპი"
+        }
+      }
+    },
+    {
+      "id": "GE",
+      "isoNumeric": "268",
+      "status": "planned",
+      "i18n": {
+        "en": {
+          "name": "Georgia",
+          "text": "Planned – language & culture"
+        },
+        "hu": {
+          "name": "Grúzia",
+          "text": "Tervben – nyelv és kultúra"
+        },
+        "pt": {
+          "name": "Geórgia",
+          "text": "Planeado – língua e cultura"
+        },
+        "ro": {
+          "name": "Georgia",
+          "text": "Planificat – limbă și cultură"
+        },
+        "el": {
+          "name": "Γεωργία",
+          "text": "Στα σχέδια – γλώσσα και πολιτισμός"
+        },
+        "ka": {
+          "name": "საქართველო",
+          "text": "დაგეგმილი – ენა და კულტურა"
+        }
+      }
+    }
+  ]
+}

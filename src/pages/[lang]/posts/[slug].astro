@@ -1,0 +1,151 @@
+---
+import { render } from 'astro:content';
+import { Image } from 'astro:assets';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Globe from '../../../components/Globe.astro';
+import IconCircle from '../../../components/IconCircle.astro';
+import StravaEmbeds from '../../../components/StravaEmbeds.astro';
+import { HTML_LANG, LOCALES, NATIVE_NAMES, localePath, t, type Lang } from '../../../i18n';
+import { categoryMeta } from '../../../lib/categories';
+import { formatDate, getPosts } from '../../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return LOCALES.flatMap((lang) => posts.map((post) => ({ params: { lang, slug: post.id }, props: { post } })));
+}
+
+const { post } = Astro.props;
+const lang = Astro.params.lang as Lang;
+const { Content } = await render(post);
+const { title, date, datePrecision, category, excerpt, cover, coverAlt, draft, facts, strava, lang: postLang } = post.data;
+const meta = categoryMeta(category);
+const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEnglish') : NATIVE_NAMES[postLang]) : undefined;
+---
+
+<BaseLayout lang={lang} title={title} description={excerpt} ogType="article">
+  <article class="post">
+    <header class="section post__header">
+      <div class="bg-layer">
+        <Globe size="min(600px, 110vw)" right="-16%" top="-30%" speed={80} />
+      </div>
+      <div class="container">
+        <a class="link-arrow back-link" href={localePath(lang)}>{t(lang, 'posts.back')}</a>
+        <div class="post__meta">
+          <a class="pill post__cat" href={localePath(lang, category)}>
+            <IconCircle icon={meta.icon} variant={meta.tone} size="xs" />
+            {t(lang, meta.titleKey)}
+          </a>
+          {date && <time datetime={date.toISOString().slice(0, datePrecision === 'month' ? 7 : 10)}>{formatDate(date, lang, datePrecision)}</time>}
+          {langNote && <span class="pill post__lang">{langNote}</span>}
+          {draft && <span class="pill post__draft">DRAFT</span>}
+        </div>
+        <h1 lang={HTML_LANG[postLang]}>{title}</h1>
+      </div>
+    </header>
+
+    <div class="section post__body">
+      <div class="bg-layer">
+        <Globe size="min(700px, 120vw)" left="-26%" top="20%" speed={70} direction="ccw" dots={false} />
+      </div>
+      <div class="container">
+        {cover && <Image class="post__cover" src={cover} alt={coverAlt ?? ''} widths={[700, 1400]} sizes="(max-width: 800px) 100vw, 70ch" />}
+        {
+          facts && (
+            <ul class="facts" lang={HTML_LANG[postLang]}>
+              {facts.map((f, i) => (
+                <li class="reveal">
+                  <IconCircle icon={f.icon} variant={i % 2 ? 'yellow' : 'violet'} size="lg" />
+                  <span>{f.label}</span>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+        <div class="prose" lang={HTML_LANG[postLang]}>
+          <Content />
+        </div>
+        {strava && strava.length > 0 && <StravaEmbeds lang={lang} activities={strava} />}
+        <p><a class="link-arrow back-link" href={localePath(lang, category)}>{t(lang, meta.linkKey)}</a></p>
+      </div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .post__header {
+    padding-block: clamp(32px, 6vw, 72px) 0;
+  }
+  .post__header h1 {
+    font-size: clamp(36px, 5.5vw, 68px);
+    max-width: 20ch;
+    margin-top: 16px;
+  }
+  .post__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    margin-top: 16px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .post__cat {
+    padding: 4px 14px 4px 4px;
+    color: var(--ink);
+    text-decoration: none;
+    min-height: var(--touch);
+  }
+  .post__cat:hover {
+    background: var(--yellow-tint);
+  }
+  .post__lang {
+    background: var(--violet-tint);
+    color: var(--violet-dark);
+  }
+  .post__draft {
+    background: var(--ink);
+    color: #fff;
+  }
+  .post__body {
+    padding-top: clamp(24px, 4vw, 48px);
+    padding-bottom: 0;
+  }
+  .post__body :global(.post__cover) {
+    width: 100%;
+    max-width: calc(70ch * var(--tz));
+    border: var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-yellow);
+    margin-bottom: 40px;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(calc(150px * var(--tz)), 1fr));
+    gap: calc(20px * var(--tz));
+    max-width: calc(70ch * var(--tz));
+    margin: 0 0 40px;
+    padding: 0;
+    list-style: none;
+  }
+  .facts li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 12px;
+    text-align: center;
+    font-weight: 700;
+    line-height: 1.3;
+    background: var(--surface);
+    border: var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .back-link::after {
+    order: -1;
+    transform: rotate(180deg);
+  }
+  .back-link:hover::after {
+    transform: rotate(180deg) translateX(4px);
+  }
+</style>

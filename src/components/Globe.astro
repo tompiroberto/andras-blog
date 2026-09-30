@@ -1,0 +1,161 @@
+---
+/**
+ * Decorative rotating wireframe globe. Always aria-hidden and non-interactive.
+ * Position it with top/left/right/bottom (any CSS length); it may sit partly off-screen.
+ */
+interface Props {
+  /** CSS length, e.g. '640px' or 'min(80vw, 700px)' */
+  size?: string;
+  top?: string;
+  left?: string;
+  right?: string;
+  bottom?: string;
+  /** Seconds per full turn */
+  speed?: number;
+  direction?: 'cw' | 'ccw';
+  opacity?: number;
+  /** Meridians "breathe" to fake a spinning planet (hero) */
+  animatedMeridians?: boolean;
+  /** Dashed orbit ring with a small violet triangle, turning the other way */
+  orbit?: boolean;
+  tone?: 'default' | 'footer';
+  /** Small "city" dots; turn off for globes that sit behind running text */
+  dots?: boolean;
+  /** Positioned absolutely (background) or in normal flow */
+  absolute?: boolean;
+  class?: string;
+}
+
+const {
+  size = '600px',
+  top,
+  left,
+  right,
+  bottom,
+  speed = 75,
+  direction = 'cw',
+  opacity = 1,
+  animatedMeridians = false,
+  orbit = false,
+  tone = 'default',
+  dots = true,
+  absolute = true,
+  class: className,
+} = Astro.props;
+
+const style = [
+  `--globe-size:${size}`,
+  `--globe-speed:${speed}s`,
+  `--globe-dir:${direction === 'cw' ? 'normal' : 'reverse'}`,
+  `opacity:${opacity}`,
+  top && `top:${top}`,
+  left && `left:${left}`,
+  right && `right:${right}`,
+  bottom && `bottom:${bottom}`,
+]
+  .filter(Boolean)
+  .join(';');
+---
+
+<div
+  class:list={['globe', { 'globe--abs': absolute, 'globe--footer': tone === 'footer' }, className]}
+  style={style}
+  aria-hidden="true"
+>
+  <svg class="globe__svg" viewBox="0 0 400 400" fill="none" focusable="false">
+    <g class="globe__lines">
+      <circle cx="200" cy="200" r="190" />
+      <ellipse cx="200" cy="200" rx="140" ry="190">
+        {animatedMeridians && <animate attributeName="rx" values="140;30;140" dur="14s" repeatCount="indefinite" />}
+      </ellipse>
+      <ellipse cx="200" cy="200" rx="80" ry="190">
+        {animatedMeridians && <animate attributeName="rx" values="80;170;80" dur="14s" repeatCount="indefinite" />}
+      </ellipse>
+      <line x1="200" y1="10" x2="200" y2="390" />
+      <ellipse cx="200" cy="200" rx="190" ry="26" />
+      <ellipse cx="200" cy="112" rx="166" ry="18" />
+      <ellipse cx="200" cy="288" rx="166" ry="18" />
+    </g>
+    {
+      dots && tone === 'default' && (
+        <g class="globe__cities">
+          <circle cx="132" cy="146" r="7" class="dot-yellow" />
+          <circle cx="262" cy="232" r="6" class="dot-violet" />
+          <circle cx="226" cy="98" r="5" class="dot-violet" />
+          <circle cx="112" cy="276" r="6" class="dot-yellow" />
+          <circle cx="306" cy="160" r="4.5" class="dot-yellow" />
+        </g>
+      )
+    }
+  </svg>
+  {
+    orbit && (
+      <svg class="globe__orbit" viewBox="0 0 400 400" fill="none" focusable="false">
+        <circle cx="200" cy="200" r="194" class="orbit-ring" />
+        {/* sits on top of the ring, pointing along the (counter-clockwise) direction of travel */}
+        <path d="M188 6 L208 -5 L208 17 Z" class="orbit-tri" />
+      </svg>
+    )
+  }
+</div>
+
+<style>
+  .globe {
+    width: var(--globe-size);
+    aspect-ratio: 1;
+    pointer-events: none;
+    z-index: var(--z-globe);
+    flex: none;
+  }
+  .globe--abs {
+    position: absolute;
+  }
+  .globe__svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    animation: spin var(--globe-speed) linear infinite;
+    animation-direction: var(--globe-dir);
+  }
+  .globe__lines {
+    stroke: var(--globe-line);
+    stroke-width: 1.6;
+    vector-effect: non-scaling-stroke;
+  }
+  .globe__lines * {
+    vector-effect: non-scaling-stroke;
+  }
+  .globe--footer .globe__lines {
+    stroke: var(--globe-line-footer);
+  }
+  .dot-yellow {
+    fill: var(--yellow);
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+  .dot-violet {
+    fill: var(--violet);
+  }
+  .globe__orbit {
+    position: absolute;
+    inset: -8%;
+    width: 116%;
+    height: 116%;
+    overflow: visible;
+    animation: spin 40s linear infinite reverse;
+  }
+  .orbit-ring {
+    stroke: var(--violet);
+    stroke-width: 1.5;
+    stroke-dasharray: 6 10;
+    opacity: 0.55;
+    vector-effect: non-scaling-stroke;
+  }
+  .orbit-tri {
+    fill: var(--violet);
+    stroke: var(--ink);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+  }
+</style>

@@ -1,0 +1,723 @@
+---
+/**
+ * Background "world" on the page's own coordinate system (src/lib/pageGeo.ts, shared with the
+ * coordinate grid): latitude runs down the whole page, the screen is centred on Budapest and both
+ * axes use the same scale. Draws faint continent outlines and pops city names into the empty space
+ * as they scroll into view.
+ */
+import cities from '../data/world-cities.json';
+import doodles from '../data/doodles.json';
+import DoodleSprite from './DoodleSprite.astro';
+import { DOODLE_MOTION, DOODLE_SIZES } from '../lib/doodles';
+
+const data = cities.cities.map((c) => [c.name, c.lat, c.lon, c.rank] as const);
+// [kind, lat, lon, width, height, motion]
+const doodleData = doodles.doodles.map(([kind, lat, lon]) => {
+  const [w, h] = DOODLE_SIZES[kind as string];
+  return [kind, lat, lon, w, h, DOODLE_MOTION[kind as string]];
+});
+---
+
+<div class="world-layer" aria-hidden="true" data-world-layer>
+  <svg class="world-layer__land" preserveAspectRatio="none" focusable="false" data-world-land></svg>
+</div>
+<DoodleSprite />
+<script type="application/json" data-doodle-data set:html={JSON.stringify(doodleData)} />
+<!-- Above the content (labels only go where there is no content): clickable cities and the search pin -->
+<div class="search-pin-layer" data-search-pin-layer>
+  <div class="world-layer__cities" aria-hidden="true" data-world-cities></div>
+  <!-- little landscape drawings (ships, whales, camels, icebergs…) that come and go; click them -->
+  <div class="world-layer__doodles" aria-hidden="true" data-world-doodles></div>
+  <div class="search-pin" data-search-pin hidden>
+    <svg class="search-pin__icon" viewBox="0 0 28 38" width="42" height="57" aria-hidden="true">
+      <path d="M14 36.5C14 36.5 3 22.5 3 13.5a11 11 0 1 1 22 0c0 9-11 23-11 23Z" />
+      <circle cx="14" cy="13.5" r="4.6" />
+    </svg>
+    <span class="search-pin__label" data-search-pin-label></span>
+  </div>
+</div>
+<script type="application/json" data-world-data set:html={JSON.stringify(data)} />
+
+<style>
+  .world-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .world-layer__land {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .world-layer__land :global(path) {
+    fill: color-mix(in srgb, var(--globe-line) 45%, transparent);
+    stroke: color-mix(in srgb, var(--globe-line) 70%, var(--violet) 30%);
+    stroke-width: 1.4;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .world-layer__cities {
+    position: absolute;
+    inset: 0;
+  }
+  .search-pin-layer :global(.w-city) {
+    pointer-events: auto;
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--muted);
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(var(--x), var(--y)) scale(0.4);
+    transform-origin: 4px 50%;
+    transition:
+      opacity 350ms var(--ease),
+      transform 450ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .search-pin-layer :global(.w-city:not(.is-in)) {
+    pointer-events: none;
+  }
+  .search-pin-layer :global(.w-city:hover .w-name) {
+    color: var(--violet-dark);
+    text-decoration: underline;
+  }
+  .search-pin-layer :global(.w-city.is-left) {
+    flex-direction: row-reverse;
+    transform-origin: calc(100% - 4px) 50%;
+  }
+  .search-pin-layer :global(.w-city.is-in) {
+    opacity: 1;
+    transform: translate(var(--x), var(--y)) scale(1);
+  }
+  .search-pin-layer :global(.w-dot) {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--violet);
+    border: 1.5px solid var(--ink);
+  }
+  .search-pin-layer :global(.w-city[data-rank='1'] .w-dot) {
+    background: var(--yellow);
+  }
+  /* ---- landscape drawings: each fades in, moves a bit, fades out, and comes back later ---- */
+  .world-layer__doodles {
+    position: absolute;
+    inset: 0;
+  }
+  .search-pin-layer :global(.doodle) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(var(--x), var(--y));
+    opacity: 0;
+    animation: doodle-life var(--life) ease-in-out var(--delay) infinite;
+  }
+  .search-pin-layer :global(.doodle svg) {
+    display: block;
+    overflow: visible;
+  }
+  .search-pin-layer :global(.doodle.is-flipped svg) {
+    transform: scaleX(-1);
+  }
+  .search-pin-layer :global(.doodle) {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  /* clicked: a jump and a spin, icebergs rock and sparkle */
+  .search-pin-layer :global(.doodle.is-poked svg) {
+    animation: doodle-poke 0.9s cubic-bezier(0.3, 1.4, 0.6, 1);
+  }
+  .search-pin-layer :global(.doodle.is-poked[data-kind='iceberg'] svg) {
+    animation: doodle-berg 1.4s ease-in-out;
+  }
+  @keyframes doodle-poke {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    25% {
+      transform: translateY(-18px) scale(1.15, 0.9) rotate(-8deg);
+    }
+    60% {
+      transform: translateY(-10px) scale(1.05) rotate(360deg);
+    }
+    100% {
+      transform: translateY(0) scale(1) rotate(360deg);
+    }
+  }
+  @keyframes doodle-berg {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    20% {
+      transform: rotate(-10deg) translateY(2px);
+    }
+    45% {
+      transform: rotate(8deg) translateY(-3px);
+    }
+    70% {
+      transform: rotate(-4deg);
+    }
+  }
+  .search-pin-layer :global(.doodle-burst) {
+    position: absolute;
+    left: 50%;
+    top: 40%;
+    width: 9px;
+    height: 9px;
+    margin: -4px;
+    pointer-events: none;
+    animation: doodle-burst 0.8s ease-out forwards;
+  }
+  .search-pin-layer :global(.doodle-burst.is-circle) {
+    border-radius: 50%;
+    background: var(--yellow);
+    border: 1.5px solid var(--ink);
+  }
+  .search-pin-layer :global(.doodle-burst.is-tri) {
+    background: var(--violet);
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  .search-pin-layer :global(.doodle-burst.is-spark) {
+    background: #fff;
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+    width: 12px;
+    height: 12px;
+  }
+  @keyframes doodle-burst {
+    from {
+      transform: translate(0, 0) scale(0.4);
+      opacity: 1;
+    }
+    to {
+      transform: translate(var(--bx), var(--by)) scale(1) rotate(200deg);
+      opacity: 0;
+    }
+  }
+  @keyframes doodle-life {
+    0% {
+      opacity: 0;
+    }
+    8%,
+    55% {
+      opacity: 0.95;
+    }
+    63%,
+    100% {
+      opacity: 0;
+    }
+  }
+  /* travelling kinds move across their spot while visible (same timing as the fade) */
+  .search-pin-layer :global(.doodle__move) {
+    animation: doodle-travel var(--life) linear var(--delay) infinite;
+  }
+  @keyframes doodle-travel {
+    0% {
+      transform: translateX(0);
+    }
+    63%,
+    100% {
+      transform: translateX(calc(var(--dir) * var(--travel)));
+    }
+  }
+  .search-pin-layer :global(.doodle[data-motion='walk'] .doodle__inner) {
+    animation: doodle-step 0.7s ease-in-out infinite alternate;
+  }
+  @keyframes doodle-step {
+    to {
+      transform: translateY(-1.5px) rotate(-1deg);
+    }
+  }
+  .search-pin-layer :global(.doodle[data-motion='sail'] .doodle__inner),
+  .search-pin-layer :global(.doodle[data-motion='swim'] .doodle__inner),
+  .search-pin-layer :global(.doodle[data-motion='bob'] .doodle__inner) {
+    animation: doodle-bob 2.6s ease-in-out infinite alternate;
+  }
+  @keyframes doodle-bob {
+    from {
+      transform: translateY(-2px) rotate(-2deg);
+    }
+    to {
+      transform: translateY(2px) rotate(2deg);
+    }
+  }
+  .search-pin-layer :global(.doodle[data-motion='swim'] .d-spout) {
+    animation: doodle-spout 3.2s ease-out infinite;
+    transform-box: fill-box;
+    transform-origin: bottom center;
+  }
+  @keyframes doodle-spout {
+    0%,
+    45% {
+      opacity: 0;
+      transform: scaleY(0.2);
+    }
+    60% {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+    90%,
+    100% {
+      opacity: 0;
+      transform: scaleY(1.2);
+    }
+  }
+  .search-pin-layer :global(.doodle[data-motion='jump'] .doodle__inner) {
+    animation: doodle-jump 3.4s ease-in-out infinite;
+  }
+  @keyframes doodle-jump {
+    0%,
+    55%,
+    100% {
+      transform: translate(0, 3px) rotate(0deg);
+    }
+    68% {
+      transform: translate(8px, -12px) rotate(-18deg);
+    }
+    80% {
+      transform: translate(16px, -8px) rotate(16deg);
+    }
+    90% {
+      transform: translate(20px, 3px) rotate(4deg);
+    }
+  }
+  .search-pin-layer :global(.doodle[data-motion='hop'] .doodle__inner) {
+    animation: doodle-hop 0.55s cubic-bezier(0.3, 0, 0.7, 1) infinite alternate;
+  }
+  @keyframes doodle-hop {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-10px) rotate(-6deg);
+    }
+  }
+  .search-pin-layer :global(.doodle[data-motion='sway'] .doodle__inner) {
+    animation: doodle-sway 3s ease-in-out infinite alternate;
+    transform-origin: 50% 100%;
+  }
+  @keyframes doodle-sway {
+    from {
+      transform: rotate(-4deg);
+    }
+    to {
+      transform: rotate(4deg);
+    }
+  }
+  .search-pin-layer :global(.doodle[data-motion='waddle'] .doodle__inner) {
+    animation: doodle-waddle 0.7s ease-in-out infinite alternate;
+    transform-origin: 50% 100%;
+  }
+  @keyframes doodle-waddle {
+    from {
+      transform: rotate(-7deg);
+    }
+    to {
+      transform: rotate(7deg);
+    }
+  }
+  .search-pin-layer :global(.doodle .d-blades) {
+    animation: spin 6s linear infinite;
+    transform-box: view-box;
+    transform-origin: 16px 16px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* no movement: the drawings simply stay visible */
+    .search-pin-layer :global(.doodle),
+    .search-pin-layer :global(.doodle *) {
+      animation: none !important;
+    }
+    .search-pin-layer :global(.doodle) {
+      opacity: 0.9;
+    }
+  }
+
+  /* while the page falls apart on the way into chaos mode, the map and the cities stay and glow */
+  .world-layer__land :global(path) {
+    transition:
+      fill 500ms ease,
+      stroke 500ms ease;
+  }
+  :global(html.chaos-transition) .world-layer__land :global(path) {
+    fill: #c6ff00;
+    stroke: #ff00c8;
+    stroke-width: 2.5;
+  }
+  :global(html.chaos-transition) .search-pin-layer :global(.w-city) {
+    opacity: 1;
+    transform: translate(var(--x), var(--y)) scale(1.15);
+  }
+  :global(html.chaos-transition) .search-pin-layer :global(.w-name) {
+    color: #fff;
+    background: #1b0033;
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  :global(html.chaos-transition) .search-pin-layer :global(.w-dot) {
+    background: #ff00c8;
+  }
+
+  /* switched off from the header: background city labels hidden (the scrollbar cities stay) */
+  :global(html.cities-off) .world-layer__cities {
+    display: none;
+  }
+  .search-pin-layer :global(.w-coord) {
+    display: none;
+    font-weight: 500;
+    font-size: 10px;
+    color: var(--violet-dark);
+  }
+  /* with the coordinate grid on, each city also shows its coordinates */
+  :global(html.grid-on) .search-pin-layer :global(.w-coord) {
+    display: inline;
+  }
+  .search-pin-layer {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-grid);
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .search-pin {
+    position: absolute;
+    pointer-events: auto;
+    left: 0;
+    top: 0;
+    transform: translate(var(--px), var(--py));
+  }
+  .search-pin__icon {
+    position: absolute;
+    left: -21px;
+    top: -55px;
+    width: 42px;
+    height: 57px;
+    max-width: none; /* the global svg max-width would collapse it: its anchor has no width */
+    overflow: visible;
+    animation: pin-drop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .search-pin__icon path {
+    fill: var(--violet);
+    stroke: var(--ink);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+  }
+  .search-pin__icon circle {
+    fill: var(--yellow);
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+  .search-pin::after {
+    /* ripple where the pin lands */
+    content: '';
+    position: absolute;
+    left: -14px;
+    top: -6px;
+    width: 28px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--violet);
+    animation: pulse var(--pulse-duration) ease-out infinite;
+  }
+  .search-pin__label {
+    position: absolute;
+    left: 26px;
+    top: -52px;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    background: var(--ink);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    white-space: nowrap;
+    box-shadow: 3px 3px 0 var(--yellow);
+  }
+  .search-pin.is-flipped .search-pin__label {
+    left: auto;
+    right: 26px;
+  }
+  @keyframes pin-drop {
+    from {
+      transform: translateY(-80px);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @media print {
+    .world-layer,
+    .search-pin-layer {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { CENTER_EVENT, FACTS_EVENT, GRID_EVENT, HORIZONTAL_EVENT, RIBBON_EVENT, type SearchTarget } from '../lib/constants';
+  import { centerLon, isHorizontal, pageGeo, pageSize } from '../lib/pageGeo';
+  import { pageZoom, textZoom } from '../lib/zoom';
+
+  type City = [name: string, lat: number, lon: number, rank: number];
+
+  // Content that labels must never cover (text, cards, controls, media)
+  const OBSTACLES = [
+    'main h1', 'main h2', 'main h3', 'main p', 'main li', 'main figure', 'main form', 'main img', 'main time',
+    'main .card', 'main .btn', 'main .pill', 'main .link-arrow', 'main .icon-strip', 'main .map-panel',
+    'main .timeline', 'main .section-heading', 'main .supporters', 'main .facts', 'main .stat-ring',
+    'main .chips', 'main .badges', 'main .hero__actions', 'main .icon-circle', 'main .message__art',
+    '.site-header', '.powerlines', '.site-footer',
+  ].join(',');
+  const PAD = 14; // clearance around content, px
+  const GAP = 8; // clearance between labels, px
+  const MOBILE_MAX_CITIES = 14;
+
+  const land = document.querySelector<SVGSVGElement>('[data-world-land]');
+  const doodleBox = document.querySelector<HTMLElement>('[data-world-doodles]');
+  type Doodle = [kind: string, lat: number, lon: number, w: number, h: number, motion: string];
+  const doodleData: Doodle[] = JSON.parse(document.querySelector('[data-doodle-data]')?.textContent || '[]');
+  /** Drawings are shown this much larger than their drawn size */
+  const DOODLE_SCALE = 1.3;
+  /** How far travelling kinds move while visible, px */
+  const TRAVEL: Record<string, number> = { sail: 60, walk: 36, hop: 70, swim: 24 };
+  const layer = document.querySelector<HTMLElement>('[data-world-layer]');
+  const box = document.querySelector<HTMLElement>('[data-world-cities]');
+  const raw = document.querySelector('[data-world-data]')?.textContent;
+  if (layer && box && raw) init(layer, box, JSON.parse(raw) as City[]);
+
+  function init(layer: HTMLElement, box: HTMLElement, cities: City[]) {
+    const fmt = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(1)}°${v >= 0 ? pos : neg}`;
+    // one element per city, measured once
+    const els = cities.map(([name, lat, lon, rank]) => {
+      const el = document.createElement('span');
+      el.className = 'w-city';
+      el.dataset.rank = String(rank);
+      el.innerHTML = `<span class="w-dot"></span><span class="w-name"></span><span class="w-coord"></span>`;
+      el.querySelector('.w-name')!.textContent = name;
+      el.querySelector('.w-coord')!.textContent = `${fmt(lat, 'N', 'S')} ${fmt(lon, 'E', 'W')}`;
+      // click a city: a random fact about it
+      el.addEventListener('click', () => window.dispatchEvent(new CustomEvent(FACTS_EVENT, { detail: { name, lat, lon } })));
+      return { el, lat, lon, rank };
+    });
+    // highest rank first, then north to south so placement is stable
+    els.sort((a, b) => a.rank - b.rank || b.lat - a.lat);
+
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.target.classList.toggle('is-in', e.isIntersecting)),
+      { rootMargin: '-8% 0px -8% 0px' },
+    );
+
+    // Continent outlines: one path in a 360 × 180 plate-carrée space (x = lon + 180, y = 90 − lat)
+    fetch('/world-land.svg')
+      .then((r) => r.text())
+      .then((svg) => {
+        const d = new DOMParser().parseFromString(svg, 'image/svg+xml').querySelector('path')?.getAttribute('d');
+        if (!d || !land) return;
+        // drawn three times (−360°, 0, +360°) so the map wraps around the 180° meridian
+        land.replaceChildren(
+          ...[-360, 0, 360].map((dx) => {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', d);
+            if (dx) path.setAttribute('transform', `translate(${dx} 0)`);
+            return path;
+          }),
+        );
+      })
+      .catch(() => {});
+
+    /** Clicked drawing: a jump and a spin (icebergs rock) with a little burst of brand shapes. */
+    function poke(el: HTMLElement, kind: string) {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      el.classList.remove('is-poked');
+      void el.offsetWidth; // restart the animation
+      el.classList.add('is-poked');
+      window.setTimeout(() => el.classList.remove('is-poked'), 1500);
+      const shapes = kind === 'iceberg' ? ['is-spark', 'is-spark', 'is-spark', 'is-spark', 'is-spark'] : ['is-circle', 'is-tri', 'is-circle', 'is-tri', 'is-circle'];
+      shapes.forEach((cls, i) => {
+        const b = document.createElement('span');
+        b.className = `doodle-burst ${cls}`;
+        const angle = (i / shapes.length) * Math.PI * 2 - Math.PI / 2;
+        b.style.setProperty('--bx', `${(Math.cos(angle) * 34).toFixed(0)}px`);
+        b.style.setProperty('--by', `${(Math.sin(angle) * 34).toFixed(0)}px`);
+        el.append(b);
+        window.setTimeout(() => b.remove(), 900);
+      });
+    }
+
+    const doodleEls = doodleData.map(([kind, lat, lon, w0, h0, motion]) => {
+      const w = Math.round(w0 * DOODLE_SCALE);
+      const h = Math.round(h0 * DOODLE_SCALE);
+      const el = document.createElement('div');
+      el.className = 'doodle';
+      el.dataset.motion = motion;
+      el.dataset.kind = kind;
+      el.addEventListener('click', () => poke(el, kind));
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      if (dir < 0 && motion !== 'sway' && motion !== 'spin') el.classList.add('is-flipped');
+      const life = 18 + Math.random() * 16; // seconds for one appear-move-disappear cycle
+      el.style.setProperty('--life', `${life.toFixed(1)}s`);
+      el.style.setProperty('--delay', `${(-Math.random() * life).toFixed(1)}s`);
+      el.style.setProperty('--dir', String(dir));
+      el.style.setProperty('--travel', `${TRAVEL[motion] ?? 0}px`);
+      el.innerHTML = `<div class="doodle__move"><div class="doodle__inner"><svg width="${w}" height="${h}" viewBox="0 0 ${w0} ${h0}"><use href="#doodle-${kind}"/></svg></div></div>`;
+      return { el, kind, lat, lon, w, h, dir, travel: TRAVEL[motion] ?? 0 };
+    });
+
+    let timer = 0;
+    function layout() {
+      const { width: W, height: H } = pageSize();
+      if (!W || !H) return;
+      const horiz = isHorizontal();
+      const geo = pageGeo(W, H, centerLon(), horiz);
+      // show exactly the visible longitudes (and latitudes), at the same scale on both axes
+      land?.setAttribute('viewBox', `${geo.lonMin + 180} ${90 - geo.latTop} ${geo.lonMax - geo.lonMin} ${geo.latTop - geo.latBottom}`);
+      const z = pageZoom();
+      // page coordinates are relative to the body (it floats in the middle when zoomed out)
+      const body = document.body.getBoundingClientRect();
+      const bx = body.left;
+      const by = body.top;
+      // keep clear of the visible scrollbar ribbon and its labels (measured, since its width varies)
+      const ribbonBox = Array.from(document.querySelectorAll<HTMLElement>('[data-chile], [data-ribbon-switch]'))
+        .map((el) => el.getBoundingClientRect())
+        .filter((r) => r.width > 0 && getComputedStyle(document.documentElement).getPropertyValue('--chile-space').trim() !== '0px');
+      // (horizontal page: the ribbon floats over the columns, which keep their own room for it)
+      const chileSpace = ribbonBox.length && !horiz ? Math.max(0, W - (Math.min(...ribbonBox.map((r) => r.left)) - bx) / z + 8) : 0;
+      const blocked = Array.from(document.querySelectorAll<HTMLElement>(OBSTACLES))
+        .map((n) => n.getBoundingClientRect())
+        .filter((r) => r.width && r.height)
+        .map((r) => ({ l: (r.left - bx) / z - PAD, r: (r.right - bx) / z + PAD, t: (r.top - by) / z - PAD, b: (r.bottom - by) / z + PAD }));
+      const placed: typeof blocked = [];
+      const hits = (a: (typeof blocked)[number], list: typeof blocked) =>
+        list.some((o) => a.l < o.r && a.r > o.l && a.t < o.b && a.b > o.t);
+
+      io.disconnect();
+      box.replaceChildren();
+      const limit = W < 600 ? MOBILE_MAX_CITIES : Infinity;
+      for (const c of els) {
+        if (placed.length >= limit) break;
+        // the copy of the city nearest to the centre (wraps around the 180° meridian)
+        const center = (geo.lonMin + geo.lonMax) / 2;
+        const lon = c.lon + 360 * Math.round((center - c.lon) / 360);
+        const x = geo.xOf(lon);
+        const y = geo.yOf(c.lat);
+        if (x < 0 || x > W || y < 0 || y > H) continue;
+        box.append(c.el);
+        c.el.style.setProperty('--x', '0px');
+        c.el.style.setProperty('--y', '0px');
+        const w = c.el.offsetWidth;
+        const h = c.el.offsetHeight;
+        // label to the right of the dot; flip to the left near the right edge
+        let left = x - 4;
+        let flip = false;
+        if (left + w > W - chileSpace - 8) {
+          left = x + 4 - w;
+          flip = true;
+        }
+        const rect = { l: left, r: left + w, t: y - h / 2, b: y + h / 2 };
+        const inPage = rect.l > 6 && rect.r < W - chileSpace - 6;
+        if (!inPage || hits(rect, blocked) || hits({ l: rect.l - GAP, r: rect.r + GAP, t: rect.t - GAP, b: rect.b + GAP }, placed)) {
+          c.el.remove();
+          continue;
+        }
+        placed.push(rect);
+        c.el.classList.toggle('is-left', flip);
+        c.el.classList.remove('is-in');
+        c.el.style.setProperty('--x', `${left}px`);
+        c.el.style.setProperty('--y', `${rect.t}px`);
+        io.observe(c.el);
+      }
+      placeDoodles(geo, W, blocked, placed, chileSpace);
+      placePin(geo);
+    }
+
+    /** Drawings go only where there is nothing else: no content, no city label, no other drawing. */
+    function placeDoodles(
+      geo: ReturnType<typeof pageGeo>,
+      W: number,
+      blocked: { l: number; r: number; t: number; b: number }[],
+      taken: { l: number; r: number; t: number; b: number }[],
+      chileSpace: number,
+    ) {
+      if (!doodleBox) return;
+      doodleBox.replaceChildren();
+      const center = (geo.lonMin + geo.lonMax) / 2;
+      const mine: typeof taken = [];
+      // like the city names, the drawings keep their size when the page is zoomed out
+      const tz = textZoom();
+      for (const d of doodleEls) {
+        const w = d.w * tz;
+        const h = d.h * tz;
+        const svg = d.el.querySelector('svg')!;
+        svg.setAttribute('width', w.toFixed(1));
+        svg.setAttribute('height', h.toFixed(1));
+        d.el.style.setProperty('--travel', `${(d.travel * tz).toFixed(1)}px`);
+        const lon = d.lon + 360 * Math.round((center - d.lon) / 360);
+        const x = geo.xOf(lon) - w / 2;
+        const y = geo.yOf(d.lat) - h / 2;
+        // the area it covers, including where it travels to
+        const reach = d.travel * tz * d.dir;
+        const rect = { l: Math.min(x, x + reach) - 6, r: Math.max(x + w, x + w + reach) + 6, t: y - 12, b: y + h + 4 };
+        if (rect.l < 4 || rect.r > W - chileSpace - 4) continue;
+        const hit = (list: typeof taken) => list.some((o) => rect.l < o.r && rect.r > o.l && rect.t < o.b && rect.b > o.t);
+        if (hit(blocked) || hit(taken) || hit(mine)) continue;
+        mine.push(rect);
+        d.el.style.setProperty('--x', `${x.toFixed(1)}px`);
+        d.el.style.setProperty('--y', `${y.toFixed(1)}px`);
+        doodleBox.append(d.el);
+      }
+    }
+
+    // ---- Search result pin ----
+    const pinLayer = document.querySelector<HTMLElement>('[data-search-pin-layer]')!;
+    const pin = pinLayer.querySelector<HTMLElement>('[data-search-pin]')!;
+    const pinLabel = pin.querySelector<HTMLElement>('[data-search-pin-label]')!;
+    let target: SearchTarget | null = null;
+    pin.addEventListener('click', () => target && window.dispatchEvent(new CustomEvent(FACTS_EVENT, { detail: target })));
+    function placePin(geo: ReturnType<typeof pageGeo>) {
+      if (!target) {
+        pin.hidden = true;
+        return;
+      }
+      const x = geo.xOf(target.lon);
+      pin.style.setProperty('--px', `${x}px`);
+      pin.style.setProperty('--py', `${geo.yOf(target.lat)}px`);
+      pin.classList.toggle('is-flipped', x > layer.clientWidth * 0.6);
+      pin.hidden = false;
+    }
+    window.addEventListener(CENTER_EVENT, (e) => {
+      target = (e as CustomEvent<SearchTarget | null>).detail;
+      if (target) {
+        pinLabel.textContent = `${target.name} · ${fmt(target.lat, 'N', 'S')} ${fmt(target.lon, 'E', 'W')}`;
+        // restart the drop animation
+        pin.hidden = true;
+        void pin.offsetWidth;
+      }
+      layout();
+    });
+    const schedule = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(layout, 150);
+    };
+
+    new ResizeObserver(schedule).observe(document.body);
+    window.addEventListener('resize', schedule);
+    window.addEventListener(GRID_EVENT, schedule); // labels get wider with coordinates shown
+    window.addEventListener(RIBBON_EVENT, schedule); // the reserved scrollbar space changes
+    window.addEventListener(HORIZONTAL_EVENT, schedule);
+    document.fonts?.ready.then(schedule);
+    schedule();
+  }
+</script>

@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Globe from '../../../components/Globe.astro';
+import IconCircle from '../../../components/IconCircle.astro';
+import PostCard from '../../../components/PostCard.astro';
+import { LOCALES, localePath, t, type Lang } from '../../../i18n';
+import { CATEGORIES, type Category } from '../../../lib/constants';
+import { categoryMeta } from '../../../lib/categories';
+import { getPosts } from '../../../lib/posts';
+
+export function getStaticPaths() {
+  return LOCALES.flatMap((lang) => CATEGORIES.map((category) => ({ params: { lang, category } })));
+}
+
+const lang = Astro.params.lang as Lang;
+const category = Astro.params.category as Category;
+const meta = categoryMeta(category);
+const posts = await getPosts(category);
+const title = t(lang, meta.titleKey);
+const intro = t(lang, meta.textKey);
+---
+
+<BaseLayout lang={lang} title={title} description={intro}>
+  <header class="section page-header">
+    <div class="bg-layer">
+      <Globe size="min(620px, 110vw)" right="-14%" top="-30%" speed={80} />
+    </div>
+    <div class="container">
+      <a class="link-arrow back-link" href={localePath(lang)}>{t(lang, 'posts.back')}</a>
+      <div class="page-header__title">
+        <IconCircle icon={meta.icon} variant={meta.tone} size="lg" />
+        <h1>{title}</h1>
+      </div>
+      <p class="page-header__intro">{intro}</p>
+    </div>
+  </header>
+
+  <section class="section post-list" aria-label={title}>
+    <div class="bg-layer">
+      <Globe size="min(700px, 120vw)" left="-24%" top="10%" speed={70} direction="ccw" />
+    </div>
+    <div class="container">
+      {
+        posts.length ? (
+          <ul class="post-grid">
+            {posts.map((post, i) => (
+              <li class="reveal">
+                <PostCard post={post} lang={lang} index={i} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="empty">
+            <IconCircle icon="sparkles" variant="yellow" size="sm" />
+            {t(lang, 'posts.empty')}
+          </p>
+        )
+      }
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .page-header {
+    padding-block: clamp(32px, 6vw, 72px) 0;
+  }
+  .page-header__title {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 16px;
+  }
+  .page-header__title h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    margin: 0;
+    min-width: 0;
+  }
+  .page-header__intro {
+    font-size: var(--fs-tagline);
+    color: var(--muted);
+    max-width: 50ch;
+    margin-top: 20px;
+  }
+  .back-link::after {
+    order: -1;
+    transform: rotate(180deg);
+  }
+  .back-link:hover::after {
+    transform: rotate(180deg) translateX(4px);
+  }
+  .post-list {
+    padding-top: clamp(40px, 6vw, 64px);
+    padding-bottom: 0;
+  }
+  .post-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(300px * var(--tz))), 1fr));
+    gap: clamp(24px, 3vw, 36px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .post-grid > li {
+    display: flex;
+  }
+  .post-grid > li > :global(*) {
+    flex: 1;
+  }
+  .empty {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: var(--fs-tagline);
+    font-weight: 700;
+  }
+</style>

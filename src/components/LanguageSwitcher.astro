@@ -1,0 +1,202 @@
+---
+import Icon from './Icon.astro';
+import { LOCALES, NATIVE_NAMES, HTML_LANG, localePath, t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+  /** Current path without the language prefix, e.g. 'erasmus' */
+  path: string;
+  /** Unique suffix so several switchers can live on one page */
+  uid: string;
+  /** Dropdown opens upward/inline (mobile overlay) */
+  inline?: boolean;
+}
+
+const { lang, path, uid, inline = false } = Astro.props;
+const menuId = `lang-menu-${uid}`;
+---
+
+<div class:list={['lang-switch', { 'lang-switch--inline': inline }]} data-lang-switcher>
+  <button
+    type="button"
+    class="lang-switch__btn"
+    aria-expanded="false"
+    aria-controls={menuId}
+    aria-label={`${t(lang, 'lang.label')}: ${NATIVE_NAMES[lang]}`}
+    data-lang-toggle
+  >
+    <Icon name="globe" size={20} />
+    <span class="lang-switch__code">{lang.toUpperCase()}</span>
+  </button>
+  <ul class="lang-switch__menu" id={menuId} hidden data-lang-menu>
+    {
+      LOCALES.map((l) => (
+        <li>
+          <a
+            href={localePath(l, path)}
+            hreflang={HTML_LANG[l]}
+            lang={HTML_LANG[l]}
+            data-lang-option={l}
+            aria-current={l === lang ? 'true' : undefined}
+          >
+            <span class="lang-switch__native">{NATIVE_NAMES[l]}</span>
+            <span class="lang-switch__tag" aria-hidden="true">{l.toUpperCase()}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .lang-switch {
+    position: relative;
+  }
+  .lang-switch__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: var(--touch);
+    min-height: var(--touch);
+    padding: 8px 14px;
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    font-weight: 700;
+    font-size: var(--fs-small);
+    cursor: pointer;
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+  .lang-switch__btn :global(svg) {
+    flex: none;
+  }
+  .lang-switch {
+    flex: none;
+  }
+  .lang-switch__btn:hover,
+  .lang-switch__btn[aria-expanded='true'] {
+    background: var(--violet-tint);
+  }
+  .lang-switch__menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    z-index: var(--z-overlay);
+    min-width: 200px;
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+    background: var(--surface);
+    border: var(--border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-yellow);
+  }
+  .lang-switch--inline .lang-switch__menu {
+    position: static;
+    margin-top: 12px;
+    box-shadow: none;
+  }
+  .lang-switch__menu a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: var(--touch);
+    padding: 8px 14px;
+    border-radius: 12px;
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .lang-switch__menu a:hover,
+  .lang-switch__menu a:focus-visible {
+    background: var(--violet-tint);
+    outline-offset: -3px;
+  }
+  .lang-switch__menu a[aria-current='true'] {
+    font-weight: 700;
+    background: var(--yellow-tint);
+  }
+  .lang-switch__native {
+    font-family: 'DM Sans', 'Noto Sans', 'Noto Sans Georgian', system-ui, sans-serif;
+  }
+  .lang-switch__tag {
+    font-size: var(--fs-tiny);
+    color: var(--muted);
+    font-weight: 700;
+  }
+</style>
+
+<script>
+  import { LANG_STORAGE_KEY } from '../lib/constants';
+
+  function setup(root: HTMLElement) {
+    const btn = root.querySelector<HTMLButtonElement>('[data-lang-toggle]')!;
+    const menu = root.querySelector<HTMLElement>('[data-lang-menu]')!;
+    const links = Array.from(menu.querySelectorAll<HTMLAnchorElement>('a'));
+
+    const open = (focusIndex?: number) => {
+      menu.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      if (focusIndex !== undefined) links[focusIndex]?.focus();
+    };
+    const close = (returnFocus = false) => {
+      menu.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      if (returnFocus) btn.focus();
+    };
+    const currentIndex = () => Math.max(0, links.findIndex((a) => a.getAttribute('aria-current') === 'true'));
+
+    btn.addEventListener('click', () => (menu.hidden ? open() : close()));
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        open(currentIndex());
+      }
+    });
+
+    menu.addEventListener('keydown', (e) => {
+      const i = links.indexOf(document.activeElement as HTMLAnchorElement);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        links[(i + 1) % links.length].focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        links[(i - 1 + links.length) % links.length].focus();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        links[0].focus();
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        links[links.length - 1].focus();
+      } else if (e.key === 'Tab') {
+        close();
+      }
+    });
+
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !menu.hidden) {
+        e.stopPropagation();
+        close(true);
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!menu.hidden && !root.contains(e.target as Node)) close();
+    });
+
+    links.forEach((a) => {
+      a.addEventListener('click', () => {
+        try {
+          localStorage.setItem(LANG_STORAGE_KEY, a.dataset.langOption ?? '');
+        } catch {
+          /* storage unavailable */
+        }
+        // Keep the scroll anchor when switching language
+        if (location.hash) a.href = a.href.split('#')[0] + location.hash;
+      });
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-lang-switcher]').forEach(setup);
+</script>

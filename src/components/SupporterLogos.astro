@@ -1,0 +1,102 @@
+---
+/**
+ * Supporter logos (mandatory on every page). Original colours, never distorted,
+ * animated or overlapped. The EU logo is never smaller than the foundation logo.
+ */
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+  /** 'full' = footer strip with disclaimer, 'small' = inside a card / page header */
+  size?: 'full' | 'small';
+  showDisclaimer?: boolean;
+}
+
+const { lang, size = 'full', showDisclaimer = size === 'full' } = Astro.props;
+
+// Intrinsic sizes of the files in public/images/.
+// The EU logo is a copy of the original with its large white margins trimmed
+// (colours untouched), so at equal height its mark is not smaller than the other logo.
+const LOGOS = {
+  eu: { base: '/images/logo-erasmus-plus-cofunded-trimmed', fallback: 'png', w: 694, h: 171 },
+  foundation: { base: '/images/logo-youth-lifelong-learning-foundation', fallback: 'jpg', w: 300, h: 300 },
+};
+---
+
+<div class:list={['supporters', `supporters--${size}`]}>
+  <div class="supporters__logos">
+    <picture>
+      <source srcset={`${LOGOS.eu.base}.webp`} type="image/webp" />
+      <img
+        src={`${LOGOS.eu.base}.${LOGOS.eu.fallback}`}
+        width={LOGOS.eu.w}
+        height={LOGOS.eu.h}
+        alt="Co-funded by the Erasmus+ Programme of the European Union"
+        loading="lazy"
+        decoding="async"
+      />
+    </picture>
+    <picture>
+      <source srcset={`${LOGOS.foundation.base}.webp`} type="image/webp" />
+      <img
+        src={`${LOGOS.foundation.base}.${LOGOS.foundation.fallback}`}
+        width={LOGOS.foundation.w}
+        height={LOGOS.foundation.h}
+        alt="Youth and Lifelong Learning Foundation"
+        loading="lazy"
+        decoding="async"
+      />
+    </picture>
+  </div>
+  {showDisclaimer && <p class="supporters__disclaimer">{t(lang, 'footer.disclaimer')}</p>}
+</div>
+
+<style>
+  .supporters {
+    --logo-h: 110px;
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    padding: clamp(20px, 3vw, 32px);
+    color: var(--ink);
+  }
+  .supporters--small {
+    --logo-h: 56px;
+    padding: 14px 18px;
+    border: var(--border);
+    border-radius: 20px;
+  }
+  .supporters__logos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: clamp(20px, 4vw, 48px);
+  }
+  .supporters__logos picture {
+    display: contents;
+  }
+  .supporters__logos img {
+    height: var(--logo-h);
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  .supporters__disclaimer {
+    margin: 18px 0 0;
+    font-size: var(--fs-tiny);
+    line-height: 1.5;
+    color: var(--muted);
+    max-width: 90ch;
+  }
+  @media (max-width: 599px) {
+    .supporters--full {
+      --logo-h: 72px;
+    }
+    .supporters--full .supporters__logos {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .supporters--small {
+      --logo-h: 44px;
+    }
+  }
+</style>

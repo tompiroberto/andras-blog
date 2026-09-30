@@ -1,0 +1,531 @@
+{
+ "_comment": "Short GeoGuessr tips shown in map mode (own wording; details via the Plonk It link). Text in en + hu, other languages fall back to English.",
+ "348": {
+  "a2": "HU",
+  "plonk": "hungary",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ő Ű",
+    "en": "Only Hungarian uses the letters ő and ű.",
+    "hu": "Csak a magyarban van ő és ű betű."
+   }
+  ]
+ },
+ "616": {
+  "a2": "PL",
+  "plonk": "poland",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ł Ż Ś",
+    "en": "Polish letters ł, ż, ś, ź, ć and ń on signs.",
+    "hu": "Lengyel betűk a táblákon: ł, ż, ś, ź, ć, ń."
+   }
+  ]
+ },
+ "203": {
+  "a2": "CZ",
+  "plonk": "czechia",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ř Ů",
+    "en": "The letters ř and ů exist only in Czech.",
+    "hu": "Az ř és ů betű csak a csehben létezik."
+   }
+  ]
+ },
+ "703": {
+  "a2": "SK",
+  "plonk": "slovakia",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ä Ô Ľ",
+    "en": "Slovak has ä, ô, ľ and ĺ – but no ř or ů.",
+    "hu": "A szlovákban van ä, ô, ľ és ĺ – de ř és ů nincs."
+   }
+  ]
+ },
+ "642": {
+  "a2": "RO",
+  "plonk": "romania",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ș Ț Ă",
+    "en": "Romanian letters ș, ț, ă, â and î.",
+    "hu": "Román betűk: ș, ț, ă, â, î."
+   }
+  ]
+ },
+ "440": {
+  "a2": "LT",
+  "plonk": "lithuania",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ė Ų Į",
+    "en": "Lithuanian letters ė, ų, į and ū.",
+    "hu": "Litván betűk: ė, ų, į, ū."
+   }
+  ]
+ },
+ "428": {
+  "a2": "LV",
+  "plonk": "latvia",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ā Ķ Ņ",
+    "en": "Latvian uses long vowels with a line (ā, ē, ī, ū) and ķ, ļ, ņ.",
+    "hu": "A lettben hosszú magánhangzók vonallal (ā, ē, ī, ū), és ķ, ļ, ņ."
+   }
+  ]
+ },
+ "233": {
+  "a2": "EE",
+  "plonk": "estonia",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Õ Ä Ü",
+    "en": "Estonian has õ – together with ä, ö and ü.",
+    "hu": "Az észtben van õ – ä, ö és ü mellett."
+   }
+  ]
+ },
+ "300": {
+  "a2": "GR",
+  "plonk": "greece",
+  "clues": [
+   {
+    "type": "script",
+    "extra": "Αθήνα",
+    "en": "Greek alphabet on every sign.",
+    "hu": "Görög ábécé minden táblán."
+   }
+  ]
+ },
+ "191": {
+  "a2": "HR",
+  "plonk": "croatia",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Č Ć Đ",
+    "en": "Croatian letters č, ć and đ – Latin alphabet only.",
+    "hu": "Horvát betűk: č, ć, đ – csak latin ábécé."
+   }
+  ]
+ },
+ "705": {
+  "a2": "SI",
+  "plonk": "slovenia",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Č Š Ž",
+    "en": "Slovene has č, š and ž, but no ć or đ.",
+    "hu": "A szlovénben van č, š, ž, de nincs ć és đ."
+   }
+  ]
+ },
+ "070": {
+  "a2": "BA",
+  "plonk": "bosnia-and-herzegovina",
+  "clues": [
+   {
+    "type": "script",
+    "extra": "Сарајево",
+    "en": "Signs often in both Latin and Cyrillic letters.",
+    "hu": "A táblák gyakran latin és cirill betűvel is."
+   }
+  ]
+ },
+ "688": {
+  "a2": "RS",
+  "plonk": "serbia",
+  "clues": [
+   {
+    "type": "script",
+    "extra": "Београд",
+    "en": "Serbian Cyrillic (with ђ, ћ, џ) next to Latin script.",
+    "hu": "Szerb cirill (ђ, ћ, џ) a latin írás mellett."
+   }
+  ]
+ },
+ "040": {
+  "a2": "AT",
+  "plonk": "austria",
+  "clues": [
+   {
+    "type": "language",
+    "en": "German on the signs; many villages end in -dorf.",
+    "hu": "Német feliratok; sok falu neve -dorf végű."
+   }
+  ]
+ },
+ "276": {
+  "a2": "DE",
+  "plonk": "germany",
+  "clues": [
+   {
+    "type": "yellow-sign",
+    "en": "Yellow town-entrance signs with black letters.",
+    "hu": "Sárga helységnévtáblák fekete betűkkel."
+   }
+  ]
+ },
+ "643": {
+  "a2": "RU",
+  "plonk": "russia",
+  "clues": [
+   {
+    "type": "script",
+    "extra": "Москва",
+    "en": "Cyrillic with ы and э – letters Ukrainian does not use.",
+    "hu": "Cirill írás ы és э betűvel – ezeket az ukrán nem használja."
+   }
+  ]
+ },
+ "804": {
+  "a2": "UA",
+  "plonk": "ukraine",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ї Є І",
+    "en": "Ukrainian letters ї, є and і.",
+    "hu": "Ukrán betűk: ї, є, і."
+   }
+  ]
+ },
+ "268": {
+  "a2": "GE",
+  "plonk": "georgia",
+  "clues": [
+   {
+    "type": "script",
+    "extra": "საქართველო",
+    "en": "The unique Georgian alphabet.",
+    "hu": "A különleges grúz ábécé."
+   }
+  ]
+ },
+ "792": {
+  "a2": "TR",
+  "plonk": "turkey",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ğ Ş İ",
+    "en": "Turkish letters ğ, ş and the dotted İ / dotless ı.",
+    "hu": "Török betűk: ğ, ş, a pontos İ és a pont nélküli ı."
+   }
+  ]
+ },
+ "352": {
+  "a2": "IS",
+  "plonk": "iceland",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ð Þ",
+    "en": "Icelandic letters ð and þ.",
+    "hu": "Izlandi betűk: ð és þ."
+   }
+  ]
+ },
+ "578": {
+  "a2": "NO",
+  "plonk": "norway",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Æ Ø Å",
+    "en": "Norwegian letters æ, ø and å.",
+    "hu": "Norvég betűk: æ, ø, å."
+   }
+  ]
+ },
+ "752": {
+  "a2": "SE",
+  "plonk": "sweden",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Å Ä Ö",
+    "en": "Swedish uses å, ä and ö (no æ or ø).",
+    "hu": "A svédben å, ä, ö van (æ és ø nincs)."
+   }
+  ]
+ },
+ "208": {
+  "a2": "DK",
+  "plonk": "denmark",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Æ Ø Å",
+    "en": "Danish letters æ, ø and å.",
+    "hu": "Dán betűk: æ, ø, å."
+   }
+  ]
+ },
+ "246": {
+  "a2": "FI",
+  "plonk": "finland",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ä Ö",
+    "en": "Finnish: many double letters (aa, kk) and ä, ö.",
+    "hu": "Finn: sok dupla betű (aa, kk), és ä, ö."
+   }
+  ]
+ },
+ "724": {
+  "a2": "ES",
+  "plonk": "spain",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ñ",
+    "en": "Spanish ñ on signs.",
+    "hu": "Spanyol ñ a táblákon."
+   }
+  ]
+ },
+ "620": {
+  "a2": "PT",
+  "plonk": "portugal",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ã Õ Ç",
+    "en": "Portuguese ã, õ and ç.",
+    "hu": "Portugál ã, õ, ç."
+   }
+  ]
+ },
+ "826": {
+  "a2": "GB",
+  "plonk": "united-kingdom",
+  "clues": [
+   {
+    "type": "drive-left",
+    "en": "Cars drive on the left.",
+    "hu": "Balra tartás: az autók a bal oldalon közlekednek."
+   }
+  ]
+ },
+ "372": {
+  "a2": "IE",
+  "plonk": "ireland",
+  "clues": [
+   {
+    "type": "yellow-edge",
+    "en": "Yellow lines along the edge of the road.",
+    "hu": "Sárga vonal az út szélén."
+   },
+   {
+    "type": "language",
+    "en": "Signs in Irish and English.",
+    "hu": "Ír és angol nyelvű táblák."
+   }
+  ]
+ },
+ "392": {
+  "a2": "JP",
+  "plonk": "japan",
+  "clues": [
+   {
+    "type": "drive-left",
+    "en": "Cars drive on the left.",
+    "hu": "Balra tartás: az autók a bal oldalon közlekednek."
+   },
+   {
+    "type": "pole-stripes",
+    "en": "Yellow-and-black striped guards on utility poles.",
+    "hu": "Sárga-fekete csíkos védőburkolat a villanyoszlopokon."
+   }
+  ]
+ },
+ "458": {
+  "a2": "MY",
+  "plonk": "malaysia",
+  "clues": [
+   {
+    "type": "drive-left",
+    "en": "Cars drive on the left.",
+    "hu": "Balra tartás: az autók a bal oldalon közlekednek."
+   },
+   {
+    "type": "kerb",
+    "en": "Black-and-white painted kerbs; streets are called \"Jalan\".",
+    "hu": "Fekete-fehérre festett útszegélyek; az utcák neve \"Jalan\"."
+   }
+  ]
+ },
+ "360": {
+  "a2": "ID",
+  "plonk": "indonesia",
+  "clues": [
+   {
+    "type": "drive-left",
+    "en": "Cars drive on the left.",
+    "hu": "Balra tartás: az autók a bal oldalon közlekednek."
+   },
+   {
+    "type": "language",
+    "en": "Indonesian signs – streets are also called \"Jalan\".",
+    "hu": "Indonéz táblák – az utcák itt is \"Jalan\"-ok."
+   }
+  ]
+ },
+ "764": {
+  "a2": "TH",
+  "plonk": "thailand",
+  "clues": [
+   {
+    "type": "drive-left",
+    "en": "Cars drive on the left.",
+    "hu": "Balra tartás: az autók a bal oldalon közlekednek."
+   },
+   {
+    "type": "script",
+    "extra": "ประเทศไทย",
+    "en": "Thai script on the signs.",
+    "hu": "Thai írás a táblákon."
+   }
+  ]
+ },
+ "404": {
+  "a2": "KE",
+  "plonk": "kenya",
+  "clues": [
+   {
+    "type": "snorkel",
+    "en": "The Google car has a snorkel (a tall air intake).",
+    "hu": "A Google-autón \"snorkel\" (magas légbeszívó cső) van."
+   },
+   {
+    "type": "drive-left",
+    "en": "Cars drive on the left.",
+    "hu": "Balra tartás: az autók a bal oldalon közlekednek."
+   }
+  ]
+ },
+ "710": {
+  "a2": "ZA",
+  "plonk": "south-africa",
+  "clues": [
+   {
+    "type": "drive-left",
+    "en": "Cars drive on the left.",
+    "hu": "Balra tartás: az autók a bal oldalon közlekednek."
+   }
+  ]
+ },
+ "036": {
+  "a2": "AU",
+  "plonk": "australia",
+  "clues": [
+   {
+    "type": "drive-left",
+    "en": "Cars drive on the left.",
+    "hu": "Balra tartás: az autók a bal oldalon közlekednek."
+   },
+   {
+    "type": "kangaroo",
+    "en": "Kangaroo warning signs.",
+    "hu": "Kengurus figyelmeztető táblák."
+   }
+  ]
+ },
+ "554": {
+  "a2": "NZ",
+  "plonk": "new-zealand",
+  "clues": [
+   {
+    "type": "drive-left",
+    "en": "Cars drive on the left.",
+    "hu": "Balra tartás: az autók a bal oldalon közlekednek."
+   }
+  ]
+ },
+ "840": {
+  "a2": "US",
+  "plonk": "united-states",
+  "clues": [
+   {
+    "type": "yellow-center",
+    "en": "Yellow centre lines on the roads.",
+    "hu": "Sárga felezővonal az utakon."
+   }
+  ]
+ },
+ "124": {
+  "a2": "CA",
+  "plonk": "canada",
+  "clues": [
+   {
+    "type": "yellow-center",
+    "en": "Yellow centre lines on the roads.",
+    "hu": "Sárga felezővonal az utakon."
+   },
+   {
+    "type": "language",
+    "en": "French signs in Québec.",
+    "hu": "Francia táblák Québecben."
+   }
+  ]
+ },
+ "484": {
+  "a2": "MX",
+  "plonk": "mexico",
+  "clues": [
+   {
+    "type": "speedbump",
+    "en": "Lots of \"TOPE\" speed-bump signs.",
+    "hu": "Rengeteg \"TOPE\" fekvőrendőr-tábla."
+   }
+  ]
+ },
+ "076": {
+  "a2": "BR",
+  "plonk": "brazil",
+  "clues": [
+   {
+    "type": "letters",
+    "extra": "Ã Ç",
+    "en": "Portuguese (ã, ç) – the only Portuguese-speaking country in South America.",
+    "hu": "Portugál nyelv (ã, ç) – az egyetlen portugál nyelvű ország Dél-Amerikában."
+   }
+  ]
+ },
+ "152": {
+  "a2": "CL",
+  "plonk": "chile",
+  "clues": [
+   {
+    "type": "mountains-east",
+    "en": "The Andes are always on the east side.",
+    "hu": "Az Andok mindig keleten vannak."
+   }
+  ]
+ },
+ "032": {
+  "a2": "AR",
+  "plonk": "argentina",
+  "clues": [
+   {
+    "type": "language",
+    "en": "Spanish signs; huge flat plains in the middle of the country.",
+    "hu": "Spanyol táblák; óriási síkságok az ország közepén."
+   }
+  ]
+ }
+}

@@ -1,0 +1,212 @@
+---
+/**
+ * Developer mode: click the header title (the globe or "András") 5 times quickly. A small panel opens
+ * with shortcuts into the editor (Decap CMS at /admin): new post, upload a photo, media library.
+ * Publishing needs a login there (Netlify Identity, invite only) – the 5 clicks only reveal the door.
+ */
+import Icon from './Icon.astro';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<aside class="dev-panel" hidden data-dev-panel aria-labelledby="dev-title">
+  <div class="dev-panel__head">
+    <span class="dev-panel__icon" aria-hidden="true"><Icon name="code" size={18} /></span>
+    <h2 id="dev-title">{t(lang, 'dev.title')}</h2>
+    <button type="button" class="dev-panel__close" aria-label={t(lang, 'dev.off')} title={t(lang, 'dev.off')} data-dev-off><Icon name="x" size={16} /></button>
+  </div>
+  <p class="dev-panel__text">{t(lang, 'dev.text')}</p>
+  <div class="dev-panel__actions">
+    <a class="dev-panel__btn" href="/admin/#/collections/posts/new" target="_blank" rel="noopener"><Icon name="file-plus" size={16} />{t(lang, 'dev.newPost')}</a>
+    <a class="dev-panel__btn" href="/admin/#/collections/photos/new" target="_blank" rel="noopener"><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</a>
+    <a class="dev-panel__btn" href="/admin/#/media" target="_blank" rel="noopener"><Icon name="images" size={16} />{t(lang, 'dev.media')}</a>
+    <a class="dev-panel__btn" href="/admin/" target="_blank" rel="noopener"><Icon name="layout-dashboard" size={16} />{t(lang, 'dev.admin')}</a>
+  </div>
+  <p class="dev-panel__note">{t(lang, 'dev.note')}</p>
+</aside>
+<p class="dev-toast" hidden role="status" data-dev-toast></p>
+<template data-dev-on>{t(lang, 'dev.on')}</template>
+<template data-dev-offmsg>{t(lang, 'dev.offMsg')}</template>
+<template data-dev-count>{t(lang, 'dev.count')}</template>
+
+<style>
+  .dev-panel {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 690;
+    width: min(340px, calc(100vw - 32px));
+    padding: 14px 16px;
+    border: 2px solid #1b1b24;
+    border-radius: 16px;
+    background: #0d1117;
+    color: #d6f5d6;
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 13px;
+    box-shadow: 5px 5px 0 #39d353;
+    zoom: var(--inv-zoom, 1);
+    animation: dev-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .dev-panel[hidden] {
+    display: none;
+  }
+  .dev-panel__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dev-panel__icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: #39d353;
+    color: #0d1117;
+  }
+  .dev-panel h2 {
+    flex: 1;
+    margin: 0;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    color: #39d353;
+  }
+  .dev-panel__close {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: transparent;
+    color: #d6f5d6;
+    cursor: pointer;
+  }
+  .dev-panel__text,
+  .dev-panel__note {
+    margin: 10px 0;
+    line-height: 1.45;
+  }
+  .dev-panel__note {
+    margin-bottom: 0;
+    font-size: 11px;
+    opacity: 0.7;
+  }
+  .dev-panel__actions {
+    display: grid;
+    gap: 6px;
+  }
+  .dev-panel__btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    color: #d6f5d6;
+    text-decoration: none;
+  }
+  .dev-panel__btn:hover,
+  .dev-panel__btn:focus-visible {
+    border-color: #39d353;
+    background: #161b22;
+  }
+  .dev-toast {
+    position: fixed;
+    left: 50%;
+    top: 90px;
+    z-index: 695;
+    margin: 0;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: #0d1117;
+    color: #39d353;
+    font: 700 13px ui-monospace, Consolas, monospace;
+    transform: translateX(-50%);
+    zoom: var(--inv-zoom, 1);
+  }
+  .dev-toast[hidden] {
+    display: none;
+  }
+  @keyframes dev-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+  }
+</style>
+
+<script>
+  const KEY = 'andras-dev-mode';
+  const CLICKS = 5;
+  const WINDOW_MS = 3000;
+  const html = document.documentElement;
+  const panel = document.querySelector<HTMLElement>('[data-dev-panel]');
+  const toast = document.querySelector<HTMLElement>('[data-dev-toast]');
+  const tpl = (n: string) => document.querySelector<HTMLTemplateElement>(`[data-dev-${n}]`)?.content.textContent ?? '';
+  let toastTimer = 0;
+  const say = (text: string) => {
+    if (!toast) return;
+    toast.textContent = text;
+    toast.hidden = false;
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => (toast.hidden = true), 1600);
+  };
+  const setDev = (on: boolean) => {
+    html.classList.toggle('dev-mode', on);
+    if (panel) panel.hidden = !on;
+    try {
+      if (on) localStorage.setItem(KEY, '1');
+      else localStorage.removeItem(KEY);
+    } catch {
+      /* storage unavailable */
+    }
+  };
+  try {
+    if (localStorage.getItem(KEY) === '1') setDev(true);
+  } catch {
+    /* storage unavailable */
+  }
+
+  // 5 quick clicks on the header title; the clicks are counted across a page load too
+  document.querySelectorAll<HTMLAnchorElement>('.site-header .brand').forEach((brand) =>
+    brand.addEventListener('click', (e) => {
+      const now = Date.now();
+      let clicks: number[] = [];
+      try {
+        clicks = JSON.parse(sessionStorage.getItem('andras-dev-clicks') ?? '[]');
+      } catch {
+        /* storage unavailable */
+      }
+      clicks = [...clicks.filter((c) => now - c < WINDOW_MS), now];
+      // already on this page: no reload, so the clicks can follow each other quickly
+      if (new URL(brand.href).pathname === location.pathname) {
+        e.preventDefault();
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      }
+      if (clicks.length >= CLICKS) {
+        clicks = [];
+        const on = !html.classList.contains('dev-mode');
+        setDev(on);
+        say(on ? tpl('on') : tpl('offmsg'));
+      } else if (clicks.length >= 2) {
+        say(tpl('count').replace('{n}', String(CLICKS - clicks.length)));
+      }
+      try {
+        sessionStorage.setItem('andras-dev-clicks', JSON.stringify(clicks));
+      } catch {
+        /* storage unavailable */
+      }
+    }),
+  );
+  document.querySelector('[data-dev-off]')?.addEventListener('click', () => {
+    setDev(false);
+    say(tpl('offmsg'));
+  });
+</script>

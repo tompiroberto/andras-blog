@@ -1,0 +1,355 @@
+---
+/**
+ * CV view: a separate, calm page (header switch "CV", html.cv-mode) – one A4-like sheet with a sidebar,
+ * printable / savable as PDF. Content in src/data/cv.ts.
+ */
+import Icon from './Icon.astro';
+import { CV, type CvItem } from '../data/cv';
+import site from '../data/site.json';
+import type { Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const cv = CV[lang];
+const main: { title: string; items: CvItem[] }[] = [
+  { title: cv.h.education, items: cv.education },
+  { title: cv.h.erasmus, items: cv.erasmus },
+  { title: cv.h.work, items: cv.work },
+  { title: cv.h.volunteering, items: cv.volunteering },
+];
+---
+
+<div class="cv-view" data-cv-view aria-label={cv.title}>
+  <div class="cv-view__bar">
+    <button type="button" class="btn btn--secondary cv-view__btn" data-cv-close>
+      <Icon name="arrow-left" size={18} />
+      {cv.close}
+    </button>
+    <button type="button" class="btn btn--primary cv-view__btn" data-cv-print>
+      <Icon name="printer" size={18} />
+      {cv.print}
+    </button>
+  </div>
+
+  <article class="cv-sheet">
+    <header class="cv-sheet__head">
+      <div>
+        <h1 class="cv-sheet__name">{site.owner}</h1>
+        <p class="cv-sheet__role">{cv.role}</p>
+      </div>
+      <p class="cv-sheet__title">{cv.title}</p>
+    </header>
+
+    <div class="cv-sheet__body">
+      <aside class="cv-side">
+        <section>
+          <h2>{cv.h.contact}</h2>
+          <ul class="cv-contact">
+            <li><Icon name="map-pin" size={15} />{cv.location}</li>
+            <li><Icon name="mail" size={15} /><a href={`mailto:${site.email}`}>{site.email}</a></li>
+            <li><Icon name="instagram" size={15} /><a href={site.instagram.url} target="_blank" rel="noopener">{site.instagram.handle}</a></li>
+            <li><Icon name="strava" size={15} /><a href={site.strava} target="_blank" rel="noopener">Strava</a></li>
+          </ul>
+        </section>
+        <section>
+          <h2>{cv.h.languages}</h2>
+          <ul class="cv-langs">
+            {
+              cv.languages.map(([name, level]) => (
+                <li>
+                  <span>{name}</span>
+                  <span class="cv-langs__level">{level}</span>
+                </li>
+              ))
+            }
+          </ul>
+        </section>
+        <section>
+          <h2>{cv.h.sport}</h2>
+          <ul class="cv-list">{cv.sport.map((s) => <li>{s}</li>)}</ul>
+        </section>
+        <section>
+          <h2>{cv.h.interests}</h2>
+          <ul class="cv-list">{cv.interests.map((s) => <li>{s}</li>)}</ul>
+        </section>
+        <section>
+          <h2>{cv.h.hobbies}</h2>
+          <ul class="cv-list">{cv.hobbies.map((s) => <li>{s}</li>)}</ul>
+        </section>
+      </aside>
+
+      <div class="cv-main">
+        <section>
+          <h2>{cv.h.profile}</h2>
+          <p class="cv-profile">{cv.profile}</p>
+        </section>
+        {
+          main.map((sec) => (
+            <section>
+              <h2>{sec.title}</h2>
+              <ul class="cv-items">
+                {sec.items.map((it) => (
+                  <li class="cv-item">
+                    <span class="cv-item__when">{it.when ?? ''}</span>
+                    <div>
+                      <p class="cv-item__what">{it.what}</p>
+                      {it.where && <p class="cv-item__where">{it.where}</p>}
+                      {it.note && <p class="cv-item__note">{it.note}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
+        }
+      </div>
+    </div>
+  </article>
+</div>
+
+<style>
+  .cv-view {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 545;
+    overflow: auto;
+    padding: 20px 16px 48px;
+    background: color-mix(in srgb, var(--violet-tint) 45%, var(--bg));
+    color: #1b1b24;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    /* the page zoom slider does not affect the CV */
+    zoom: var(--inv-zoom, 1);
+  }
+  :global(html.cv-mode) .cv-view {
+    display: block;
+  }
+  :global(html.cv-mode) {
+    overflow: hidden;
+  }
+  .cv-view__bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+    max-width: 860px;
+    margin: 0 auto 16px;
+  }
+  .cv-view__btn {
+    font-size: 15px;
+  }
+  .cv-sheet {
+    max-width: 860px;
+    margin: 0 auto;
+    background: #fff;
+    border: 2px solid #1b1b24;
+    border-radius: 14px;
+    box-shadow: 6px 6px 0 var(--violet);
+    overflow: hidden;
+    animation: cv-in 450ms var(--ease) both;
+  }
+  .cv-sheet__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px 24px;
+    padding: 32px 36px 24px;
+    border-bottom: 3px solid var(--violet);
+  }
+  .cv-sheet__name {
+    margin: 0;
+    font-family: 'Unbounded', system-ui, sans-serif;
+    font-size: 40px;
+    line-height: 1.05;
+  }
+  .cv-sheet__role {
+    margin: 8px 0 0;
+    font-size: 16px;
+    color: #4a4a5a;
+  }
+  .cv-sheet__title {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--violet-dark);
+  }
+  .cv-sheet__body {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+  }
+  .cv-side {
+    padding: 24px 24px 32px 36px;
+    background: #f6f5fa;
+    border-right: 1px solid #e3e1ec;
+  }
+  .cv-main {
+    padding: 24px 36px 32px 28px;
+  }
+  .cv-sheet section + section {
+    margin-top: 22px;
+  }
+  .cv-sheet h2 {
+    margin: 0 0 10px;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--violet-dark);
+  }
+  .cv-sheet ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .cv-contact li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+  .cv-contact li + li {
+    margin-top: 6px;
+  }
+  .cv-contact a {
+    color: inherit;
+  }
+  .cv-langs li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 14px;
+    padding: 3px 0;
+    border-bottom: 1px dashed #d8d5e4;
+  }
+  .cv-langs__level {
+    font-weight: 700;
+    color: #4a4a5a;
+  }
+  .cv-list li {
+    position: relative;
+    padding-left: 14px;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  .cv-list li + li {
+    margin-top: 5px;
+  }
+  .cv-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--violet);
+  }
+  .cv-profile {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .cv-item {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 12px;
+  }
+  .cv-item + .cv-item {
+    margin-top: 12px;
+  }
+  .cv-item__when {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4a4a5a;
+    padding-top: 1px;
+  }
+  .cv-item p {
+    margin: 0;
+  }
+  .cv-item__what {
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .cv-item__where {
+    font-size: 14px;
+    color: #4a4a5a;
+  }
+  .cv-item__note {
+    margin-top: 2px !important;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  @media (max-width: 700px) {
+    .cv-sheet__body {
+      grid-template-columns: 1fr;
+    }
+    .cv-side {
+      border-right: 0;
+      border-bottom: 1px solid #e3e1ec;
+      padding: 20px;
+    }
+    .cv-main,
+    .cv-sheet__head {
+      padding: 20px;
+    }
+    .cv-sheet__name {
+      font-size: 32px;
+    }
+    .cv-item {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+  }
+  @keyframes cv-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+  }
+
+  /* Printing in CV mode: only the sheet */
+  @media print {
+    :global(html.cv-mode body > *:not(.cv-view)) {
+      display: none !important;
+    }
+    :global(html.cv-mode) .cv-view {
+      position: static;
+      padding: 0;
+      background: #fff;
+      zoom: 1;
+    }
+    .cv-view__bar {
+      display: none;
+    }
+    .cv-sheet {
+      border: 0;
+      box-shadow: none;
+      border-radius: 0;
+      animation: none;
+    }
+    .cv-side {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+</style>
+
+<script>
+  const view = document.querySelector<HTMLElement>('[data-cv-view]');
+  if (view) {
+    // "back": the same as switching the header's CV toggle off (keeps its saved state in sync)
+    view.querySelector('[data-cv-close]')!.addEventListener('click', () => {
+      document.querySelector<HTMLButtonElement>('[data-html-toggle="cv-mode"]')?.click();
+    });
+    view.querySelector('[data-cv-print]')!.addEventListener('click', () => window.print());
+  }
+</script>

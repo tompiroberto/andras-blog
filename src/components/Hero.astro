@@ -1,0 +1,357 @@
+---
+import Globe from './Globe.astro';
+import Icon from './Icon.astro';
+import { t, type Lang } from '../i18n';
+import site from '../data/site.json';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+
+// Put the name on a yellow highlight wherever it appears in the translated title
+const title = t(lang, 'hero.title');
+const nameAt = title.indexOf(site.owner);
+const before = nameAt >= 0 ? title.slice(0, nameAt) : title;
+const after = nameAt >= 0 ? title.slice(nameAt + site.owner.length) : '';
+
+// Only the lead-in is translated; the nicknames are always shown exactly as in site.json
+const nickLead = t(lang, 'hero.nicknames').split(':')[0].trim();
+---
+
+<section class="hero section" aria-labelledby="hero-title">
+  <div class="bg-layer hero__bg">
+    <Globe
+      class="hero__globe"
+      size="min(700px, 92vw)"
+      right="max(-140px, -12vw)"
+      top="50%"
+      speed={80}
+      animatedMeridians
+      orbit
+    />
+    <svg class="shape float hero__tri hero__tri--yellow" viewBox="0 0 60 60" aria-hidden="true">
+      <path d="M8 52 L30 8 L52 52 Z" />
+    </svg>
+    <svg class="shape float float--slow hero__tri hero__tri--violet" viewBox="0 0 60 60" aria-hidden="true">
+      <path d="M8 52 L30 8 L52 52 Z" />
+    </svg>
+    <span class="shape float float--fast hero__dot" aria-hidden="true"></span>
+  </div>
+
+  <div class="container hero__inner">
+    <div class="hero__copy">
+      <p class="pill hero__status">
+        <span class="hero__pin" aria-hidden="true">
+          <Icon name="map-pin" size={14} />
+        </span>
+        {t(lang, 'hero.status')}
+      </p>
+
+      <div class="hero__title-wrap" data-nick>
+        <h1 id="hero-title">
+          {before}
+          {
+            nameAt >= 0 && (
+              <button type="button" class="hero__name" aria-describedby="nick-tip" aria-expanded="false" data-nick-trigger>
+                {site.owner}
+              </button>
+            )
+          }
+          {after}
+        </h1>
+        <div class="nick-tip" id="nick-tip" role="tooltip" data-nick-tip>
+          {nickLead}:{' '}
+          {
+            site.nicknames.map((n, i) => (
+              <>
+                {i > 0 && <span aria-hidden="true"> · </span>}
+                <strong lang={/[Ⴀ-ჿ]/.test(n) ? 'ka' : 'de'}>{n}</strong>
+              </>
+            ))
+          }
+        </div>
+      </div>
+
+      <p class="hero__tagline">{t(lang, 'hero.tagline')}</p>
+
+      <div class="hero__actions">
+        <a class="btn btn--primary" href="#explore">
+          <Icon name="arrow-down" size={20} />
+          {t(lang, 'hero.btnScroll')}
+        </a>
+        <a class="btn btn--secondary" href={site.strava} target="_blank" rel="noopener">
+          <Icon name="strava" size={20} />
+          {t(lang, 'hero.btnStrava')}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding-top: clamp(40px, 8vw, 96px);
+    padding-bottom: clamp(120px, 14vw, 180px);
+    min-height: min(88vh, 860px);
+    display: flex;
+    align-items: center;
+  }
+  .hero__bg :global(.hero__globe) {
+    transform: translateY(-50%);
+  }
+  .hero__inner {
+    width: 100%;
+  }
+  .hero__copy {
+    max-width: calc(700px * var(--tz));
+  }
+  .hero__status {
+    margin: 0 0 24px;
+    padding: 6px 16px 6px 6px;
+  }
+  .hero__pin {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--violet);
+    color: #fff;
+    flex: none;
+  }
+  .hero__pin::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--violet);
+    z-index: -1;
+    animation: pulse var(--pulse-duration) ease-out infinite;
+  }
+  .hero__title-wrap {
+    position: relative;
+  }
+  .hero__title-wrap h1 {
+    margin-bottom: 0.35em;
+  }
+  .hero__name {
+    all: unset;
+    position: relative;
+    display: inline-block;
+    padding: 0 0.14em;
+    margin: 0 0.02em;
+    cursor: help;
+    font-family: 'Unbounded', var(--font-heading);
+    z-index: 0;
+    text-decoration: underline dashed var(--ink);
+    text-decoration-thickness: 3px;
+    text-underline-offset: 0.16em;
+  }
+  .hero__name::before {
+    content: '';
+    position: absolute;
+    inset: 0.1em -0.02em 0.02em;
+    background: var(--yellow);
+    border: 2px solid var(--ink);
+    border-radius: 0.28em;
+    z-index: -1;
+    transform: rotate(-1.5deg);
+  }
+  .hero__name:focus-visible {
+    outline: 3px solid var(--violet);
+    outline-offset: 4px;
+    border-radius: 0.28em;
+  }
+
+  .nick-tip {
+    position: absolute;
+    /* set by JS in the title's CSS px; the bubble itself is counter-zoomed (--tz) */
+    left: calc(var(--tip-x, 0px) / var(--tz));
+    top: calc(var(--tip-y, 0px) / var(--tz) + 14px);
+    z-index: var(--z-tooltip);
+    max-width: min(340px, calc(100vw - 32px));
+    padding: 12px 16px;
+    background: var(--yellow);
+    border: var(--border);
+    border-radius: 18px;
+    box-shadow: 4px 4px 0 var(--ink);
+    font-size: var(--fs-small);
+    font-weight: 500;
+    line-height: 1.4;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px);
+    transition:
+      opacity var(--t-fast),
+      transform var(--t-fast),
+      visibility var(--t-fast);
+  }
+  .nick-tip strong {
+    font-weight: 700;
+  }
+  .nick-tip strong:lang(ka) {
+    font-family: 'Noto Sans Georgian', sans-serif;
+  }
+  .nick-tip::before,
+  .nick-tip::after {
+    /* speech-bubble pointer */
+    content: '';
+    position: absolute;
+    left: calc(var(--arrow-x, 32px) / var(--tz));
+    border: 10px solid transparent;
+    border-top: 0;
+  }
+  .nick-tip::before {
+    top: -12px;
+    border-bottom: 12px solid var(--ink);
+    margin-left: -10px;
+  }
+  .nick-tip::after {
+    top: -8px;
+    border-width: 0 8px 10px;
+    border-bottom-color: var(--yellow);
+    margin-left: -8px;
+  }
+  .nick-tip.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+
+  .hero__tagline {
+    font-size: var(--fs-tagline);
+    line-height: 1.45;
+    color: var(--muted);
+    max-width: 36ch;
+    margin-bottom: 32px;
+  }
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .hero__tri {
+    width: 64px;
+    height: 64px;
+  }
+  .hero__tri path {
+    stroke: var(--ink);
+    stroke-width: 3;
+    stroke-linejoin: round;
+  }
+  .hero__tri--yellow {
+    --rot: 14deg;
+    right: 38%;
+    top: 14%;
+  }
+  .hero__tri--yellow path {
+    fill: var(--yellow);
+  }
+  .hero__tri--violet {
+    --rot: -22deg;
+    width: 44px;
+    height: 44px;
+    right: 6%;
+    bottom: 16%;
+  }
+  .hero__tri--violet path {
+    fill: var(--violet);
+  }
+  .hero__dot {
+    right: 30%;
+    bottom: 22%;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--yellow);
+    border: 2px solid var(--ink);
+  }
+
+  @media (max-width: 899px) {
+    .hero {
+      min-height: 0;
+    }
+    .hero__bg :global(.hero__globe) {
+      opacity: 0.55 !important;
+      right: -45vw !important;
+    }
+    .hero__bg :global(.globe__cities) {
+      display: none;
+    }
+    .hero__tri--yellow {
+      right: 8%;
+      top: 4%;
+      width: 44px;
+      height: 44px;
+    }
+  }
+</style>
+
+<script>
+  import { pageZoom } from '../lib/zoom';
+
+  const wrap = document.querySelector<HTMLElement>('[data-nick]');
+  const trigger = wrap?.querySelector<HTMLButtonElement>('[data-nick-trigger]');
+  const tip = wrap?.querySelector<HTMLElement>('[data-nick-tip]');
+
+  if (wrap && trigger && tip) {
+    let hideTimer = 0;
+    let pinned = false; // opened by click/tap: stays until dismissed
+
+    const place = () => {
+      // screen rects are zoomed; convert to CSS px (see src/lib/zoom.ts)
+      const z = pageZoom();
+      const scale = (r: DOMRect) => ({ left: r.left / z, top: r.top / z, bottom: r.bottom / z, width: r.width / z });
+      const w = scale(wrap.getBoundingClientRect());
+      const n = scale(trigger.getBoundingClientRect());
+      const maxX = Math.max(0, w.width - tip.offsetWidth);
+      const x = Math.min(Math.max(0, n.left - w.left), maxX);
+      tip.style.setProperty('--tip-x', `${x}px`);
+      tip.style.setProperty('--tip-y', `${n.bottom - w.top}px`);
+      tip.style.setProperty('--arrow-x', `${Math.min(Math.max(20, n.left - w.left + n.width / 2 - x), tip.offsetWidth - 20)}px`);
+    };
+    const show = () => {
+      window.clearTimeout(hideTimer);
+      place();
+      tip.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+    };
+    const hide = () => {
+      pinned = false;
+      tip.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+    };
+    const hideSoon = () => {
+      if (pinned) return;
+      hideTimer = window.setTimeout(hide, 200);
+    };
+
+    trigger.addEventListener('mouseenter', show);
+    trigger.addEventListener('mouseleave', hideSoon);
+    tip.addEventListener('mouseenter', () => window.clearTimeout(hideTimer));
+    tip.addEventListener('mouseleave', hideSoon);
+    trigger.addEventListener('focus', show);
+    trigger.addEventListener('blur', () => {
+      pinned = false;
+      hideSoon();
+    });
+    trigger.addEventListener('click', () => {
+      if (pinned) hide();
+      else {
+        pinned = true;
+        show();
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && tip.classList.contains('is-open')) hide();
+    });
+    document.addEventListener('pointerdown', (e) => {
+      if (!wrap.contains(e.target as Node)) hide();
+    });
+    window.addEventListener('resize', () => tip.classList.contains('is-open') && place());
+  }
+</script>
