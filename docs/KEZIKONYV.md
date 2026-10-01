@@ -153,7 +153,8 @@ Letisztult, egyoldalas CV: tanulmányok, Erasmus+ projektek, munka, önkéntess�
 
 1. Kattints **5-ször gyorsan** a fejlécben az **András** feliratra vagy a földgömbre → „Fejlesztői mód BE”.
 2. Zöld panel jobbra lent: **Új bejegyzés**, **Fotó feltöltése**, **Médiatár**, **Szerkesztő**.
-3. A szerkesztő (`/admin`) bejelentkezést kér (Netlify Identity, csak meghívottak). Mentés után az
+3. A szerkesztő (`/admin`) **GitHub-bejelentkezést** kér (ingyenes; csak az tud menteni, akinek
+   írási joga van a repóhoz). Mentés után az
    oldal kb. egy perc alatt frissül.
 4. Kikapcsolás: újabb 5 kattintás vagy az ✕ a panelen.
 Beállítás lépései: `README.md` → *Developer mode*.

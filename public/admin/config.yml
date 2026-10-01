@@ -1,8 +1,10 @@
 # Decap CMS (developer mode): new posts and photos become files in the repository.
-# Online: Netlify Identity + Git Gateway must be enabled (README → "Developer mode").
+# Online: log in with GitHub (free; Netlify's OAuth provider must be installed, README → "Developer mode").
+# Only GitHub accounts with write access to the repository can publish.
 # Locally: run `npx decap-server` next to `npm run dev`, then open http://localhost:4321/admin/
 backend:
-  name: git-gateway
+  name: github
+  repo: tompiroberto/andras-blog
   branch: main
 local_backend: true
 locale: hu

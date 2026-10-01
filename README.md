@@ -112,13 +112,15 @@ Click the header title (the globe or "András") **5 times quickly**: a small gre
 shortcuts into the editor at `/admin` (Decap CMS): new post, upload a photo, media library.
 The same 5 clicks turn it off again. The clicks only reveal the door – saving needs a login.
 
-**Online (Netlify), once:**
-1. Netlify → Site configuration → Identity → *Enable Identity*. Registration: **Invite only**.
-2. Identity → Services → *Enable Git Gateway*.
-3. Identity → *Invite users* → your e-mail, accept the invitation.
-4. Open `https://<your-site>/admin/`, log in. New posts are saved to `src/content/posts/`,
-   photos to `src/content/photos/` (pictures in `src/assets/`), and Netlify rebuilds the site
-   (about a minute). Photos appear in the new **Photos** section of the home page.
+**Online (free – GitHub login), once:**
+1. GitHub → Settings → Developer settings → OAuth Apps → *New OAuth App*.
+   Homepage URL: `https://<your-site>.netlify.app`, Authorization callback URL:
+   `https://api.netlify.com/auth/done`. Register, then *Generate a new client secret*.
+2. Netlify → Project configuration → Access & security → OAuth → *Install provider* → GitHub,
+   paste the Client ID and Client secret.
+3. Open `https://<your-site>/admin/` → *Login with GitHub*. Only accounts with write access to the
+   repository can publish. New posts are saved to `src/content/posts/`, photos to
+   `src/content/photos/` (pictures in `src/assets/`), and Netlify rebuilds the site (about a minute).
 
 **Locally:** run `npx decap-server` in a second terminal next to `npm run dev`, then open
 `http://localhost:4321/admin/` – no login needed, files are written straight into the project.
