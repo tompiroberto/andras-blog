@@ -2,7 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { LOCALES } from './i18n';
-import { CATEGORIES } from './lib/constants';
+import { CATEGORIES, COVER_POSITIONS } from './lib/constants';
 import countriesData from './data/countries.json';
 
 const countryIds = countriesData.countries.map((c) => c.id);
@@ -22,6 +22,8 @@ const posts = defineCollection({
       excerpt: z.string(),
       cover: image().optional(),
       coverAlt: z.string().optional(),
+      /** Which part of the cover stays on the 16:9 post card ('attention' = the most interesting part) */
+      coverPosition: z.enum(COVER_POSITIONS).default('attention'),
       draft: z.boolean().default(false),
       /** Lucide (or custom) icon name shown on the card when there is no cover photo */
       icon: z.string().optional(),

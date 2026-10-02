@@ -12,7 +12,12 @@ interface Props {
 }
 
 const { post, lang, index = 0 } = Astro.props;
-const { title, date, datePrecision, category, excerpt, cover, coverAlt, draft, icon, lang: postLang } = post.data;
+const { title, date, datePrecision, category, excerpt, cover, coverAlt, coverPosition, draft, icon, lang: postLang } = post.data;
+// same spot for the browser's own cropping (object-position) as for the cropped file
+const objectPosition = coverPosition === 'attention' ? 'center' : coverPosition;
+// a 16:9 crop no wider than the picture itself (images are never enlarged)
+const cardW = cover ? Math.min(800, cover.width) : 0;
+const cardWidths = [400, 800].filter((w) => w < cardW).concat(cardW);
 const meta = categoryMeta(category);
 const href = localePath(lang, `posts/${post.id}`);
 const titleId = `post-${post.id}`;
@@ -23,7 +28,7 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
   <div class="post-card__cover">
     {
       cover ? (
-        <Image src={cover} alt={coverAlt ?? ''} widths={[400, 800]} sizes="(max-width: 700px) 100vw, 400px" loading="lazy" />
+        <Image src={cover} alt={coverAlt ?? ''} width={cardW} height={Math.round((cardW * 9) / 16)} fit="cover" position={coverPosition} widths={cardWidths} sizes="(max-width: 700px) 100vw, 400px" loading="lazy" style={`object-position: ${objectPosition}`} />
       ) : (
         <div class:list={['post-card__placeholder', `is-${meta.tone}`]} aria-hidden="true">
           <span class="ph-circle">{icon && <Icon name={icon} size={52} />}</span>

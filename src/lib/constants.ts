@@ -10,6 +10,9 @@ export const DESKTOP_POINTER_QUERY = `(min-width: ${MOBILE_BREAKPOINT}px) and (p
 export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 export const CATEGORIES = ['adventures', 'erasmus', 'random'] as const;
+/** Crop positions for post covers on the cards (sharp's names; 'attention' = smart crop) */
+export const COVER_POSITIONS = ['attention', 'left top', 'top', 'right top', 'left', 'center', 'right', 'left bottom', 'bottom', 'right bottom'] as const;
+export type CoverPosition = (typeof COVER_POSITIONS)[number];
 export type Category = (typeof CATEGORIES)[number];
 
 /** localStorage key ('1' / '0') and window event for the coordinate-grid overlay. */

@@ -175,6 +175,14 @@ Ez az oldal nyitóoldala (lásd 0. pont). Letisztult, egyoldalas CV: tanulmányo
 4. Kikapcsolás: újabb 5 kattintás vagy az ✕ a panelen.
 5. Ha utána a gépeden is dolgozol: előbb `git pull`.
 
+**Posztok képei a galériában:** a poszt borítóképe és a szövegbe beszúrt képek automatikusan a
+Galériába is bekerülnek (felirat: a poszt címe, nagy nézetben link a posztra).
+
+**Borítókép a kártyán:** a kártyák 16:9-es képet mutatnak. A posztíróban a borítókép kiválasztása után
+látod, hogyan fog kinézni; kattints oda, ahol a lényeg van (pl. egy magas fotónál a tetejére), vagy hagyd
+**Automatikus**-on – ilyenkor az oldal maga keresi meg a kép legérdekesebb részét. A poszt oldalán a kép
+mindig egészben látszik.
+
 **GitHub-kulcs a fotófeltöltéshez (egyszer kell):**
 1. A feltöltő ablakban kattints a **Kulcs létrehozása** linkre (vagy: github.com/settings/personal-access-tokens/new).
 2. *Token name:* pl. `fotofeltoltes`; *Expiration:* pl. 1 év.

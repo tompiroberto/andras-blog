@@ -421,5 +421,8 @@
   "post.done": "Published! It is online in about a minute.",
   "post.open": "Open it →",
   "post.required": "Fill in the title, the short description and the text.",
-  "upload.live": "new · online in ~1 min"
+  "upload.live": "new · online in ~1 min",
+  "post.cropHint": "This is how it looks on the post card. Click where the important part is.",
+  "post.cropAuto": "Automatic",
+  "gallery.toPost": "Open the post →"
 }

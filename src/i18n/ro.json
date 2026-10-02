@@ -421,5 +421,8 @@
   "post.done": "Publicat! Apare online în aproximativ un minut.",
   "post.open": "Deschide →",
   "post.required": "Completează titlul, descrierea scurtă și textul.",
-  "upload.live": "nou · online în ~1 min"
+  "upload.live": "nou · online în ~1 min",
+  "post.cropHint": "Așa va arăta pe cardul postării. Apasă unde e partea importantă.",
+  "post.cropAuto": "Automat",
+  "gallery.toPost": "Deschide postarea →"
 }

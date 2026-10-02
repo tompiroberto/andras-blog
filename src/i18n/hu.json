@@ -421,5 +421,8 @@
   "post.done": "Közzétéve! Kb. egy perc múlva fent van.",
   "post.open": "Megnyitás →",
   "post.required": "Töltsd ki a címet, a rövid leírást és a szöveget.",
-  "upload.live": "új · kb. 1 perc múlva élesben"
+  "upload.live": "új · kb. 1 perc múlva élesben",
+  "post.cropHint": "Így fog kinézni a poszt kártyáján. Kattints oda, ahol a lényeg van.",
+  "post.cropAuto": "Automatikus",
+  "gallery.toPost": "A poszt megnyitása →"
 }

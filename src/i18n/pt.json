@@ -421,5 +421,8 @@
   "post.done": "Publicado! Fica online em cerca de um minuto.",
   "post.open": "Abrir →",
   "post.required": "Preenche o título, a descrição curta e o texto.",
-  "upload.live": "novo · online em ~1 min"
+  "upload.live": "novo · online em ~1 min",
+  "post.cropHint": "É assim que fica no cartão do post. Clica onde está o importante.",
+  "post.cropAuto": "Automático",
+  "gallery.toPost": "Abrir o post →"
 }

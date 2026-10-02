@@ -38,7 +38,7 @@ const photos = await Promise.all(
         {
           photos.map((p, i) => (
             <li class="gallery__item">
-              <button type="button" class="gallery__open" data-index={i} data-large={p.large} data-caption={p.caption} data-place={p.place ?? ''} data-when={p.when}>
+              <button type="button" class="gallery__open" data-index={i} data-large={p.large} data-caption={p.caption} data-place={p.place ?? ''} data-when={p.when} data-post={p.post ? localePath(lang, `posts/${p.post}`) : ''}>
                 <Image src={p.image} alt={p.caption} widths={[360, 720]} sizes="(max-width: 600px) 100vw, 360px" loading={i < 6 ? 'eager' : 'lazy'} />
               </button>
               <p class="gallery__caption">{p.caption}</p>
@@ -66,6 +66,7 @@ const photos = await Promise.all(
       <figcaption class="lightbox__text">
         <strong data-lb-caption></strong>
         <span class="lightbox__meta" data-lb-meta></span>
+        <a class="lightbox__post" hidden data-lb-post>{t(lang, 'gallery.toPost')}</a>
       </figcaption>
     </figure>
     <button type="button" class="lightbox__btn lightbox__close" aria-label={t(lang, 'facts.close')} data-lb-close><Icon name="x" size={22} /></button>
@@ -194,6 +195,14 @@ const photos = await Promise.all(
     font-size: 14px;
     opacity: 0.8;
   }
+  .lightbox__post {
+    justify-self: center;
+    color: #ffd84d;
+    font-weight: 700;
+  }
+  .lightbox__post[hidden] {
+    display: none;
+  }
   .lightbox__btn {
     position: absolute;
     display: grid;
@@ -243,6 +252,7 @@ const photos = await Promise.all(
     const img = box.querySelector<HTMLImageElement>('[data-lb-img]')!;
     const caption = box.querySelector<HTMLElement>('[data-lb-caption]')!;
     const meta = box.querySelector<HTMLElement>('[data-lb-meta]')!;
+    const postLink = box.querySelector<HTMLAnchorElement>('[data-lb-post]')!;
     let at = 0;
 
     const show = (i: number) => {
@@ -252,6 +262,8 @@ const photos = await Promise.all(
       img.alt = d.caption!;
       caption.textContent = d.caption!;
       meta.textContent = [d.place, d.when].filter(Boolean).join(' · ');
+      postLink.hidden = !d.post;
+      if (d.post) postLink.href = d.post;
       if (!box.open) box.showModal();
     };
 
