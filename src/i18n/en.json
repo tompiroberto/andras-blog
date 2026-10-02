@@ -549,5 +549,9 @@
   "footer.pum": "a {pum} product",
   "bg.open": "Background",
   "bg.hide": "Fold away",
-  "route.failed": "Couldn't plan this one – check the connection and pick a mode again."
+  "route.failed": "Couldn't plan this one – check the connection and pick a mode again.",
+  "bg.mode": "Background photos",
+  "bg.one": "One photo",
+  "bg.cycle": "Changing",
+  "bg.next": "Another"
 }

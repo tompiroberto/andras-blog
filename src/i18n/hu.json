@@ -549,5 +549,9 @@
   "footer.pum": "a {pum} terméke",
   "bg.open": "Háttér",
   "bg.hide": "Összecsukás",
-  "route.failed": "Ezt most nem sikerült megtervezni – nézd meg a netet, és válassz újra közlekedési módot."
+  "route.failed": "Ezt most nem sikerült megtervezni – nézd meg a netet, és válassz újra közlekedési módot.",
+  "bg.mode": "Háttérképek",
+  "bg.one": "Egy kép",
+  "bg.cycle": "Váltakozó",
+  "bg.next": "Másik"
 }

@@ -39,6 +39,11 @@ const CHIPS: [string, string][] = [
     <button type="submit" class="dyn-search__go" aria-label={t(lang, 'bg.search')} title={t(lang, 'bg.search')}>🔍</button>
     <button type="button" class="dyn-search__min" aria-label={t(lang, 'bg.hide')} title={t(lang, 'bg.hide')} data-dyn-min>▾</button>
   </div>
+  <div class="dyn-search__modes" role="radiogroup" aria-label={t(lang, 'bg.mode')}>
+    <button type="button" role="radio" aria-checked="false" data-dyn-mode="one">🖼 {t(lang, 'bg.one')}</button>
+    <button type="button" role="radio" aria-checked="true" data-dyn-mode="cycle">🔄 {t(lang, 'bg.cycle')}</button>
+    <button type="button" class="dyn-search__next" data-dyn-next title={t(lang, 'bg.next')}>↻ {t(lang, 'bg.next')}</button>
+  </div>
   <div class="dyn-search__chips">
     {CHIPS.map(([label, q]) => <button type="button" data-dyn-chip={q}>{label}</button>)}
   </div>
@@ -74,11 +79,11 @@ const CHIPS: [string, string][] = [
     background-position: center;
     background-size: cover;
     opacity: 0;
-    transition: opacity 1.8s ease;
+    transition: opacity 3.2s ease-in-out;
   }
   .dyn-bg__slide.is-on {
     opacity: 1;
-    animation: dyn-kenburns 16s ease-in-out both;
+    animation: dyn-kenburns 24s ease-in-out both;
   }
   .dyn-bg__slide.is-on.is-odd {
     animation-name: dyn-kenburns-2;
@@ -183,6 +188,29 @@ const CHIPS: [string, string][] = [
     border-radius: 50%;
     background: var(--yellow);
     cursor: pointer;
+  }
+  .dyn-search__modes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+  }
+  .dyn-search__modes button {
+    padding: 3px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .dyn-search__modes button[aria-checked='true'] {
+    background: var(--yellow);
+  }
+  .dyn-search__next {
+    margin-left: auto;
   }
   .dyn-search__chips {
     display: flex;
@@ -300,6 +328,34 @@ const CHIPS: [string, string][] = [
       img.src = p.url;
     }
 
+    /** 'cycle': a new photo every few seconds with a slow cross-fade; 'one': the photo stays (↻ = another one) */
+    let mode: 'one' | 'cycle' = 'cycle';
+    try {
+      if (localStorage.getItem(`${BG_STORAGE_KEY}-mode`) === 'one') mode = 'one';
+    } catch {
+      /* storage unavailable */
+    }
+    const startCycle = () => {
+      window.clearInterval(timer);
+      if (mode === 'cycle' && photos.length > 1) timer = window.setInterval(next, 12000);
+    };
+    const setMode = (m: 'one' | 'cycle') => {
+      mode = m;
+      form.querySelectorAll<HTMLButtonElement>('[data-dyn-mode]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.dynMode === m)));
+      try {
+        localStorage.setItem(`${BG_STORAGE_KEY}-mode`, m);
+      } catch {
+        /* storage unavailable */
+      }
+      startCycle();
+    };
+    form.querySelectorAll<HTMLButtonElement>('[data-dyn-mode]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.dynMode as 'one' | 'cycle')));
+    form.querySelector('[data-dyn-next]')!.addEventListener('click', () => {
+      next();
+      startCycle();
+    });
+    setMode(mode);
+
     async function load(q: string) {
       const my = ++run;
       window.clearInterval(timer);
@@ -326,7 +382,7 @@ const CHIPS: [string, string][] = [
       foldSoon();
       at = 0;
       next();
-      timer = window.setInterval(next, 9000);
+      startCycle();
     }
 
     // fold / unfold the keyword box (remembered); it folds by itself a few seconds after a search

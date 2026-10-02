@@ -549,5 +549,9 @@
   "footer.pum": "un produs {pum}",
   "bg.open": "Fundal",
   "bg.hide": "Strânge",
-  "route.failed": "N-am reușit să planific – verifică conexiunea și alege din nou un mod."
+  "route.failed": "N-am reușit să planific – verifică conexiunea și alege din nou un mod.",
+  "bg.mode": "Fotografii de fundal",
+  "bg.one": "O fotografie",
+  "bg.cycle": "Se schimbă",
+  "bg.next": "Alta"
 }

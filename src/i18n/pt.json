@@ -549,5 +549,9 @@
   "footer.pum": "um produto {pum}",
   "bg.open": "Fundo",
   "bg.hide": "Recolher",
-  "route.failed": "Não foi possível planear – verifica a ligação e escolhe de novo um modo."
+  "route.failed": "Não foi possível planear – verifica a ligação e escolhe de novo um modo.",
+  "bg.mode": "Fotos de fundo",
+  "bg.one": "Uma foto",
+  "bg.cycle": "A mudar",
+  "bg.next": "Outra"
 }
