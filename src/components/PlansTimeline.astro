@@ -19,7 +19,7 @@ const STATIONS: { n: 1 | 2 | 3 | 4 | 5; icon: string; tone: 'yellow' | 'violet' 
 ];
 /** a slight tilt per note, so the board looks hand-pinned (not a sequence) */
 const TILT = [-2.2, 1.6, -1, 2.4, -1.8];
-const k = (n: number, field: 'tag' | 'title' | 'text') => `plan${n}.${field}` as TKey;
+const k = (n: number, field: 'tag' | 'title' | 'text' | 'story' | 'facts') => `plan${n}.${field}` as TKey;
 ---
 
 <section class="section plans" id="plans" data-lay="plans" aria-labelledby="plans-title">
@@ -35,10 +35,21 @@ const k = (n: number, field: 'tag' | 'title' | 'text') => `plan${n}.${field}` as
         STATIONS.map((s, i) => (
           <li class:list={['plan-note', `plan-note--${s.tone}`]} style={`--tilt:${TILT[i % TILT.length]}deg`}>
             <span class="plan-note__pin" aria-hidden="true" />
-            <IconCircle icon={s.icon} variant={s.tone} size="lg" />
-            <span class:list={['pill', 'station__tag', `station__tag--${s.tone}`]}>{t(lang, k(s.n, 'tag'))}</span>
-            <h3>{t(lang, k(s.n, 'title'))}</h3>
-            <p>{t(lang, k(s.n, 'text'))}</p>
+            {/* the whole note is a button: a click opens the longer story in an info box */}
+            <button
+              type="button"
+              class="plan-note__btn"
+              data-info-title={t(lang, k(s.n, 'title'))}
+              data-info-text={t(lang, k(s.n, 'story'))}
+              data-info-facts={t(lang, k(s.n, 'facts'))}
+              data-info-icon=".icon-circle svg"
+            >
+              <IconCircle icon={s.icon} variant={s.tone} size="lg" />
+              <span class:list={['pill', 'station__tag', `station__tag--${s.tone}`]}>{t(lang, k(s.n, 'tag'))}</span>
+              <h3>{t(lang, k(s.n, 'title'))}</h3>
+              <p>{t(lang, k(s.n, 'text'))}</p>
+              <span class="plan-note__hint" aria-hidden="true">＋</span>
+            </button>
           </li>
         ))
       }
@@ -94,6 +105,41 @@ const k = (n: number, field: 'tag' | 'title' | 'text') => `plan${n}.${field}` as
   .plan-note:hover {
     transform: rotate(0deg) translateY(-6px) scale(1.03);
   }
+  .plan-note__btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .plan-note__hint {
+    position: absolute;
+    right: 12px;
+    bottom: 10px;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--surface);
+    font-weight: 800;
+    line-height: 1;
+    transition: transform var(--t-med) cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .plan-note__btn:hover .plan-note__hint,
+  .plan-note__btn[aria-expanded='true'] .plan-note__hint {
+    transform: rotate(90deg) scale(1.15);
+    background: var(--yellow);
+  }
   .plan-note--more {
     border-style: dashed;
     background: var(--yellow-tint);
@@ -142,3 +188,9 @@ const k = (n: number, field: 'tag' | 'title' | 'text') => `plan${n}.${field}` as
     }
   }
 </style>
+
+<script>
+  import { wireInfoBoxes } from '../lib/infobox';
+
+  wireInfoBoxes(document.querySelector('.plans-board') ?? document);
+</script>

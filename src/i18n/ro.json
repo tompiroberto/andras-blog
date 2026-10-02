@@ -521,5 +521,15 @@
   "plans.more.tag": "ÎN CURÂND",
   "plans.more.title": "Urmează și altele…",
   "plans.more.text": "Ai o idee sau vrei să vii cu mine? Scrie-mi – poate o plănuim pe următoarea împreună!",
-  "plans.more.link": "Scrie-mi"
+  "plans.more.link": "Scrie-mi",
+  "plan1.story": "Aș vrea să fac autostop prin Chile câteva săptămâni – sau chiar luni – și să explorez pe drum tot ce se poate.",
+  "plan1.facts": "[\"🗓 săptămâni sau luni\", \"👍 autostop\", \"🧭 să explorez tot\"]",
+  "plan2.story": "Merg în decembrie! Mi se pare o țară fascinantă, cu o varietate incredibilă de peisaje.",
+  "plan2.facts": "[\"📅 decembrie 2026\", \"🏔 multe peisaje\"]",
+  "plan3.story": "Dacă ai idei sau vrei să vii, scrie-mi! Mă poți ajuta și cu un loc de dormit – sau cu un borcan de Nutella. 😄",
+  "plan3.facts": "[\"💡 aștept idei\", \"🛏 loc de dormit?\", \"🫙 accept Nutella\"]",
+  "plan4.story": "Încă o regiune fascinantă. Aici provocarea low-budget e puțin mai mare – dar iubesc provocările, ar fi o experiență uimitoare, iar oamenii de acolo sunt foarte amabili.",
+  "plan4.facts": "[\"💸 provocare mai mare\", \"🌬 vânt și spațiu\", \"🤝 oameni amabili\"]",
+  "plan5.story": "Vreau să progresez în continuare la alergare. Acum timpii mei pe 10 și 5 km sunt obiectivele cele mai concrete – dar cine știe, poate într-o zi voi alerga și ultra. Pe distanțe scurte (3 km) încă nu sunt prea rapid, așa că vreau să mă îmbunătățesc și acolo – și la înot.",
+  "plan5.facts": "[\"🎯 10 km < 33:00\", \"⚡ 5 km mai rapid\", \"🏃 ultra într-o zi?\", \"🏊 înot mai bun\"]"
 }

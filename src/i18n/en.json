@@ -521,5 +521,15 @@
   "plans.more.tag": "SOON",
   "plans.more.title": "More coming soon…",
   "plans.more.text": "Have an idea, or want to come along? Write to me – maybe we'll plan the next one together!",
-  "plans.more.link": "Message me"
+  "plans.more.link": "Message me",
+  "plan1.story": "I'd like to hitchhike around Chile for several weeks – or even months – and explore everything there is to see along the way.",
+  "plan1.facts": "[\"🗓 weeks or months\", \"👍 hitchhiking\", \"🧭 explore it all\"]",
+  "plan2.story": "I'm going this December! I find it a fascinating country, with an incredible variety of landscapes.",
+  "plan2.facts": "[\"📅 December 2026\", \"🏔 many landscapes\"]",
+  "plan3.story": "If you have ideas or want to join, write to me! You can also help me out with a place to stay – or with a jar of Nutella. 😄",
+  "plan3.facts": "[\"💡 ideas welcome\", \"🛏 a place to stay?\", \"🫙 Nutella accepted\"]",
+  "plan4.story": "Another fascinating region. Here the low-budget challenge is a bit bigger – but I love a challenge, it would be an amazing experience, and people there are really kind.",
+  "plan4.facts": "[\"💸 a bigger challenge\", \"🌬 wind and space\", \"🤝 kind people\"]",
+  "plan5.story": "I want to keep improving as a runner. Right now my 10k and 5k times are the most tangible goals – but who knows, maybe one day I'll run ultras too. On shorter distances (3 km) I'm not very fast yet, so I'd like to get better there – and in swimming as well.",
+  "plan5.facts": "[\"🎯 10 km < 33:00\", \"⚡ faster 5 km\", \"🏃 ultras one day?\", \"🏊 better swimming\"]"
 }

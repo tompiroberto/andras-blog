@@ -521,5 +521,15 @@
   "plans.more.tag": "HAMAROSAN",
   "plans.more.title": "Hamarosan még több…",
   "plans.more.text": "Van egy ötleted, vagy jönnél velem? Írj nyugodtan – lehet, hogy a következőt együtt tervezzük meg!",
-  "plans.more.link": "Írj nekem"
+  "plans.more.link": "Írj nekem",
+  "plan1.story": "Több hétig, akár hónapokig szeretnék Chilében stoppolni, és közben alaposan felfedezni mindent, amit az ország kínál.",
+  "plan1.facts": "[\"🗓 hetek vagy hónapok\", \"👍 stoppal\", \"🧭 mindent felfedezni\"]",
+  "plan2.story": "Idén decemberben megyek! Nagyon érdekes országnak tartom, rengeteg különböző tájjal.",
+  "plan2.facts": "[\"📅 2026. december\", \"🏔 sokféle táj\"]",
+  "plan3.story": "Ha van ötleted, vagy csatlakoznál, írj nyugodtan! Egy szállással is kisegíthetsz – vagy akár egy bödön Nutellával. 😄",
+  "plan3.facts": "[\"💡 ötleteket várok\", \"🛏 szállás?\", \"🫙 Nutellát elfogadok\"]",
+  "plan4.story": "Ez is egy nagyon izgalmas vidék. Itt a low-budget kihívás kicsit nagyobb – de szeretem a kihívásokat, óriási élmény lenne, és arrafelé nagyon kedvesek az emberek.",
+  "plan4.facts": "[\"💸 nagyobb kihívás\", \"🌬 szél és tér\", \"🤝 kedves emberek\"]",
+  "plan5.story": "Szeretnék még sokat fejlődni a futásban. Most a 10 és az 5 km-es időm a legkézzelfoghatóbb cél – de ki tudja, egyszer talán ultrázni is fogok. Rövidebb távon (3 km) sajnos még nem vagyok túl gyors, ott is szeretnék javulni – és úszásban is jó lenne fejlődni.",
+  "plan5.facts": "[\"🎯 10 km < 33:00\", \"⚡ gyorsabb 5 km\", \"🏃 egyszer ultra?\", \"🏊 jobb úszás\"]"
 }
