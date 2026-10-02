@@ -21,8 +21,8 @@ a **földgömb + nyelvkód** gombbal lehet váltani.
 | Rész | Mi van benne |
 | --- | --- |
 | **Nyitó rész** | Bemutatkozás, „Jelenleg itt vagyok” jelvény, gombok a bejegyzésekhez és a Stravához. |
-| **Ikonsor** | Futás, stoppolás, térképek, olcsó utazás, nyelvek, sokat evés. |
-| **Rólam** | Bemutatkozó szöveg, nyelvek, fotó, egyéni csúcsok (3 km 9:29, 5 km 16:20, 10 km 34:40), versenyek. |
+| **Ikonsor** | Futás, stoppolás, térképek, olcsó utazás, nyelvek, sokat evés – **kattints egy ikonra**, és alatta megjelenik a hozzá tartozó történet. |
+| **Rólam** | Bemutatkozó szöveg, nyelvek (**a nyelvre kattintva** a története), fotó, egyéni csúcsok (3 km 9:29, 5 km 16:20, 10 km 34:40), versenyek. |
 | **Felfedezés** | Három kategória: Kalandok, Erasmus+, Random dolgok. Alatta a **Merre jártam** térkép: a térkép ikonra kattintva töltődik be; vidd az egeret egy ország fölé (telefonon koppints rá). |
 | **Galéria** | A legújabb 6 fotó, alatta **Az összes fotó** gomb: a galériaoldalon minden kép leírással, helyszínnel, dátummal; kattintásra nagyban, nyilakkal lapozható. |
 | **Jövőbeli tervek** | Öt állomás: stoppolás Chilében, Grúzia, még több stoppolás, Patagónia olcsón, 10 km 33 perc alatt. |
@@ -171,9 +171,19 @@ Ez az oldal nyitóoldala (lásd 0. pont). Letisztult, egyoldalas CV: tanulmányo
    **↑ ↓** sorrend · **👁** elrejtés/megjelenítés (a rejtett rész fejlesztői módban halványan látszik) ·
    **⇔** szélesség (keskeny / normál / széles / teljes) · **A− A+** méret.
    Változtatás után alul **Mentés** (kb. 1 perc múlva élesben) vagy **Visszavonás**.
-6. Zöld panel jobbra lent: új poszt, fotók feltöltése, régi posztok szerkesztése (GitHub), és
+6. **Szerkesztés az oldalon (mint a PowerPointban)** – a panelen *Szerkesztés az oldalon: BE*:
+   - **kattints bármire** → zöld keret 8 fogantyúval; **húzd** a keretet = áthelyezés, **húzd a
+     fogantyút** = átméretezés (képek sarkánál megmarad az arány, Shift-tel szabadon);
+   - **dupla kattintás** egy szövegre → átírod, Enter = kész;
+   - a keret feletti sáv: **⬑** a körülötte lévő doboz kijelölése · **✎** szöveg · **＋H** alcím ·
+     **＋¶** bekezdés · **👁** elrejtés · **↺** vissza az eredetire · **✕**;
+   - nyilakkal 1 px-enként (Shift: 10 px) mozgatsz, Delete = elrejtés, Esc = kijelölés vége;
+   - a méret és a hely minden nyelven ugyanaz, a szöveg csak azon a nyelven változik, ahol átírtad;
+   - közben a linkek nem működnek – ha navigálni akarsz, kapcsold KI a szerkesztést.
+   Alul **Mentés** (kb. 1 perc múlva élesben).
+7. Zöld panel jobbra lent: új poszt, fotók feltöltése, régi posztok szerkesztése (GitHub), és
    **Az „Üzenj” működése**: *írás az oldalon* vagy *e-mail-program megnyitása*.
-7. Kikapcsolás: újabb 5 kattintás (kód nélkül) vagy az ✕ a panelen.
+8. Kikapcsolás: újabb 5 kattintás (kód nélkül) vagy az ✕ a panelen.
 
 **Fotók helyadata:** feltöltéskor a telefonos fotók GPS-adatából az oldal magától kitölti a helyet; ha
 nincs GPS, a beírt helynevet keresi meg a térképen. A **Galéria** tetején világtérkép: minden fotó egy

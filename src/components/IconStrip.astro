@@ -8,6 +8,7 @@ interface Props {
 
 const { lang } = Astro.props;
 
+/** a click on an icon opens its story (story.<name>) in a box under the strip */
 const ITEMS: { key: TKey; icon: string }[] = [
   { key: 'icon.running', icon: 'timer' },
   { key: 'icon.hitchhiking', icon: 'thumbs-up' },
@@ -18,17 +19,21 @@ const ITEMS: { key: TKey; icon: string }[] = [
 ];
 ---
 
-<div class="container icon-strip-wrap" data-lay="icons">
+<div class="container icon-strip-wrap" data-lay="icons" data-stories>
   <ul class="icon-strip reveal">
     {
       ITEMS.map((item, i) => (
         <li>
-          <IconCircle icon={item.icon} variant={i % 2 ? 'yellow' : 'violet'} size="md" />
-          <span>{t(lang, item.key)}</span>
+          <button type="button" class="icon-strip__btn" aria-expanded="false" aria-controls="icon-story" data-story={t(lang, `story.${item.key.slice(5)}` as TKey)}>
+            <IconCircle icon={item.icon} variant={i % 2 ? 'yellow' : 'violet'} size="md" />
+            <span>{t(lang, item.key)}</span>
+          </button>
         </li>
       ))
     }
   </ul>
+  <p class="icon-story" id="icon-story" role="region" aria-live="polite" hidden data-story-box></p>
+  <p class="icon-strip__hint">{t(lang, 'story.hint')}</p>
 </div>
 
 <style>
@@ -48,6 +53,63 @@ const ITEMS: { key: TKey; icon: string }[] = [
     border: var(--border);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-hard);
+  }
+  .icon-strip__btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 6px 4px;
+    border: 0;
+    border-radius: 18px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: transform var(--t-fast), background-color var(--t-fast);
+  }
+  .icon-strip__btn:hover,
+  .icon-strip__btn:focus-visible {
+    transform: translateY(-3px);
+  }
+  .icon-strip__btn[aria-expanded='true'] {
+    background: var(--violet-tint);
+  }
+  .icon-strip__btn[aria-expanded='true'] span {
+    text-decoration: underline 3px var(--yellow);
+    text-underline-offset: 4px;
+  }
+  .icon-story {
+    position: relative;
+    max-width: 760px;
+    margin: 18px auto 0;
+    padding: 18px 22px;
+    border: var(--border);
+    border-radius: 20px;
+    background: var(--yellow-tint);
+    box-shadow: 5px 5px 0 var(--ink);
+    font-size: var(--fs-body);
+    line-height: 1.55;
+    animation: story-in 280ms var(--ease);
+  }
+  .icon-story[hidden] {
+    display: none;
+  }
+  .icon-strip__hint {
+    margin: 10px 0 0;
+    text-align: center;
+    font-size: var(--fs-tiny);
+    color: var(--muted);
+  }
+  .icon-story:not([hidden]) + .icon-strip__hint {
+    display: none;
+  }
+  @keyframes story-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
   }
   .icon-strip li {
     display: flex;
@@ -72,3 +134,9 @@ const ITEMS: { key: TKey; icon: string }[] = [
     }
   }
 </style>
+
+<script>
+  import { wireStories } from '../lib/stories';
+
+  document.querySelectorAll<HTMLElement>('.icon-strip-wrap[data-stories]').forEach((root) => wireStories(root, '.icon-strip__btn'));
+</script>
