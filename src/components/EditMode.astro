@@ -37,6 +37,10 @@ const L = {
   close: t(lang, 'facts.close'),
   newSubtitle: t(lang, 'ed.newSubtitle'),
   newParagraph: t(lang, 'ed.newParagraph'),
+  up: t(lang, 'ed.up'),
+  down: t(lang, 'ed.down'),
+  addHere: t(lang, 'ed.addHere'),
+  more: t(lang, 'ed.more'),
 };
 ---
 
@@ -50,6 +54,8 @@ const L = {
     <button type="button" data-ed-act="p" title={L.paragraph}>＋¶</button>
     <button type="button" data-ed-act="style" title={L.style}>🎨</button>
     <button type="button" data-ed-act="dup" title={L.dup}>⧉</button>
+    <button type="button" data-ed-act="up" title={L.up}>▲</button>
+    <button type="button" data-ed-act="down" title={L.down}>▼</button>
     <button type="button" data-ed-act="img" title={L.img}>🖼</button>
     <button type="button" data-ed-act="hide" title={L.hide}>👁</button>
     <button type="button" data-ed-act="reset" title={L.reset}>↺</button>
@@ -78,6 +84,15 @@ const L = {
     <button type="button" class="ed-style__reset" data-st-reset>{L.styleReset}</button>
   </div>
 </div>
+<!-- the "+" under the element the mouse is over: put something new right there -->
+<button type="button" class="ed-addhere" hidden data-dev-ui data-ed-addhere title={L.addHere} aria-label={L.addHere}>＋</button>
+<div class="ed-addmenu" hidden data-dev-ui data-ed-addmenu>
+  <button type="button" data-ed-addpick="more">⧉ {L.more}</button>
+  <button type="button" data-ed-addpick="h3">＋H {L.subtitle}</button>
+  <button type="button" data-ed-addpick="p">＋¶ {L.paragraph}</button>
+  <button type="button" data-ed-addpick="up">▲ {L.up}</button>
+  <button type="button" data-ed-addpick="down">▼ {L.down}</button>
+</div>
 <template data-ed-texts>{JSON.stringify(L)}</template>
 
 <style is:global>
@@ -98,6 +113,14 @@ const L = {
     opacity: 0.3;
     outline: 2px dashed #ff4d4d;
   }
+  :root.ed-placing,
+  :root.ed-placing * {
+    cursor: copy !important;
+  }
+  :root.ed-placing .ed-hover {
+    outline: none !important;
+    box-shadow: 0 6px 0 -2px #39ff14 !important;
+  }
   :root.ed-on .ed-hover {
     outline: 2px dashed #39ff14 !important;
     outline-offset: 2px;
@@ -107,6 +130,54 @@ const L = {
     outline: 2px solid #ffd60a !important;
     outline-offset: 3px;
     cursor: text;
+  }
+  .ed-addhere {
+    position: fixed;
+    z-index: 679;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 2px solid #000;
+    border-radius: 50%;
+    background: #39ff14;
+    color: #000;
+    font: 900 17px/1 ui-monospace, Consolas, monospace;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.6);
+    transition: transform 120ms ease;
+  }
+  .ed-addhere:hover {
+    transform: scale(1.2);
+  }
+  .ed-addhere[hidden],
+  .ed-addmenu[hidden] {
+    display: none;
+  }
+  .ed-addmenu {
+    position: fixed;
+    z-index: 2050;
+    display: grid;
+    gap: 2px;
+    min-width: 200px;
+    padding: 6px;
+    border: 2px solid #39ff14;
+    border-radius: 12px;
+    background: #0d1117;
+    box-shadow: 0 0 18px rgba(57, 255, 20, 0.35);
+  }
+  .ed-addmenu button {
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: #d6f5d6;
+    font: 700 13px ui-monospace, Consolas, monospace;
+    text-align: left;
+    cursor: pointer;
+  }
+  .ed-addmenu button:hover {
+    background: rgba(57, 255, 20, 0.16);
+    color: #39ff14;
   }
   .ed-frame {
     position: fixed;
@@ -264,10 +335,12 @@ const L = {
   type Theme = { violet?: string; yellow?: string; bg?: string; ink?: string };
   type Style = { src?: string; x?: number; y?: number; w?: number; h?: number; hidden?: boolean; color?: string; bg?: string; font?: string; fs?: number; fw?: string; r?: number };
   type Added = { id: string; after: string[]; tag?: 'h3' | 'p'; text?: string; clone?: string[] };
+  type Move = { id: string; path: string[]; after?: string[]; before?: string[] };
   interface Edits {
     style: Record<string, Record<string, Style>>;
     text: Record<string, Record<string, string>>;
     add: Record<string, Added[]>;
+    move?: Record<string, Move[]>;
     theme?: Theme;
   }
   interface SiteEdits {
@@ -276,6 +349,8 @@ const L = {
     pathOf: (el: Element) => string[];
     styleEl: (el: HTMLElement, s: Style) => void;
     added: (a: Added) => HTMLElement | null;
+    move: (m: Move) => void;
+    unmoveAll: () => void;
     applyTheme: (t: Theme) => void;
     page: string;
     full: string;
@@ -295,6 +370,8 @@ const L = {
     draft.style[api.page] ??= {};
     draft.text[api.full] ??= {};
     draft.add[api.full] ??= [];
+    draft.move ??= {};
+    draft.move[api.full] ??= [];
     let dirty = false;
     let sel: HTMLElement | null = null;
     let hover: HTMLElement | null = null;
@@ -323,12 +400,14 @@ const L = {
     };
     /** show a draft on the page: added elements, texts, styles and colours */
     const show = (prev: Edits, next: Edits) => {
+      api.unmoveAll();
       document.querySelectorAll('[data-ed-id]').forEach((n) => n.remove());
       for (const a of next.add[api.full] ?? []) {
         const ref = api.resolve(a.after);
         const n = api.added(a);
         if (ref && n) ref.after(n);
       }
+      for (const m of next.move?.[api.full] ?? []) api.move(m);
       const texts = new Set([...Object.keys(prev.text[api.full] ?? {}), ...Object.keys(next.text[api.full] ?? {})]);
       for (const k of texts) {
         const el = api.resolve(JSON.parse(k));
@@ -360,10 +439,12 @@ const L = {
       draft.style = next.style;
       draft.text = next.text;
       draft.add = next.add;
+      draft.move = next.move ?? {};
       draft.theme = next.theme ?? {};
       draft.style[api.page] ??= {};
       draft.text[api.full] ??= {};
       draft.add[api.full] ??= [];
+      draft.move[api.full] ??= [];
       show(prev, next);
       dirty = true;
       window.dispatchEvent(new Event('andras:dev-changed'));
@@ -456,6 +537,8 @@ const L = {
       if (!on) {
         deselect();
         hover?.classList.remove('ed-hover');
+        addBtn.hidden = true;
+        addMenu.hidden = true;
       }
     };
     new MutationObserver(() => {
@@ -466,8 +549,61 @@ const L = {
     // developer mode may already be on when this script runs (saved in this browser)
     if (html.classList.contains('dev-mode')) setOn(true);
 
+    const addBtn = document.querySelector<HTMLButtonElement>('[data-ed-addhere]')!;
+    const addMenu = document.querySelector<HTMLElement>('[data-ed-addmenu]')!;
+    let addFor: HTMLElement | null = null;
+    // an item of a list (a card, a plan note …) first – then a paragraph / heading
+    const ITEMS = 'li, article, figure, .card';
+    const BLOCKS = 'p, h1, h2, h3, h4, blockquote, dt, dd, .ed-added';
+    const showAdd = (el: HTMLElement | null) => {
+      const block = el?.closest<HTMLElement>(ITEMS) ?? el?.closest<HTMLElement>(BLOCKS) ?? el;
+      if (!block || !pickable(block) || editing) {
+        addBtn.hidden = true;
+        return;
+      }
+      addFor = block;
+      const z = Number(getComputedStyle(html).zoom) || 1;
+      const r = block.getBoundingClientRect();
+      addBtn.style.left = `${(r.left + r.width / 2) / z - 13}px`;
+      addBtn.style.top = `${r.bottom / z - 13}px`;
+      addBtn.hidden = false;
+    };
+    addBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const r = addBtn.getBoundingClientRect();
+      const z = Number(getComputedStyle(html).zoom) || 1;
+      addMenu.hidden = false;
+      addMenu.style.left = `${Math.min(window.innerWidth / z - 230, r.left / z)}px`;
+      addMenu.style.top = `${Math.min(window.innerHeight / z - 220, r.bottom / z + 4)}px`;
+    });
+    addMenu.querySelectorAll<HTMLButtonElement>('[data-ed-addpick]').forEach((b) =>
+      b.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        addMenu.hidden = true;
+        addBtn.hidden = true;
+        const el = addFor;
+        if (!el?.isConnected) return;
+        const pick = b.dataset.edAddpick;
+        if (pick === 'more') cloneAfter(el, el);
+        else if (pick === 'h3' || pick === 'p') insertAfter(pick, el);
+        else moveEl(el, pick === 'up' ? -1 : 1);
+      }),
+    );
+    document.addEventListener('pointerdown', (e) => {
+      if (!(e.target instanceof Element) || !e.target.closest('[data-ed-addmenu], [data-ed-addhere]')) addMenu.hidden = true;
+    });
+    addEventListener('scroll', () => {
+      addBtn.hidden = true;
+      addMenu.hidden = true;
+    }, true);
+
     document.addEventListener('mouseover', (e) => {
       if (!html.classList.contains('ed-on') || drag) return;
+      // the "+" (and its menu) keep the element they belong to
+      if (e.target instanceof Element && e.target.closest('[data-ed-addhere], [data-ed-addmenu]')) return;
+      if (addMenu.hidden) showAdd(pickable(e.target));
       const el = pickable(e.target);
       if (el === hover) return;
       hover?.classList.remove('ed-hover');
@@ -478,10 +614,15 @@ const L = {
     document.addEventListener(
       'click',
       (e) => {
-        if (!html.classList.contains('ed-on')) return;
+        if (!html.classList.contains('ed-on') || html.classList.contains('ed-placing')) return;
         const el = pickable(e.target);
         if (!el) return;
-        if (el.isContentEditable) return;
+        if (el.isContentEditable) {
+          // a click in the text being written: no info box, no link
+          if (el.closest('button, a')) e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         select(el);
@@ -549,6 +690,11 @@ const L = {
           place();
         }
         if (e.key === 'Escape') stopText();
+        // inside a button (a plan note, a card) the space key would press the button instead of typing
+        if (e.key === ' ' && editing?.closest('button')) {
+          e.preventDefault();
+          document.execCommand('insertText', false, ' ');
+        }
         return;
       }
       if (!sel || !html.classList.contains('ed-on')) return;
@@ -589,6 +735,7 @@ const L = {
         changed();
         return select(n);
       }
+      if (a === 'up' || a === 'down') return moveEl(sel, a === 'up' ? -1 : 1);
       if (a === 'img') {
         const img = sel.tagName === 'IMG' ? sel : sel.querySelector<HTMLElement>('img');
         if (!img) return void (sizeEl.textContent = L.noImg);
@@ -636,6 +783,84 @@ const L = {
         startText();
       }
     }
+    /**
+     * Insert a subtitle / paragraph after an element, or a copy of a card (a new plan note, a new Explore
+     * card) – asked for by DevMode (the panel buttons, the "+" menus):
+     *   andras:insert { tag: 'h3' | 'p', after?: Element }  – without "after": click where it should go
+     *   andras:insert { clone: Element, after: Element }
+     */
+    let placing: 'h3' | 'p' | null = null;
+    /** the neighbour that counts (no stand-ins, scripts or developer buttons) */
+    const neighbour = (el: Element, dir: -1 | 1) => {
+      let s = dir < 0 ? el.previousElementSibling : el.nextElementSibling;
+      while (s && (s.hasAttribute('data-ed-ph') || isDevUi(s) || /^(SCRIPT|STYLE|TEMPLATE)$/.test(s.tagName) || s.classList.contains('dev-plus') || s.classList.contains('lay-bar')))
+        s = dir < 0 ? s.previousElementSibling : s.nextElementSibling;
+      return s;
+    };
+    /** ▲ / ▼: swap with the neighbour (a new order for cards, plans, paragraphs …) */
+    function moveEl(el: HTMLElement, dir: -1 | 1) {
+      const to = neighbour(el, dir);
+      if (!to) return;
+      const m: Move = { id: el.dataset.edMv ?? Date.now().toString(36), path: api.pathOf(el), ...(dir > 0 ? { after: api.pathOf(to) } : { before: api.pathOf(to) }) };
+      draft.move![api.full].push(m);
+      api.move(m);
+      changed();
+      select(el);
+    }
+    function insertAfter(tag: 'h3' | 'p', after: HTMLElement) {
+      const item: Added = { id: Date.now().toString(36), after: api.pathOf(after), tag, text: tag === 'h3' ? L.newSubtitle : L.newParagraph };
+      const n = api.added(item);
+      if (!n) return;
+      draft.add[api.full].push(item);
+      after.after(n);
+      changed();
+      select(n);
+      startText();
+    }
+    function cloneAfter(source: HTMLElement, after: HTMLElement) {
+      const item: Added = { id: Date.now().toString(36), after: api.pathOf(after), clone: api.pathOf(source) };
+      const n = api.added(item);
+      if (!n) return;
+      draft.add[api.full].push(item);
+      after.after(n);
+      changed();
+      // straight into its title, so the new card / plan gets its own text
+      const title = n.querySelector<HTMLElement>('h3, h2, strong') ?? n;
+      select(title);
+      startText();
+    }
+    window.addEventListener('andras:insert', (e) => {
+      const d = (e as CustomEvent<{ tag?: 'h3' | 'p'; after?: HTMLElement; clone?: HTMLElement }>).detail;
+      setOn(true);
+      if (d.clone && d.after) return cloneAfter(d.clone, d.after);
+      if (d.tag && d.after) return insertAfter(d.tag, d.after);
+      if (d.tag) {
+        placing = d.tag;
+        html.classList.add('ed-placing');
+      }
+    });
+    document.addEventListener(
+      'click',
+      (e) => {
+        if (!placing) return;
+        const el = pickable(e.target);
+        if (!el) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const tag = placing;
+        placing = null;
+        html.classList.remove('ed-placing');
+        insertAfter(tag, el);
+      },
+      true,
+    );
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && placing) {
+        placing = null;
+        html.classList.remove('ed-placing');
+      }
+    });
+
     // double-click on the selected element (the frame lies over it) rewrites its text
     frame.addEventListener('dblclick', (e) => {
       if ((e.target as Element).closest('[data-ed-tools]')) return;

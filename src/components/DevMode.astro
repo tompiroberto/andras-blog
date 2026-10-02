@@ -28,6 +28,8 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   <div class="dev-panel__head">
     <span class="dev-panel__icon" aria-hidden="true"><Icon name="code" size={18} /></span>
     <h2 id="dev-title">{t(lang, 'dev.title')}</h2>
+    <span class="dev-panel__grip" aria-hidden="true" title={t(lang, 'dev.panelMove')}>⠿</span>
+    <button type="button" class="dev-panel__close" aria-label={t(lang, 'dev.panelReset')} title={t(lang, 'dev.panelReset')} data-dev-panel-reset>⤢</button>
     <button type="button" class="dev-panel__close" aria-label={t(lang, 'dev.off')} title={t(lang, 'dev.off')} data-dev-off><Icon name="x" size={16} /></button>
   </div>
   <p class="dev-panel__text">{t(lang, 'dev.text')}</p>
@@ -37,6 +39,8 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   <p class="dev-publish__note">{t(lang, 'pub.note')}</p>
   <div class="dev-panel__actions">
     <button type="button" class="dev-panel__btn" data-dev-new-post><Icon name="file-plus" size={16} />{t(lang, 'dev.newPost')}</button>
+    <button type="button" class="dev-panel__btn" data-dev-insert="h3" title={t(lang, 'ins.hint')}><Icon name="heading" size={16} />{t(lang, 'ins.subtitle')}</button>
+    <button type="button" class="dev-panel__btn" data-dev-insert="p" title={t(lang, 'ins.hint')}><Icon name="pilcrow" size={16} />{t(lang, 'ins.paragraph')}</button>
     <button type="button" class="dev-panel__btn" data-dev-upload><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</button>
     <button type="button" class="dev-panel__btn dev-panel__edit" aria-pressed="true" data-dev-edit><Icon name="move" size={16} /><span data-dev-edit-label>{t(lang, 'ed.on')}</span></button>
     <a class="dev-panel__btn" href={`${REPO}/tree/main/src/content/posts`} target="_blank" rel="noopener"><Icon name="layout-dashboard" size={16} />{t(lang, 'dev.admin')}</a>
@@ -77,6 +81,9 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 <PostEditor lang={lang} />
 <EditMode lang={lang} />
 <div class="dev-add-menu" hidden data-dev-add-menu>
+  <button type="button" data-dev-add-pick="card" hidden><Icon name="copy-plus" size={18} /><span data-dev-card-label>{t(lang, 'ins.card')}</span></button>
+  <button type="button" data-dev-add-pick="h3"><Icon name="heading" size={18} />{t(lang, 'ins.subtitleHere')}</button>
+  <button type="button" data-dev-add-pick="p"><Icon name="pilcrow" size={18} />{t(lang, 'ins.paragraphHere')}</button>
   <button type="button" data-dev-add-pick="photo"><Icon name="image-plus" size={18} />{t(lang, 'dev.addPhoto')}</button>
   <button type="button" data-dev-add-pick="post"><Icon name="file-plus" size={18} />{t(lang, 'dev.addPost')}</button>
 </div>
@@ -95,6 +102,9 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 <template data-dev-pubnone>{t(lang, 'pub.none')}</template>
 <template data-dev-edon>{t(lang, 'ed.on')}</template>
 <template data-dev-edoff>{t(lang, 'ed.off')}</template>
+<template data-dev-plan>{t(lang, 'ins.plan')}</template>
+<template data-dev-card>{t(lang, 'ins.card')}</template>
+<template data-dev-placehint>{t(lang, 'ins.hint')}</template>
 <template data-dev-addlabel>{t(lang, 'dev.add')}</template>
 <canvas class="dev-rain" aria-hidden="true" data-dev-rain></canvas>
 <div class="dev-scan" aria-hidden="true"></div>
@@ -136,6 +146,26 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     box-shadow: 5px 5px 0 #39d353;
     zoom: var(--inv-zoom, 1);
     animation: dev-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  /* the panel can be dragged by its title bar and resized from the corner */
+  .dev-panel {
+    resize: both;
+    min-width: 240px;
+    min-height: 160px;
+  }
+  .dev-panel__head {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+  .dev-panel.is-dragging .dev-panel__head {
+    cursor: grabbing;
+  }
+  .dev-panel__grip {
+    margin-left: auto;
+    color: #39d353;
+    font-size: 16px;
+    opacity: 0.7;
   }
   .dev-panel[hidden] {
     display: none;
@@ -502,6 +532,9 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     text-align: left;
     cursor: pointer;
   }
+  .dev-add-menu button[hidden] {
+    display: none;
+  }
   .dev-add-menu button:hover,
   .dev-add-menu button:focus-visible {
     background: #39d353;
@@ -678,6 +711,85 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   import { PENDING_EVENT, TOKEN_KEY, commitFiles, getToken, pendingCount, publishSite, readFile } from '../lib/githubCommit';
 
   const KEY = 'andras-dev-mode';
+
+  // ---- the panel: drag it by the title bar, resize it from the corner; remembered in this browser ----
+  {
+    const panel = document.querySelector<HTMLElement>('[data-dev-panel]')!;
+    const head = panel.querySelector<HTMLElement>('.dev-panel__head')!;
+    const PKEY = 'andras-dev-panel';
+    type Box = { x?: number; y?: number; w?: number; h?: number };
+    const read = (): Box => {
+      try {
+        return JSON.parse(localStorage.getItem(PKEY) ?? '{}') as Box;
+      } catch {
+        return {};
+      }
+    };
+    const write = (b: Box) => {
+      try {
+        localStorage.setItem(PKEY, JSON.stringify(b));
+      } catch {
+        /* storage unavailable */
+      }
+    };
+    const zoom = () => Number(getComputedStyle(document.documentElement).zoom) || 1;
+    const applyBox = (b: Box) => {
+      const k = 1 / zoom();
+      if (b.x !== undefined && b.y !== undefined) {
+        // always (at least partly) on the screen
+        const x = Math.max(0, Math.min(window.innerWidth * k - 120, b.x));
+        const y = Math.max(0, Math.min(window.innerHeight * k - 40, b.y));
+        panel.style.left = `${x}px`;
+        panel.style.top = `${y}px`;
+        panel.style.right = 'auto';
+        panel.style.bottom = 'auto';
+      } else {
+        panel.style.left = panel.style.top = panel.style.right = panel.style.bottom = '';
+      }
+      panel.style.width = b.w ? `${b.w}px` : '';
+      panel.style.height = b.h ? `${b.h}px` : '';
+    };
+    applyBox(read());
+    addEventListener('resize', () => applyBox(read()));
+    let start: { px: number; py: number; x: number; y: number } | null = null;
+    head.addEventListener('pointerdown', (e) => {
+      if ((e.target as Element).closest('button')) return;
+      const k = 1 / zoom();
+      const r = panel.getBoundingClientRect();
+      start = { px: e.clientX, py: e.clientY, x: r.left * k, y: r.top * k };
+      head.setPointerCapture(e.pointerId);
+      panel.classList.add('is-dragging');
+    });
+    head.addEventListener('pointermove', (e) => {
+      if (!start) return;
+      const k = 1 / zoom();
+      applyBox({ ...read(), x: start.x + (e.clientX - start.px) * k, y: start.y + (e.clientY - start.py) * k, w: panel.offsetWidth, h: panel.style.height ? panel.offsetHeight : undefined });
+    });
+    const end = () => {
+      if (!start) return;
+      start = null;
+      panel.classList.remove('is-dragging');
+      write({ ...read(), x: parseFloat(panel.style.left), y: parseFloat(panel.style.top) });
+    };
+    head.addEventListener('pointerup', end);
+    head.addEventListener('pointercancel', end);
+    // a size set with the corner handle
+    let sized = false;
+    new ResizeObserver(() => {
+      if (panel.hidden || !sized) return;
+      write({ ...read(), w: panel.offsetWidth, h: panel.offsetHeight });
+    }).observe(panel);
+    panel.addEventListener('pointerdown', (e) => {
+      const r = panel.getBoundingClientRect();
+      // the browser's resize corner (bottom right)
+      if (e.clientX > r.right - 22 && e.clientY > r.bottom - 22) sized = true;
+    });
+    panel.querySelector('[data-dev-panel-reset]')!.addEventListener('click', () => {
+      sized = false;
+      write({});
+      applyBox({});
+    });
+  }
 
   // ---- labels: in developer mode every tool button says what it does, at once ----
   const devTip = document.querySelector<HTMLElement>('[data-dev-tip]')!;
@@ -954,6 +1066,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   // "+" on every section (and on the places marked data-dev-add="photo" | "post", with data-dev-category)
   const menu = document.querySelector<HTMLElement>('[data-dev-add-menu]')!;
   let menuCategory: string | undefined;
+  let menuHost: HTMLElement | null = null;
   const openPhoto = () => window.dispatchEvent(new Event('andras:upload-photos'));
   const openPost = (category?: string) => window.dispatchEvent(new CustomEvent('andras:new-post', { detail: { category } }));
   const hideMenu = () => (menu.hidden = true);
@@ -974,6 +1087,12 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
         if (kind === 'photo') return openPhoto();
         if (kind === 'post') return openPost(host.dataset.devCategory);
         menuCategory = host.dataset.devCategory;
+        menuHost = host;
+        // sections made of cards / notes offer a new one (a copy of the first, then rewritten)
+        const cards = cardsOf(host);
+        const cardBtn = menu.querySelector<HTMLButtonElement>('[data-dev-add-pick="card"]')!;
+        cardBtn.hidden = !cards;
+        if (cards) menu.querySelector('[data-dev-card-label]')!.textContent = tpl(host.dataset.lay === 'plans' ? 'plan' : 'card');
         // the page may be zoomed (html zoom): the menu lives in the same zoomed space
         const z = Number(getComputedStyle(document.documentElement).zoom) || 1;
         const r = plus.getBoundingClientRect();
@@ -994,8 +1113,32 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   menu.querySelectorAll<HTMLButtonElement>('[data-dev-add-pick]').forEach((b) =>
     b.addEventListener('click', () => {
       hideMenu();
-      if (b.dataset.devAddPick === 'photo') openPhoto();
-      else openPost(menuCategory);
+      const pick = b.dataset.devAddPick;
+      const insert = (detail: Record<string, unknown>) => window.dispatchEvent(new CustomEvent('andras:insert', { detail }));
+      if (pick === 'photo') return openPhoto();
+      if (pick === 'post') return openPost(menuCategory);
+      if (!menuHost) return;
+      if (pick === 'card') {
+        const cards = cardsOf(menuHost);
+        if (cards) insert({ clone: cards[0], after: cards[cards.length - 1] });
+        return;
+      }
+      // a subtitle / paragraph right under the section's title
+      const heading = menuHost.querySelector<HTMLElement>('.section-heading, h2, h1') ?? menuHost.querySelector<HTMLElement>('.container > *');
+      if (heading) insert({ tag: pick, after: heading });
+    }),
+  );
+  /** the cards / notes of a section (Explore cards, plan notes – without the "more coming soon" one) */
+  function cardsOf(host: HTMLElement): HTMLElement[] | null {
+    const list = Array.from(host.querySelectorAll<HTMLElement>('.plans-board > li:not(.plan-note--more):not([data-ed-ph]), .explore__grid > li:not([data-ed-ph]), .photos__grid > li:not([data-ed-ph])'));
+    return list.length ? list : null;
+  }
+  // panel: "＋ New subtitle / paragraph" – then click where it should go
+  document.querySelectorAll<HTMLButtonElement>('[data-dev-insert]').forEach((b) =>
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      say(tpl('placehint'));
+      window.dispatchEvent(new CustomEvent('andras:insert', { detail: { tag: b.dataset.devInsert } }));
     }),
   );
   document.addEventListener('click', (e) => {

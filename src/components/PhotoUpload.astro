@@ -50,6 +50,7 @@ const { lang } = Astro.props;
       <div class="upl__inputs">
         <input class="upl__caption" type="text" maxlength="200" placeholder={t(lang, 'upload.caption')} aria-label={t(lang, 'upload.caption')} />
         <input class="upl__place" type="text" maxlength="80" placeholder={t(lang, 'upload.place')} aria-label={t(lang, 'upload.place')} />
+        <input class="upl__coords" type="text" inputmode="decimal" maxlength="60" placeholder={t(lang, 'upload.coords')} aria-label={t(lang, 'upload.coords')} />
         <span class="upl__geo" data-geo></span>
       </div>
       <button type="button" class="upl__remove" aria-label={t(lang, 'upload.remove')} title={t(lang, 'upload.remove')}><Icon name="trash-2" size={16} /></button>
@@ -64,6 +65,8 @@ const { lang } = Astro.props;
   <template data-upl-text-needtoken>{t(lang, 'upload.needToken')}</template>
   <template data-upl-text-gps>{t(lang, 'upload.gps')}</template>
   <template data-upl-text-geofound>{t(lang, 'upload.geoFound')}</template>
+  <template data-upl-text-coordsset>{t(lang, 'upload.coordsSet')}</template>
+  <template data-upl-text-badcoords>{t(lang, 'upload.badCoords')}</template>
   <template data-upl-text-nogeo>{t(lang, 'upload.noGeo')}</template>
   <template data-upl-text-live>{t(lang, 'upload.live')}</template>
   <template data-upl-text-badimage>{t(lang, 'upload.badImage')}</template>
@@ -273,11 +276,49 @@ const { lang } = Astro.props;
       const lat = Number(row.dataset.lat);
       const lng = Number(row.dataset.lng);
       row.querySelector<HTMLElement>('[data-geo]')!.textContent = `📍 ${label} · ${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+      row.querySelector<HTMLInputElement>('.upl__coords')!.value = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    };
+    /** "47.4979, 19.0402" / "47.4979 19.0402" / "-33.04;-71.62" → [lat, lng] */
+    const parseCoords = (v: string): [number, number] | null => {
+      const m = v.trim().match(/^(-?\d{1,2}(?:[.,]\d+)?)\s*[,; ]\s*(-?\d{1,3}(?:[.,]\d+)?)$/);
+      if (!m) return null;
+      const lat = Number(m[1].replace(',', '.'));
+      const lng = Number(m[2].replace(',', '.'));
+      return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? [lat, lng] : null;
     };
     /** location: the photo's own GPS data first; otherwise the typed place name is looked up */
     const wireGeo = (row: HTMLElement, file: File) => {
       const placeInput = row.querySelector<HTMLInputElement>('.upl__place')!;
       const out = row.querySelector<HTMLElement>('[data-geo]')!;
+      const coordsInput = row.querySelector<HTMLInputElement>('.upl__coords')!;
+      // typed coordinates win: they set the pin, and the city is looked up for the place field
+      const useCoords = async (c: [number, number]) => {
+        row.dataset.lat = String(c[0]);
+        row.dataset.lng = String(c[1]);
+        row.dataset.fromGps = '1';
+        geoLine(row, text('coordsset'));
+        if (!placeInput.value.trim() || parseCoords(placeInput.value)) {
+          placeInput.value = '';
+          const name = await reverseGeocode(c[0], c[1], lang).catch(() => '');
+          if (name && !placeInput.value.trim()) placeInput.value = name;
+        }
+      };
+      coordsInput.addEventListener('change', () => {
+        const v = coordsInput.value.trim();
+        if (!v) {
+          delete row.dataset.lat;
+          delete row.dataset.lng;
+          delete row.dataset.fromGps;
+          out.textContent = '';
+          return;
+        }
+        const c = parseCoords(v);
+        if (!c) {
+          out.textContent = text('badcoords');
+          return;
+        }
+        void useCoords(c);
+      });
       void (async () => {
         try {
           const { gps } = await import('exifr');
@@ -296,6 +337,9 @@ const { lang } = Astro.props;
         }
       })();
       placeInput.addEventListener('change', async () => {
+        // coordinates typed into the place field work too
+        const typed = parseCoords(placeInput.value);
+        if (typed) return void useCoords(typed);
         if (row.dataset.fromGps) return;
         const q = placeInput.value.trim();
         delete row.dataset.lat;

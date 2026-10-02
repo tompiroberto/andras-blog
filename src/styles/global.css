@@ -717,7 +717,7 @@ select {
 :root.map-mode {
   overflow: hidden;
 }
-:root.map-mode body > :not(.map-mode-view):not(.chaos-view):not(.fact-card):not(.place-msg):not(.route-view):not(script):not(style) {
+:root.map-mode body > :not(.map-mode-view):not(.chaos-view):not(.fact-card):not(.place-msg):not(.route-view):not(.dev-panel):not(.dev-toast):not(.dev-tip):not(.lay-save):not(.upl):not(.ped):not(.dev-gate):not(.mm-spin):not(script):not(style) {
   visibility: hidden;
 }
 
@@ -1398,3 +1398,97 @@ select {
   white-space: nowrap;
 }
 
+/* Switching to the world map: a spinning Earth flies in, then opens up into the map (MapMode.astro) */
+.mm-spin {
+  position: fixed;
+  inset: 0;
+  z-index: 680;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: radial-gradient(circle, rgb(26 20 70 / 0.85), rgb(7 5 26 / 0.95));
+  animation: mm-spin-bg 1900ms ease forwards;
+}
+.mm-spin__earth {
+  position: relative;
+  width: min(42vmin, 320px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #1e6fd9;
+  box-shadow:
+    inset -28px -18px 50px rgb(0 0 30 / 0.55),
+    inset 14px 10px 30px rgb(255 255 255 / 0.25),
+    0 0 60px rgb(80 160 255 / 0.55);
+  animation: mm-spin-fly 1900ms cubic-bezier(0.5, 0, 0.3, 1) forwards;
+}
+.mm-spin__land {
+  position: absolute;
+  inset: 0;
+  width: 200%;
+  background: var(--mm-land) repeat-x 0 0 / 50% 100%;
+  animation: mm-spin-turn 1100ms linear infinite;
+}
+.mm-spin__glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.35), transparent 45%);
+}
+.mm-spin__ring {
+  position: absolute;
+  width: min(60vmin, 460px);
+  aspect-ratio: 1;
+  border: 3px dashed rgb(255 214 10 / 0.8);
+  border-radius: 50%;
+  animation: mm-spin-ring 1900ms ease forwards;
+}
+@keyframes mm-spin-turn {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes mm-spin-fly {
+  0% {
+    transform: scale(0.15) rotate(-30deg);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(5);
+    opacity: 0;
+  }
+}
+@keyframes mm-spin-ring {
+  0% {
+    transform: scale(0.3) rotate(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  80% {
+    transform: scale(1) rotate(200deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.2) rotate(260deg);
+    opacity: 0;
+  }
+}
+@keyframes mm-spin-bg {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
