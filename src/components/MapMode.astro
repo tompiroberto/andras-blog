@@ -14,6 +14,7 @@ import { getPosts } from '../lib/posts';
 import { categoryMeta } from '../lib/categories';
 import site from '../data/site.json';
 import countriesData from '../data/countries.json';
+import mapPins from '../data/map-pins.json';
 import nutella from '../data/nutella-factories.json';
 import { SPACE_ART } from '../lib/spaceArt';
 
@@ -56,6 +57,10 @@ interface Link {
   exit?: boolean;
 }
 interface Item {
+  /** a photo on the card (pins added in developer mode) */
+  img?: string;
+  /** set for the pins added in developer mode (src/data/map-pins.json) */
+  pinId?: string;
   id: string;
   lat: number;
   lon: number;
@@ -191,18 +196,42 @@ for (const post of posts) {
   });
 }
 
-// countries for colouring and the click tooltip
+// countries for colouring and the click tooltip (when / details / image: added in developer mode)
+type CountryExtra = { when?: string; image?: string; i18n: Record<string, { name: string; text: string; details?: string }> };
 const countryInfo = Object.fromEntries(
   countriesData.countries
     .filter((c) => c.isoNumeric)
     .map((c) => {
-      const tr = c.i18n[lang as keyof typeof c.i18n] ?? c.i18n.en;
-      return [c.isoNumeric as string, { status: c.status, name: tr.name, text: tr.text }];
+      const x = c as unknown as CountryExtra;
+      const tr = x.i18n[lang] ?? x.i18n.en;
+      return [c.isoNumeric as string, { status: c.status, name: tr.name, text: tr.text, when: x.when ?? '', details: tr.details ?? '', image: x.image ?? '' }];
     }),
 );
+// pins added in developer mode: a place with a title, a text and maybe a photo
+type MapPin = { id: string; lat: number; lon: number; title: string; text: string; image?: string };
+for (const p of mapPins as MapPin[]) {
+  items.push({ id: `pin-${p.id}`, pinId: p.id, lat: p.lat, lon: p.lon, title: p.title, text: p.text, img: p.image, icon: 'map-pin', tone: 'yellow', priority: 6, links: [] });
+}
+const edWords = {
+  statuses: ['visited', 'transit', 'planned', 'now', 'home', 'none'].map((s) => [s, s === 'none' ? t(lang, 'med.none') : t(lang, `legend.${s}` as TKey)]),
+  country: t(lang, 'med.country'),
+  pin: t(lang, 'med.pin'),
+  name: t(lang, 'med.name'),
+  when: t(lang, 'med.when'),
+  why: t(lang, 'med.why'),
+  details: t(lang, 'med.details'),
+  photo: t(lang, 'med.photo'),
+  removePhoto: t(lang, 'med.removePhoto'),
+  done: t(lang, 'med.done'),
+  remove: t(lang, 'med.remove'),
+  note: t(lang, 'med.note'),
+  addPin: t(lang, 'med.addPin'),
+  title: t(lang, 'med.title'),
+  text: t(lang, 'med.text'),
+};
 // map mode only: Russia is on the wish list too
 const regionName = new Intl.DisplayNames([HTML_LANG[lang]], { type: 'region' });
-if (!countryInfo['643']) countryInfo['643'] = { status: 'planned', name: regionName.of('RU') ?? 'Russia', text: t(lang, 'mapmode.russia') };
+if (!countryInfo['643']) countryInfo['643'] = { status: 'planned', name: regionName.of('RU') ?? 'Russia', text: t(lang, 'mapmode.russia'), when: '', details: '', image: '' };
 
 // GeoGuessr tips (own wording + own drawings), localised names; English text where there is no translation
 type MetaEntry = { a2: string; plonk: string; clues: { type: string; extra?: string; en: string; hu: string }[] };
@@ -275,13 +304,14 @@ const LEGEND: { status: string; key: TKey }[] = [
   <div class="mm-items" data-mm-items>
     {
       items.map((it) => (
-        <article class:list={['mm-item', `mm-item--${it.tone}`]} data-mm-item data-lat={it.lat} data-lon={it.lon} data-priority={it.priority} id={`mm-${it.id}`}>
+        <article class:list={['mm-item', `mm-item--${it.tone}`]} data-mm-item data-lat={it.lat} data-lon={it.lon} data-priority={it.priority} data-pin-id={it.pinId} id={`mm-${it.id}`}>
           <button type="button" class="mm-pin" data-mm-pin aria-label={it.title}>
             <Icon name={it.icon} size={16} />
           </button>
           <span class="mm-label" data-mm-label>{it.title}</span>
           <div class="mm-card">
             {it.tag && <span class="mm-card__tag">{it.tag}</span>}
+            {it.img && <img class="mm-card__img" src={it.img} alt="" loading="lazy" />}
             <h2 class="mm-card__title">{it.title}</h2>
             {it.text && <p class="mm-card__text">{it.text}</p>}
             {it.links.length > 0 && (
@@ -383,6 +413,34 @@ const LEGEND: { status: string; key: TKey }[] = [
   <template data-mm-msg-none>{t(lang, 'search.none')}</template>
   <template data-mm-msg-error>{t(lang, 'search.error')}</template>
   <script type="application/json" data-mm-countries set:html={JSON.stringify(countryInfo)} />
+  <!-- developer mode: the data files as they are, so edits can be saved back -->
+  <script type="application/json" data-mm-countries-raw set:html={JSON.stringify(countriesData)} />
+  <script type="application/json" data-mm-pins-raw set:html={JSON.stringify(mapPins)} />
+  <script type="application/json" data-mm-ed-words set:html={JSON.stringify(edWords)} />
+  <aside class="mm-ed" hidden data-mm-ed data-dev-ui aria-label="Edit">
+    <div class="mm-ed__head">
+      <span class="mm-ed__kind" data-mm-ed-kind></span>
+      <strong class="mm-ed__title" data-mm-ed-title></strong>
+      <button type="button" class="mm-ed__x" data-mm-ed-close aria-label="×">✕</button>
+    </div>
+    <div class="mm-ed__statuses" data-mm-ed-statuses></div>
+    <label class="mm-ed__field" data-mm-ed-row="name"><span>{edWords.name}</span><input data-mm-ed-in="name" /></label>
+    <label class="mm-ed__field" data-mm-ed-row="title"><span>{edWords.title}</span><input data-mm-ed-in="title" /></label>
+    <label class="mm-ed__field" data-mm-ed-row="when"><span>{edWords.when}</span><input data-mm-ed-in="when" placeholder="2026. augusztus" /></label>
+    <label class="mm-ed__field" data-mm-ed-row="text"><span data-mm-ed-textlabel>{edWords.why}</span><textarea rows="2" data-mm-ed-in="text"></textarea></label>
+    <label class="mm-ed__field" data-mm-ed-row="details"><span>{edWords.details}</span><textarea rows="3" data-mm-ed-in="details"></textarea></label>
+    <div class="mm-ed__photo">
+      <img alt="" hidden data-mm-ed-img />
+      <label class="mm-ed__pick">📷 {edWords.photo}<input type="file" accept="image/*" data-mm-ed-file /></label>
+      <button type="button" class="mm-ed__link" hidden data-mm-ed-unphoto>{edWords.removePhoto}</button>
+    </div>
+    <div class="mm-ed__actions">
+      <button type="button" class="mm-ed__done" data-mm-ed-done>✓ {edWords.done}</button>
+      <button type="button" class="mm-ed__link" hidden data-mm-ed-delete>🗑 {edWords.remove}</button>
+    </div>
+    <p class="mm-ed__note">{edWords.note}</p>
+  </aside>
+  <button type="button" class="mm-ed-addpin" hidden data-mm-ed-addpin data-dev-ui>📍 {edWords.addPin}</button>
   <script type="application/json" data-mm-metas set:html={JSON.stringify(metas)} />
   <script type="application/json" data-mm-city-data set:html={JSON.stringify(cities)} />
   <script type="application/json" data-mm-text set:html={JSON.stringify(text)} />
@@ -725,6 +783,208 @@ const LEGEND: { status: string; key: TKey }[] = [
     color: #fff;
     font-size: 13px;
     font-weight: 500;
+  }
+  .mm-card :global(.mm-card__img),
+  .mm-card__img {
+    display: block;
+    width: 100%;
+    max-height: 140px;
+    object-fit: cover;
+    margin: -2px 0 8px;
+    border-radius: 10px;
+  }
+  .mm-tip :global(.mm-tip__when) {
+    font-size: 12px;
+    font-weight: 700;
+    opacity: 0.85;
+  }
+  .mm-tip :global(.mm-tip__details) {
+    margin: 4px 0 0;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .mm-tip :global(.mm-tip__img) {
+    width: 100%;
+    max-height: 150px;
+    margin-top: 6px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+  /* developer mode: the editing panel and the "pin here" button */
+  .mm-ed {
+    position: absolute;
+    right: 14px;
+    top: 70px;
+    z-index: 8;
+    display: grid;
+    gap: 9px;
+    width: min(330px, calc(100% - 28px));
+    max-height: calc(100% - 90px);
+    overflow: auto;
+    padding: 14px;
+    border: 2px solid #39ff14;
+    border-radius: 16px;
+    background: #0d1117;
+    color: #d6f5d6;
+    font: 13px ui-monospace, Consolas, monospace;
+    box-shadow: 0 0 22px rgba(57, 255, 20, 0.35);
+  }
+  .mm-ed[hidden],
+  .mm-ed [hidden] {
+    display: none !important;
+  }
+  .mm-ed__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mm-ed__kind {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #39ff14;
+    color: #000;
+    font-weight: 800;
+    font-size: 11px;
+  }
+  .mm-ed__title {
+    flex: 1;
+    min-width: 0;
+    color: #39ff14;
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mm-ed__x {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #30363d;
+    border-radius: 50%;
+    background: none;
+    color: #d6f5d6;
+    cursor: pointer;
+  }
+  .mm-ed__statuses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .mm-ed__statuses :global(button) {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border: 1px solid #30363d;
+    border-radius: 999px;
+    background: #161b22;
+    color: #d6f5d6;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .mm-ed__statuses :global(button[aria-pressed='true']) {
+    border-color: #39ff14;
+    background: #39ff14;
+    color: #000;
+    font-weight: 800;
+  }
+  .mm-ed__statuses :global(i) {
+    width: 12px;
+    height: 12px;
+    border: 1px solid #000;
+    border-radius: 3px;
+  }
+  .mm-ed__field {
+    display: grid;
+    gap: 3px;
+  }
+  .mm-ed__field span {
+    color: #9be9a8;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .mm-ed__field input,
+  .mm-ed__field textarea {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: #161b22;
+    color: #e6edf3;
+    font: inherit;
+    font-size: 13px;
+    resize: vertical;
+  }
+  .mm-ed__photo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .mm-ed__photo img {
+    width: 100%;
+    max-height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  .mm-ed__pick {
+    position: relative;
+    padding: 5px 10px;
+    border: 1px dashed #39ff14;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .mm-ed__pick input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .mm-ed__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mm-ed__done {
+    padding: 7px 14px;
+    border: 0;
+    border-radius: 8px;
+    background: #39ff14;
+    color: #000;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .mm-ed__link {
+    border: 0;
+    background: none;
+    color: #ff8080;
+    font: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .mm-ed__note {
+    margin: 0;
+    font-size: 11px;
+    color: #9be9a8;
+  }
+  .mm-ed-addpin {
+    position: absolute;
+    left: 50%;
+    bottom: 64px;
+    z-index: 8;
+    padding: 9px 16px;
+    border: 2px solid #39ff14;
+    border-radius: 999px;
+    background: #0d1117;
+    color: #39ff14;
+    font: 800 14px ui-monospace, Consolas, monospace;
+    box-shadow: 0 0 18px rgba(57, 255, 20, 0.4);
+    transform: translateX(-50%);
+    cursor: pointer;
+  }
+  .mm-ed-addpin[hidden] {
+    display: none;
   }
   .mm-tip {
     position: absolute;
@@ -1480,7 +1740,7 @@ const LEGEND: { status: string; key: TKey }[] = [
     const status = view.querySelector<HTMLElement>('[data-mm-status]')!;
     const tip = view.querySelector<HTMLElement>('[data-mm-tip]')!;
     const msg = (n: string) => view.querySelector<HTMLTemplateElement>(`[data-mm-msg-${n}]`)!.content.textContent ?? '';
-    const info: Record<string, { status: string; name: string; text: string }> = JSON.parse(
+    const info: Record<string, { status: string; name: string; text: string; when?: string; details?: string; image?: string }> = JSON.parse(
       view.querySelector('[data-mm-countries]')!.textContent || '{}',
     );
     const metas: Record<string, { name: string; plonk: string; clues: { art: string; text: string }[] }> = JSON.parse(
@@ -2101,6 +2361,260 @@ const LEGEND: { status: string; key: TKey }[] = [
       it.el.querySelector('[data-mm-label]')!.addEventListener('click', go);
     });
 
+    // ---- developer mode: edit countries (colour, when, why, details, photo) and pins ----
+    type RawCountry = { id: string; isoNumeric?: string; status: string; when?: string; image?: string; i18n: Record<string, { name: string; text: string; details?: string }> };
+    type RawPin = { id: string; lat: number; lon: number; title: string; text: string; image?: string };
+    const raw: { _comment?: string; countries: RawCountry[] } = JSON.parse(view.querySelector('[data-mm-countries-raw]')!.textContent || '{"countries":[]}');
+    const pinsRaw: RawPin[] = JSON.parse(view.querySelector('[data-mm-pins-raw]')!.textContent || '[]');
+    const edWords: Record<string, string> & { statuses: [string, string][] } = JSON.parse(view.querySelector('[data-mm-ed-words]')!.textContent || '{}');
+    const ed = view.querySelector<HTMLElement>('[data-mm-ed]')!;
+    const edIn = (k: string) => ed.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-mm-ed-in="${k}"]`)!;
+    const edRow = (k: string) => ed.querySelector<HTMLElement>(`[data-mm-ed-row="${k}"]`)!;
+    const edImg = ed.querySelector<HTMLImageElement>('[data-mm-ed-img]')!;
+    const edFile = ed.querySelector<HTMLInputElement>('[data-mm-ed-file]')!;
+    const edUnphoto = ed.querySelector<HTMLButtonElement>('[data-mm-ed-unphoto]')!;
+    const edDelete = ed.querySelector<HTMLButtonElement>('[data-mm-ed-delete]')!;
+    const statusBox = ed.querySelector<HTMLElement>('[data-mm-ed-statuses]')!;
+    const addPinBtn = view.querySelector<HTMLButtonElement>('[data-mm-ed-addpin]')!;
+    const SWATCH: Record<string, string> = { visited: 'var(--yellow)', transit: '#fff', planned: 'repeating-linear-gradient(45deg,#7b2ff7 0 2px,#fff 2px 5px)', now: 'var(--violet)', home: 'var(--ink)', none: 'transparent' };
+    let mapDirty = false;
+    const pendingPics = new Map<string, string>(); // repo path → base64
+    const previewPics = new Map<string, string>(); // public path → data URL (until the site is rebuilt)
+    const shownSrc = (src?: string) => (src && previewPics.get(src)) || src || '';
+    const dirty = () => {
+      mapDirty = true;
+      window.dispatchEvent(new Event('andras:dev-changed'));
+    };
+    // DevMode's 🚀 Publish collects these files (and calls __mapSaved afterwards)
+    const w = window as unknown as { __mapFiles?: () => { path: string; text?: string; base64?: string }[]; __mapSaved?: () => void };
+    w.__mapFiles = () =>
+      mapDirty
+        ? [
+            { path: 'src/data/countries.json', text: `${JSON.stringify(raw, null, 2)}\n` },
+            { path: 'src/data/map-pins.json', text: `${JSON.stringify(pinsRaw, null, 2)}\n` },
+            ...[...pendingPics].map(([path, base64]) => ({ path, base64 })),
+          ]
+        : [];
+    w.__mapSaved = () => {
+      mapDirty = false;
+      pendingPics.clear();
+    };
+
+    let edTarget: { kind: 'country'; iso: string } | { kind: 'pin'; id: string; isNew: boolean; lat: number; lon: number } | null = null;
+    let edStatus = 'none';
+    let edPhoto: string | undefined;
+    const setStatus = (st: string) => {
+      edStatus = st;
+      statusBox.querySelectorAll<HTMLButtonElement>('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.st === st)));
+    };
+    statusBox.replaceChildren(
+      ...edWords.statuses.map(([st, label]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.st = st;
+        b.innerHTML = `<i style="background:${SWATCH[st]}"></i>`;
+        b.append(label);
+        b.addEventListener('click', () => setStatus(st));
+        return b;
+      }),
+    );
+    const showPhoto = (src?: string) => {
+      edPhoto = src;
+      edImg.hidden = !src;
+      edUnphoto.hidden = !src;
+      if (src) edImg.src = shownSrc(src);
+    };
+    const openEd = (kind: string, title: string) => {
+      ed.querySelector('[data-mm-ed-kind]')!.textContent = kind;
+      ed.querySelector('[data-mm-ed-title]')!.textContent = title;
+      ed.hidden = false;
+      addPinBtn.hidden = true;
+    };
+    function openCountryEditor(iso: string, fallbackName: string) {
+      const entry = raw.countries.find((c) => c.isoNumeric === iso);
+      const tr = entry ? entry.i18n[lang] ?? entry.i18n.en : undefined;
+      edTarget = { kind: 'country', iso };
+      statusBox.hidden = false;
+      edRow('name').hidden = false;
+      edRow('title').hidden = true;
+      edRow('when').hidden = false;
+      edRow('details').hidden = false;
+      ed.querySelector('[data-mm-ed-textlabel]')!.textContent = edWords.why;
+      edIn('name').value = tr?.name ?? fallbackName;
+      edIn('when').value = entry?.when ?? '';
+      edIn('text').value = tr?.text ?? '';
+      edIn('details').value = tr?.details ?? '';
+      setStatus(entry?.status ?? 'none');
+      showPhoto(entry?.image);
+      edDelete.hidden = true;
+      openEd(edWords.country, tr?.name ?? fallbackName);
+    }
+    function openPinEditor(pin: RawPin, isNew: boolean) {
+      edTarget = { kind: 'pin', id: pin.id, isNew, lat: pin.lat, lon: pin.lon };
+      statusBox.hidden = true;
+      edRow('name').hidden = true;
+      edRow('title').hidden = false;
+      edRow('when').hidden = true;
+      edRow('details').hidden = true;
+      ed.querySelector('[data-mm-ed-textlabel]')!.textContent = edWords.text;
+      edIn('title').value = pin.title;
+      edIn('text').value = pin.text;
+      showPhoto(pin.image);
+      edDelete.hidden = isNew;
+      openEd(edWords.pin, pin.title);
+    }
+    const shrink = async (file: File, max = 1600) => {
+      const bmp = await createImageBitmap(file);
+      const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * k);
+      c.height = Math.round(bmp.height * k);
+      c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', 0.85);
+    };
+    edFile.addEventListener('change', async () => {
+      const f = edFile.files?.[0];
+      edFile.value = '';
+      if (!f || !edTarget) return;
+      const dataUrl = await shrink(f).catch(() => '');
+      if (!dataUrl) return;
+      const name = `${edTarget.kind === 'country' ? edTarget.iso : `pin-${edTarget.id}`}-${Date.now().toString(36)}.jpg`;
+      const pub = `/uploads/map/${name}`;
+      pendingPics.set(`public${pub}`, dataUrl.split(',')[1]);
+      previewPics.set(pub, dataUrl);
+      showPhoto(pub);
+    });
+    edUnphoto.addEventListener('click', () => showPhoto(undefined));
+    ed.querySelector('[data-mm-ed-close]')!.addEventListener('click', () => (ed.hidden = true));
+
+    /** recolour one country on the globe */
+    const paint = (iso: string, st: string) => {
+      for (const p of paths) {
+        if (p.el.dataset.iso !== iso) continue;
+        p.el.classList.remove('is-data', 'c-visited', 'c-transit', 'c-planned', 'c-now', 'c-home', 'c-unexplored');
+        if (st === 'none') p.el.classList.add('c-unexplored');
+        else p.el.classList.add('is-data', `c-${st}`);
+      }
+    };
+    /** put a pin's card on the map (new) or refresh it */
+    const pinItem = (pin: RawPin) => {
+      let el = view.querySelector<HTMLElement>(`[data-pin-id="${CSS.escape(pin.id)}"]`);
+      if (!el) {
+        el = document.createElement('article');
+        el.className = 'mm-item mm-item--yellow';
+        el.dataset.mmItem = '';
+        el.dataset.pinId = pin.id;
+        el.dataset.lat = String(pin.lat);
+        el.dataset.lon = String(pin.lon);
+        el.dataset.priority = '6';
+        el.innerHTML = '<button type="button" class="mm-pin" data-mm-pin>📍</button><span class="mm-label" data-mm-label></span><div class="mm-card"><h2 class="mm-card__title"></h2><p class="mm-card__text"></p></div>';
+        view.querySelector('[data-mm-items]')!.append(el);
+        const it = { el, lat: pin.lat, lon: pin.lon, priority: 6 };
+        items.push(it);
+        const go = () => flyToPoint(it.lat, it.lon, Math.max(CARD_AT + 1.5, t.k));
+        el.querySelector('[data-mm-pin]')!.addEventListener('click', go);
+        el.querySelector('[data-mm-label]')!.addEventListener('click', go);
+      }
+      el.querySelector('[data-mm-label]')!.textContent = pin.title;
+      el.querySelector('.mm-card__title')!.textContent = pin.title;
+      let text = el.querySelector<HTMLElement>('.mm-card__text');
+      if (!text) {
+        text = document.createElement('p');
+        text.className = 'mm-card__text';
+        el.querySelector('.mm-card')!.append(text);
+      }
+      text.textContent = pin.text;
+      let img = el.querySelector<HTMLImageElement>('.mm-card__img');
+      if (pin.image) {
+        if (!img) {
+          img = document.createElement('img');
+          img.className = 'mm-card__img';
+          el.querySelector('.mm-card')!.prepend(img);
+        }
+        img.src = shownSrc(pin.image);
+      } else img?.remove();
+      renderItems();
+    };
+    // in developer mode a click on a pin's card opens its editor
+    view.querySelector('[data-mm-items]')!.addEventListener(
+      'click',
+      (e) => {
+        if (!document.documentElement.classList.contains('dev-mode')) return;
+        const el = (e.target as Element).closest<HTMLElement>('[data-pin-id]');
+        if (!el || !(e.target as Element).closest('.mm-card')) return;
+        const pin = pinsRaw.find((p) => p.id === el.dataset.pinId);
+        if (pin) openPinEditor(pin, false);
+      },
+      true,
+    );
+
+    ed.querySelector('[data-mm-ed-done]')!.addEventListener('click', () => {
+      if (!edTarget) return;
+      if (edTarget.kind === 'country') {
+        const iso = edTarget.iso;
+        let entry = raw.countries.find((c) => c.isoNumeric === iso);
+        const name = edIn('name').value.trim() || ed.querySelector('[data-mm-ed-title]')!.textContent || iso;
+        if (edStatus === 'none') {
+          if (entry) raw.countries = raw.countries.filter((c) => c !== entry);
+          delete info[iso];
+        } else {
+          if (!entry) {
+            entry = { id: `c${iso}`, isoNumeric: iso, status: edStatus, i18n: {} };
+            raw.countries.push(entry);
+          }
+          entry.status = edStatus;
+          const when = edIn('when').value.trim();
+          if (when) entry.when = when;
+          else delete entry.when;
+          if (edPhoto) entry.image = edPhoto;
+          else delete entry.image;
+          const details = edIn('details').value.trim();
+          entry.i18n[lang] = { name, text: edIn('text').value.trim(), ...(details ? { details } : {}) };
+          // every country needs an English entry (the other languages fall back to it)
+          if (!entry.i18n.en) entry.i18n.en = { ...entry.i18n[lang] };
+          info[iso] = { status: edStatus, name, text: entry.i18n[lang].text, when, details, image: shownSrc(edPhoto) };
+        }
+        paint(iso, edStatus);
+      } else {
+        const tgt = edTarget;
+        let pin = pinsRaw.find((p) => p.id === tgt.id);
+        if (!pin) {
+          pin = { id: tgt.id, lat: tgt.lat, lon: tgt.lon, title: '', text: '' };
+          pinsRaw.push(pin);
+        }
+        pin.title = edIn('title').value.trim() || pin.title || '📍';
+        pin.text = edIn('text').value.trim();
+        if (edPhoto) pin.image = edPhoto;
+        else delete pin.image;
+        pinItem(pin);
+      }
+      dirty();
+      ed.hidden = true;
+    });
+    edDelete.addEventListener('click', () => {
+      if (!edTarget || edTarget.kind !== 'pin') return;
+      const id = edTarget.id;
+      const i = pinsRaw.findIndex((p) => p.id === id);
+      if (i >= 0) pinsRaw.splice(i, 1);
+      const el = view.querySelector<HTMLElement>(`[data-pin-id="${CSS.escape(id)}"]`);
+      const k = items.findIndex((it) => it.el === el);
+      if (k >= 0) items.splice(k, 1);
+      el?.remove();
+      dirty();
+      ed.hidden = true;
+    });
+    /** after a search in developer mode: offer a pin at the found place */
+    let offered: { name: string; lat: number; lon: number } | null = null;
+    function offerPin(name: string, lat: number, lon: number) {
+      offered = { name, lat, lon };
+      addPinBtn.hidden = !document.documentElement.classList.contains('dev-mode');
+    }
+    addPinBtn.addEventListener('click', () => {
+      if (!offered) return;
+      const id = `${Date.now().toString(36)}`;
+      openPinEditor({ id, lat: offered.lat, lon: offered.lon, title: offered.name, text: '' }, true);
+    });
+
     // ---- country tooltip ----
     const tipMetas = tip.querySelector<HTMLElement>('[data-mm-tip-metas]')!;
     tip.querySelector('[data-mm-tip-close]')!.addEventListener('click', () => (tip.hidden = true));
@@ -2145,11 +2659,37 @@ const LEGEND: { status: string; key: TKey }[] = [
       tipName.textContent = c?.name ?? m?.name ?? p.dataset.name ?? '';
       tipText.textContent = c?.text ?? words.unexplored;
       tipPlace = tipName.textContent;
+      // in developer mode a click opens the editor instead
+      if (document.documentElement.classList.contains('dev-mode')) {
+        tip.hidden = true;
+        openCountryEditor(id, tipName.textContent);
+        return;
+      }
       const feat = paths.find((q) => q.el === p)?.f;
       const cen = feat ? geo.geoCentroid(feat) : null;
       tipAt = cen ? [cen[1], cen[0]] : null;
       markSeen(tipPlace);
       tipMetas.replaceChildren();
+      if (c?.when) {
+        const w = document.createElement('span');
+        w.className = 'mm-tip__when';
+        w.textContent = `🗓 ${c.when}`;
+        tipMetas.append(w);
+      }
+      if (c?.details) {
+        const d = document.createElement('p');
+        d.className = 'mm-tip__details';
+        d.textContent = c.details;
+        tipMetas.append(d);
+      }
+      if (c?.image) {
+        const img = document.createElement('img');
+        img.className = 'mm-tip__img';
+        img.src = c.image;
+        img.alt = c.name;
+        img.loading = 'lazy';
+        tipMetas.append(img);
+      }
       if (m) {
         const kicker = document.createElement('span');
         kicker.className = 'mm-meta__kicker';
@@ -2186,6 +2726,7 @@ const LEGEND: { status: string; key: TKey }[] = [
         if (!list.length) return void (status.textContent = msg('none'));
         const r = list[0];
         status.textContent = [r.name, r.admin1, r.country].filter(Boolean).join(', ');
+        offerPin(r.name, r.latitude, r.longitude);
         searchPin?.remove();
         searchPin = document.createElementNS(SVG_NS, 'circle');
         searchPin.setAttribute('class', 'mm-search-pin');

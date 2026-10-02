@@ -410,7 +410,9 @@ const L = {
       return `${JSON.stringify(draft, null, 2)}\n`;
     };
 
-    const isDevUi = (el: Element) => !!el.closest('[data-dev-ui], .dev-panel, .lay-bar, .dev-plus, .lay-save, .dev-gate, .dev-add-menu, .dev-toast, dialog, .site-header .brand');
+    // developer UI, and the full-screen views that have their own editing (the world map) or none
+    const isDevUi = (el: Element) =>
+      !!el.closest('[data-dev-ui], .dev-panel, .lay-bar, .dev-plus, .lay-save, .dev-gate, .dev-add-menu, .dev-toast, dialog, .site-header .brand, .map-mode-view, .chaos-view, .country-view, .route-view, .street-view');
     const pickable = (t: EventTarget | null): HTMLElement | null => {
       let el = t instanceof Element ? t : null;
       while (el && !(el instanceof HTMLElement)) el = el.parentElement;

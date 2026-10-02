@@ -566,5 +566,20 @@
   "pum.map": "Arată-mi pe hartă",
   "lay.unsaved": "Încă nesalvat – 🚀 Publică salvează și pune online.",
   "egg.circles": "Cercuri = locuri! 📍",
-  "egg.tris": "Triunghiuri = direcție – arată spre tine! ➤"
+  "egg.tris": "Triunghiuri = direcție – arată spre tine! ➤",
+  "med.none": "Nu e pe harta mea",
+  "med.country": "ȚARĂ",
+  "med.pin": "PIN",
+  "med.name": "Nume",
+  "med.when": "Când?",
+  "med.why": "De ce am fost aici?",
+  "med.details": "Mai multe detalii (opțional)",
+  "med.photo": "Foto",
+  "med.removePhoto": "Șterge foto",
+  "med.done": "Gata",
+  "med.remove": "Șterge pin",
+  "med.note": "Se salvează cu 🚀 Publică.",
+  "med.addPin": "Pin aici",
+  "med.title": "Titlu",
+  "med.text": "Text (casetă)"
 }

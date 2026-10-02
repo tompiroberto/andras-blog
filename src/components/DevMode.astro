@@ -1079,6 +1079,9 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       if (edits) files.push({ path: 'src/data/edits.json', text: edits });
       const pictures = (window as unknown as { __editsFiles?: () => { path: string; base64: string }[] }).__editsFiles?.() ?? [];
       files.push(...pictures);
+      // the world-map editor (MapMode.astro): countries, pins and their photos
+      const mapFiles = (window as unknown as { __mapFiles?: () => ({ path: string; text: string } | { path: string; base64: string })[] }).__mapFiles?.() ?? [];
+      files.push(...mapFiles);
       if (!files.length) {
         unsaved = false;
         return true;
@@ -1092,6 +1095,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       layChanged = false;
       unsaved = false;
       (window as unknown as { __editsSaved?: () => void }).__editsSaved?.();
+      (window as unknown as { __mapSaved?: () => void }).__mapSaved?.();
       layStatus.textContent = layTitles.saved;
       return true;
     } catch (err) {

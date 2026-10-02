@@ -566,5 +566,20 @@
   "pum.map": "Show me on the map",
   "lay.unsaved": "Not saved yet – 🚀 Publish saves it and puts it online.",
   "egg.circles": "Circles = places! 📍",
-  "egg.tris": "Triangles = direction – they point at you! ➤"
+  "egg.tris": "Triangles = direction – they point at you! ➤",
+  "med.none": "Not on my map",
+  "med.country": "COUNTRY",
+  "med.pin": "PIN",
+  "med.name": "Name",
+  "med.when": "When?",
+  "med.why": "Why was I here?",
+  "med.details": "More details (optional)",
+  "med.photo": "Photo",
+  "med.removePhoto": "Remove photo",
+  "med.done": "Done",
+  "med.remove": "Delete pin",
+  "med.note": "Saved with 🚀 Publish.",
+  "med.addPin": "Pin here",
+  "med.title": "Title",
+  "med.text": "Text (info box)"
 }

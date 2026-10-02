@@ -566,5 +566,20 @@
   "pum.map": "Megnézem a térképen",
   "lay.unsaved": "Még nincs mentve – a 🚀 Közzététel menti és kiteszi az oldalra.",
   "egg.circles": "Körök = helyek! 📍",
-  "egg.tris": "Háromszögek = irány – rád mutatnak! ➤"
+  "egg.tris": "Háromszögek = irány – rád mutatnak! ➤",
+  "med.none": "Nincs a térképemen",
+  "med.country": "ORSZÁG",
+  "med.pin": "GOMBOSTŰ",
+  "med.name": "Név",
+  "med.when": "Mikor?",
+  "med.why": "Miért voltam itt?",
+  "med.details": "Részletesebben (nem kötelező)",
+  "med.photo": "Kép",
+  "med.removePhoto": "Kép törlése",
+  "med.done": "Kész",
+  "med.remove": "Gombostű törlése",
+  "med.note": "A 🚀 Közzététel menti el.",
+  "med.addPin": "Gombostű ide",
+  "med.title": "Cím",
+  "med.text": "Szöveg (infobox)"
 }

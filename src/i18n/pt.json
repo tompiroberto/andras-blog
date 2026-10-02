@@ -566,5 +566,20 @@
   "pum.map": "Ver no mapa",
   "lay.unsaved": "Ainda não guardado – 🚀 Publicar guarda e põe online.",
   "egg.circles": "Círculos = lugares! 📍",
-  "egg.tris": "Triângulos = direção – apontam para ti! ➤"
+  "egg.tris": "Triângulos = direção – apontam para ti! ➤",
+  "med.none": "Fora do meu mapa",
+  "med.country": "PAÍS",
+  "med.pin": "PIN",
+  "med.name": "Nome",
+  "med.when": "Quando?",
+  "med.why": "Porque estive aqui?",
+  "med.details": "Mais detalhes (opcional)",
+  "med.photo": "Foto",
+  "med.removePhoto": "Remover foto",
+  "med.done": "Feito",
+  "med.remove": "Apagar pin",
+  "med.note": "Guardado com 🚀 Publicar.",
+  "med.addPin": "Pin aqui",
+  "med.title": "Título",
+  "med.text": "Texto (caixa)"
 }
