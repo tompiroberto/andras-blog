@@ -23,8 +23,8 @@ const fullName = lang === 'hu' ? 'Vásárhelyi András Péter' : 'András Péter
 const hasPhoto = fs.existsSync(path.resolve(process.cwd(), 'public/images/cv-photo.jpg'));
 const main: { title: string; items: CvItem[] }[] = [
   { title: cv.h.education, items: cv.education },
-  { title: cv.h.erasmus, items: cv.erasmus },
   { title: cv.h.work, items: cv.work },
+  { title: cv.h.erasmus, items: cv.erasmus },
   { title: cv.h.volunteering, items: cv.volunteering },
 ];
 ---
@@ -86,11 +86,7 @@ const main: { title: string; items: CvItem[] }[] = [
             }
           </ul>
         </section>
-        <section>
-          <h2>{cv.h.sport}</h2>
-          <ul class="cv-list">{cv.sport.map((s) => <li>{s}</li>)}</ul>
-        </section>
-        <section>
+                <section>
           <h2>{cv.h.interests}</h2>
           <ul class="cv-list">{cv.interests.map((s) => <li>{s}</li>)}</ul>
         </section>
