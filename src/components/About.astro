@@ -264,20 +264,24 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
     align-items: center;
   }
   :global(:root.horizontal) .about__side {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 12px 28px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 14px;
   }
+  /* a smaller photo, so the record rings get a full row of their own under it */
   :global(:root.horizontal) .portrait {
     margin: 0;
+    max-width: 230px;
   }
   :global(:root.horizontal) .rings {
     flex-wrap: nowrap;
+    justify-content: center;
+    gap: 22px;
   }
   :global(:root.horizontal) .rings > :global(*) {
-    /* the rings size themselves to their box (container query), so the box needs a width */
-    flex: 0 1 210px;
+    /* the rings size themselves to their box (container query), so the box needs a real width */
+    flex: 0 0 clamp(150px, 15vw, 200px);
   }
   :global(:root.horizontal) .badges {
     grid-column: 1 / -1;
