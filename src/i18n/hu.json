@@ -517,5 +517,9 @@
   "dev.theme.hint": "Az „Előnézet látogatóként” módban látszik.",
   "post.loading": "A poszt betöltése…",
   "post.editing": "Poszt szerkesztése",
-  "post.saved": "Mentve! Kb. egy perc múlva élesben."
+  "post.saved": "Mentve! Kb. egy perc múlva élesben.",
+  "plans.more.tag": "HAMAROSAN",
+  "plans.more.title": "Hamarosan még több…",
+  "plans.more.text": "Van egy ötleted, vagy jönnél velem? Írj nyugodtan – lehet, hogy a következőt együtt tervezzük meg!",
+  "plans.more.link": "Írj nekem"
 }

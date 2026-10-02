@@ -517,5 +517,9 @@
   "dev.theme.hint": "Se vede în „Previzualizare ca vizitator”.",
   "post.loading": "Se încarcă postarea…",
   "post.editing": "Editează postarea",
-  "post.saved": "Salvat! Apare online în aproximativ un minut."
+  "post.saved": "Salvat! Apare online în aproximativ un minut.",
+  "plans.more.tag": "ÎN CURÂND",
+  "plans.more.title": "Urmează și altele…",
+  "plans.more.text": "Ai o idee sau vrei să vii cu mine? Scrie-mi – poate o plănuim pe următoarea împreună!",
+  "plans.more.link": "Scrie-mi"
 }

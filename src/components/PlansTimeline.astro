@@ -2,7 +2,7 @@
 import Globe from './Globe.astro';
 import IconCircle from './IconCircle.astro';
 import SectionHeading from './SectionHeading.astro';
-import { t, type Lang, type TKey } from '../i18n';
+import { localePath, t, type Lang, type TKey } from '../i18n';
 
 interface Props {
   lang: Lang;
@@ -42,6 +42,15 @@ const k = (n: number, field: 'tag' | 'title' | 'text') => `plan${n}.${field}` as
           </li>
         ))
       }
+      <!-- the last note: more is coming – and the visitor can join in -->
+      <li class="plan-note plan-note--more" style="--tilt:1.2deg">
+        <span class="plan-note__pin" aria-hidden="true" />
+        <IconCircle icon="sparkles" variant="yellow" size="lg" />
+        <span class="pill station__tag station__tag--yellow">{t(lang, 'plans.more.tag')}</span>
+        <h3>{t(lang, 'plans.more.title')}</h3>
+        <p>{t(lang, 'plans.more.text')}</p>
+        <a class="link-arrow plan-note__link" href={`${localePath(lang)}#message`}>{t(lang, 'plans.more.link')}</a>
+      </li>
     </ul>
   </div>
 </section>
@@ -84,6 +93,15 @@ const k = (n: number, field: 'tag' | 'title' | 'text') => `plan${n}.${field}` as
   }
   .plan-note:hover {
     transform: rotate(0deg) translateY(-6px) scale(1.03);
+  }
+  .plan-note--more {
+    border-style: dashed;
+    background: var(--yellow-tint);
+  }
+  .plan-note__link {
+    margin-top: auto;
+    padding-top: 6px;
+    font-weight: 700;
   }
   .plan-note__pin {
     position: absolute;

@@ -517,5 +517,9 @@
   "dev.theme.hint": "Visible in “Preview as a visitor”.",
   "post.loading": "Loading the post…",
   "post.editing": "Edit post",
-  "post.saved": "Saved! The change is online in about a minute."
+  "post.saved": "Saved! The change is online in about a minute.",
+  "plans.more.tag": "SOON",
+  "plans.more.title": "More coming soon…",
+  "plans.more.text": "Have an idea, or want to come along? Write to me – maybe we'll plan the next one together!",
+  "plans.more.link": "Message me"
 }

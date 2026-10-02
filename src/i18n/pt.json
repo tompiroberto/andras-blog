@@ -517,5 +517,9 @@
   "dev.theme.hint": "Visível em “Ver como visitante”.",
   "post.loading": "A carregar o post…",
   "post.editing": "Editar post",
-  "post.saved": "Guardado! Fica online em cerca de um minuto."
+  "post.saved": "Guardado! Fica online em cerca de um minuto.",
+  "plans.more.tag": "EM BREVE",
+  "plans.more.title": "Mais em breve…",
+  "plans.more.text": "Tens uma ideia ou queres vir comigo? Escreve-me – talvez planeemos a próxima juntos!",
+  "plans.more.link": "Escreve-me"
 }
