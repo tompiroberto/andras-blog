@@ -63,6 +63,8 @@ export interface PlaceMessageDetail {
 
 /** CV view: a separate, printable CV page ('1' in storage = on). */
 export const CV_STORAGE_KEY = 'andras-cv';
+/** sessionStorage: 'cv' | 'blog' – the CV is the front page until the visitor goes to the blog */
+export const VIEW_SESSION_KEY = 'andras-view';
 export const CV_EVENT = 'andras:cv-change';
 
 /** Open the country / river page for a scrollbar ribbon; detail = ribbon id. */

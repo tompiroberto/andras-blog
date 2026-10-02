@@ -1,12 +1,13 @@
 ---
 /**
- * CV view: a separate, calm page (header switch "CV", html.cv-mode) – one A4-like sheet with a sidebar,
- * printable / savable as PDF. Content in src/data/cv.ts.
+ * CV view: the front page of the site (html.cv-mode, set in BaseLayout's head script) – one A4-like sheet
+ * with a sidebar, printable / savable as PDF. "Go to the blog" (top right) opens the blog; the header's CV
+ * switch brings the CV back. Content in src/data/cv.ts.
  */
 import Icon from './Icon.astro';
 import { CV, type CvItem } from '../data/cv';
 import site from '../data/site.json';
-import type { Lang } from '../i18n';
+import { LOCALES, NATIVE_NAMES, HTML_LANG, localePath, type Lang } from '../i18n';
 
 interface Props {
   lang: Lang;
@@ -24,14 +25,25 @@ const main: { title: string; items: CvItem[] }[] = [
 
 <div class="cv-view" data-cv-view aria-label={cv.title}>
   <div class="cv-view__bar">
-    <button type="button" class="btn btn--secondary cv-view__btn" data-cv-close>
-      <Icon name="arrow-left" size={18} />
-      {cv.close}
-    </button>
-    <button type="button" class="btn btn--primary cv-view__btn" data-cv-print>
-      <Icon name="printer" size={18} />
-      {cv.print}
-    </button>
+    <nav class="cv-view__langs" aria-label="Language">
+      {
+        LOCALES.map((l) => (
+          <a href={localePath(l)} hreflang={HTML_LANG[l]} lang={HTML_LANG[l]} title={NATIVE_NAMES[l]} aria-current={l === lang ? 'true' : undefined}>
+            {l.toUpperCase()}
+          </a>
+        ))
+      }
+    </nav>
+    <div class="cv-view__actions">
+      <button type="button" class="btn btn--secondary cv-view__btn" data-cv-print>
+        <Icon name="printer" size={18} />
+        {cv.print}
+      </button>
+      <button type="button" class="btn btn--primary cv-view__btn" data-cv-close>
+        {cv.close}
+        <Icon name="arrow-right" size={18} />
+      </button>
+    </div>
   </div>
 
   <article class="cv-sheet">
@@ -140,6 +152,33 @@ const main: { title: string; items: CvItem[] }[] = [
   }
   .cv-view__btn {
     font-size: 15px;
+  }
+  .cv-view__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-left: auto;
+  }
+  .cv-view__langs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
+  .cv-view__langs a {
+    padding: 6px 9px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #4a4a5a;
+    text-decoration: none;
+  }
+  .cv-view__langs a:hover {
+    background: #fff;
+  }
+  .cv-view__langs a[aria-current] {
+    background: #1b1b24;
+    color: #fff;
   }
   .cv-sheet {
     max-width: 860px;
@@ -344,10 +383,22 @@ const main: { title: string; items: CvItem[] }[] = [
 </style>
 
 <script>
+  import { VIEW_SESSION_KEY } from '../lib/constants';
+
   const view = document.querySelector<HTMLElement>('[data-cv-view]');
   if (view) {
-    // "back": the same as switching the header's CV toggle off (keeps its saved state in sync)
+    const html = document.documentElement;
+    // remember for this tab whether the visitor is on the CV or the blog (BaseLayout reads it on every page)
+    new MutationObserver(() => {
+      try {
+        sessionStorage.setItem(VIEW_SESSION_KEY, html.classList.contains('cv-mode') ? 'cv' : 'blog');
+      } catch {
+        /* storage unavailable */
+      }
+    }).observe(html, { attributes: true, attributeFilter: ['class'] });
+    // "Go to the blog": the same as switching the header's CV toggle off (keeps the buttons in sync)
     view.querySelector('[data-cv-close]')!.addEventListener('click', () => {
+      window.scrollTo(0, 0);
       document.querySelector<HTMLButtonElement>('[data-html-toggle="cv-mode"]')?.click();
     });
     view.querySelector('[data-cv-print]')!.addEventListener('click', () => window.print());

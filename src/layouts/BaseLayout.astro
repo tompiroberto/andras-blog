@@ -32,7 +32,7 @@ import ZoomSpace from '../components/ZoomSpace.astro';
 import HorizonScene from '../components/HorizonScene.astro';
 import DevMode from '../components/DevMode.astro';
 import StreetView from '../components/StreetView.astro';
-import { CV_STORAGE_KEY, STREET_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, MAP_MODE_STORAGE_KEY, CITIES_STORAGE_KEY, GRID_STORAGE_KEY, RIBBON_STORAGE_KEY, RIBBON_TRUE_STORAGE_KEY, THEME_STORAGE_KEY, ZOOM_STORAGE_KEY } from '../lib/constants';
+import { VIEW_SESSION_KEY, STREET_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, MAP_MODE_STORAGE_KEY, CITIES_STORAGE_KEY, GRID_STORAGE_KEY, RIBBON_STORAGE_KEY, RIBBON_TRUE_STORAGE_KEY, THEME_STORAGE_KEY, ZOOM_STORAGE_KEY } from '../lib/constants';
 import { DEFAULT_ZOOM, ZOOM_MAX, ZOOM_MIN } from '../lib/zoom';
 import { THEMES } from '../lib/themes';
 import { RIBBON_WIDTHS } from '../lib/ribbon';
@@ -97,10 +97,17 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
         [unboundedPreload, dmSans400Preload, dmSans700Preload].map((href) => <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />)
     }
 
-    <script is:inline define:vars={{ streetKey: STREET_STORAGE_KEY, cvKey: CV_STORAGE_KEY, horizontalKey: HORIZONTAL_STORAGE_KEY, mapModeKey: MAP_MODE_STORAGE_KEY, ribbonTrueKey: RIBBON_TRUE_STORAGE_KEY, zoomKey: ZOOM_STORAGE_KEY, zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX, defaultZoom: DEFAULT_ZOOM, citiesKey: CITIES_STORAGE_KEY, gridKey: GRID_STORAGE_KEY, ribbonKey: RIBBON_STORAGE_KEY, themeKey: THEME_STORAGE_KEY, themes: THEMES.map((x) => x.id), ribbonWidths: RIBBON_WIDTHS }}>
+    <script is:inline define:vars={{ streetKey: STREET_STORAGE_KEY, viewKey: VIEW_SESSION_KEY, horizontalKey: HORIZONTAL_STORAGE_KEY, mapModeKey: MAP_MODE_STORAGE_KEY, ribbonTrueKey: RIBBON_TRUE_STORAGE_KEY, zoomKey: ZOOM_STORAGE_KEY, zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX, defaultZoom: DEFAULT_ZOOM, citiesKey: CITIES_STORAGE_KEY, gridKey: GRID_STORAGE_KEY, ribbonKey: RIBBON_STORAGE_KEY, themeKey: THEME_STORAGE_KEY, themes: THEMES.map((x) => x.id), ribbonWidths: RIBBON_WIDTHS }}>
       document.documentElement.classList.add('js');
-      // Netlify Identity e-mails (invite, password reset) link to the home page: the editor handles them
-      if (/(invite|recovery|confirmation|email_change)_token=/.test(location.hash)) location.replace('/admin/' + location.hash);
+      // The CV is the front page: a new visit to the home page opens it; "Go to the blog" (or any other
+      // page) switches this tab to the blog until the CV is opened again (header CV switch).
+      try {
+        var view = sessionStorage.getItem(viewKey);
+        var home = /^\/[a-z]{2}\/?$/.test(location.pathname) && !location.hash;
+        if (view !== 'cv' && view !== 'blog') view = home ? 'cv' : 'blog';
+        if (view === 'cv') document.documentElement.classList.add('cv-mode');
+        sessionStorage.setItem(viewKey, view);
+      } catch (e) {}
       // page zoom (slider): saved level, else the default "zoomed out a bit".
       // Same formula as zoomVars() in src/lib/zoom.ts.
       var zoom = defaultZoom;
@@ -119,7 +126,6 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
         if (localStorage.getItem(citiesKey) === '0') document.documentElement.classList.add('cities-off');
         if (localStorage.getItem(mapModeKey) === '1') document.documentElement.classList.add('map-mode');
         if (localStorage.getItem(horizontalKey) === '1') document.documentElement.classList.add('horizontal');
-        if (localStorage.getItem(cvKey) === '1') document.documentElement.classList.add('cv-mode');
         if (localStorage.getItem(streetKey) === '1') document.documentElement.classList.add('street-mode');
         if (localStorage.getItem(ribbonTrueKey) === '1') document.documentElement.classList.add('ribbon-true');
         var ribbon = localStorage.getItem(ribbonKey);

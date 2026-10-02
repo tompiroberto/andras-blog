@@ -23,12 +23,11 @@ src/
   components/      Header, LanguageSwitcher, Globe, ChileScroll, PowerLines, Footer, WorldMap, …
   layouts/         BaseLayout.astro
   pages/           index.astro (language redirect) and [lang]/… (all translated pages)
-  lib/             helpers (posts, categories, Chile geometry, form handler)
+  lib/             helpers (posts, categories, Chile geometry, mailto links)
   styles/          global.css (all colours and sizes as CSS variables)
 public/
   images/          photo and supporter logos
   data/            countries-50m.json (world map, loaded lazily)
-  __forms.html     static copy of the contact form so Netlify can detect it
 starter-assets/    the original assets this site was built from (not used by the build)
 ```
 
@@ -82,23 +81,18 @@ Data sources: country and land shapes from [world-atlas](https://github.com/topo
    - Publish directory: `dist`
 4. Deploy. Then update the site address in `astro.config.mjs` (`SITE`) and `public/robots.txt` to the real domain, and deploy again. It is used for the sitemap, canonical links and social previews.
 
-## Contact form and e-mail notifications
+## Front page: the CV
 
-The form uses **Netlify Forms**. Netlify detects the form called `message` automatically when the site is deployed. Messages are never shown on the site.
+A new visit to the home page (`/hu/`, `/en/`, …) opens the CV (`src/components/CvView.astro`, content in
+`src/data/cv.ts`). "Go to the blog" (top right) switches the tab to the blog; the header's CV switch brings
+the CV back. The choice lives in `sessionStorage` (`andras-view`), read by the head script in
+`src/layouts/BaseLayout.astro`.
 
-To receive every message by e-mail:
+## Messages (no form backend)
 
-1. In Netlify, open the site and go to **Site configuration → Forms**. If form detection is off, click **Enable form detection** and redeploy once.
-2. Go to **Site configuration → Notifications → Emails and webhooks → Form submission notifications** and click **Add notification → Email notification**.
-3. Event: *New form submission*. Email: the address in `src/data/site.json` (`email`). Form: `message`. Save.
-
-Submissions can also be read under **Forms → message** in the Netlify dashboard, and deleted there when someone asks.
-
-Spam protection: a hidden honeypot field (`bot-field`). You can also turn on Netlify's spam filter or reCAPTCHA in the Forms settings.
-
-### Switching to Formspree later
-
-All sending code is in `src/lib/formHandler.ts`. Set `FORM_PROVIDER = 'formspree'` and fill in `FORMSPREE_ENDPOINT` (e.g. `https://formspree.io/f/abcdefg`). No other file needs to change.
+"Message me" and every "message me about this place" window offer topics; each opens the visitor's own
+e-mail app (`mailto:`) with a started letter to the address in `src/data/site.json` (`email`). Nothing is
+stored on the site, so no Netlify Forms or database is needed. Helpers: `src/lib/mail.ts`.
 
 ## Notes
 

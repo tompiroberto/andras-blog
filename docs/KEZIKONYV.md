@@ -6,6 +6,16 @@ a **földgömb + nyelvkód** gombbal lehet váltani.
 
 ---
 
+## 0. Nyitóoldal: az önéletrajz
+
+- Aki megnyitja az oldalt, először az **önéletrajzot** látja (weboldalként), fent a nyelvválasztóval.
+- Jobb felül a **„Tovább a blogra →”** gomb nyitja meg a blogot. A böngészőlapon ezután a blog marad
+  (frissítéskor is); a fejléc **📄 Önéletrajz** gombjával lehet visszamenni a CV-re.
+- Új látogatás (új lap / újranyitott böngésző) a kezdőlapon megint a CV-vel indul. Ha valaki közvetlenül
+  egy bejegyzés linkjét nyitja meg, a bejegyzést látja.
+
+---
+
 ## 1. Az oldal részei (fentről lefelé)
 
 | Rész | Mi van benne |
@@ -16,7 +26,7 @@ a **földgömb + nyelvkód** gombbal lehet váltani.
 | **Felfedezés** | Három kategória: Kalandok, Erasmus+, Random dolgok. Alatta a **Merre jártam** térkép: a térkép ikonra kattintva töltődik be; vidd az egeret egy ország fölé (telefonon koppints rá). |
 | **Fotók** | A fejlesztői módban feltöltött képek (addig nem látszik, amíg nincs fotó). |
 | **Jövőbeli tervek** | Öt állomás: stoppolás Chilében, Grúzia, még több stoppolás, Patagónia olcsón, 10 km 33 perc alatt. |
-| **Üzenj** | Üzenetküldő űrlap (név, elérhetőség, üzenet). |
+| **Üzenj** | Három gomb (ötlet / csatlakoznék / munka): megnyitja a látogató e-mail-programját egy elkezdett levéllel a pum.pum.production@gmail.com címre. |
 | **Kapcsolat (lábléc)** | E-mail, Strava, Instagram, Facebook, támogatói logók, adatvédelem, **kenyérszámláló**. |
 
 A bejegyzések kategóriánként is böngészhetők (Kalandok / Erasmus+ / Random dolgok), egy-egy
@@ -144,7 +154,7 @@ Bármelyik városnévre, helynévre, keresési találatra vagy koordinátára ka
 
 ## 10. Önéletrajz (📄)
 
-Letisztult, egyoldalas CV: tanulmányok, Erasmus+ projektek, munka, önkéntesség, nyelvek, sport,
+Ez az oldal nyitóoldala (lásd 0. pont). Letisztult, egyoldalas CV: tanulmányok, Erasmus+ projektek, munka, önkéntesség, nyelvek, sport,
 érdeklődés, hobbik. A **„Nyomtatás / mentés PDF-be”** gombbal PDF-et készíthetsz.
 
 ---
@@ -169,13 +179,14 @@ Beállítás lépései: `README.md` → *Developer mode*.
   felhasznált kenyereket.
 - **Háttérrajzok** (hajók, bálnák, tevék, jéghegyek…): kattints rájuk.
 - **Megnézett helyek** zöld ✓ jelet kapnak (a böngésződ megjegyzi).
-- **Üzenj egy helyről:** minden helykártyán (mondanék valamit / szállás-fuvar / útitárs).
+- **Üzenj egy helyről:** minden helykártyán (mondanék valamit / szállás-fuvar / útitárs) – a gombra
+  kattintva megnyílik az e-mail-program, a tárgyban a hellyel.
 
 ---
 
 ## 13. Adatvédelem röviden
 
-- Az üzeneteket a Netlify tárolja (az oldal tárhelye).
+- Üzenetek: a látogató saját e-mail-programjából mennek, az oldal semmit nem tárol.
 - Városkereső: Open-Meteo / OpenStreetMap; tények és képek: Wikipédia.
 - IP-alapú hely (GeoJS): csak gombnyomásra, illetve az országoldal animációjához látogatásonként egyszer.
 - A beállításokat (téma, nagyítás, mód…) csak a saját böngésződ jegyzi meg.

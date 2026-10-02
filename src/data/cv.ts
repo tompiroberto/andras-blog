@@ -73,7 +73,7 @@ export const CV: Record<Lang, CvText> = {
     interests: ['Geography and maps', 'Transport networks and infrastructure', 'Other cultures and languages', 'Low-budget travel'],
     hobbies: ['Running and racing', 'Long walks and bike rides (70 km on foot, 215 km by bike)', 'GeoGuessr', 'Travelling'],
     print: 'Print / save as PDF',
-    close: 'Back to the website',
+    close: 'Go to the blog',
   },
   hu: {
     toggle: 'Önéletrajz',
@@ -104,7 +104,7 @@ export const CV: Record<Lang, CvText> = {
     interests: ['Földrajz és térképek', 'Közlekedési hálózatok és infrastruktúra', 'Más kultúrák és nyelvek', 'Olcsó utazás'],
     hobbies: ['Futás és versenyzés', 'Hosszú gyaloglások és biciklitúrák (70 km gyalog, 215 km biciklivel)', 'GeoGuessr', 'Utazás'],
     print: 'Nyomtatás / mentés PDF-be',
-    close: 'Vissza a weboldalra',
+    close: 'Tovább a blogra',
   },
   pt: {
     toggle: 'CV',
@@ -135,7 +135,7 @@ export const CV: Record<Lang, CvText> = {
     interests: ['Geografia e mapas', 'Redes de transporte e infraestruturas', 'Outras culturas e línguas', 'Viagens low-cost'],
     hobbies: ['Corrida e provas', 'Longas caminhadas e voltas de bicicleta (70 km a pé, 215 km de bicicleta)', 'GeoGuessr', 'Viajar'],
     print: 'Imprimir / guardar em PDF',
-    close: 'Voltar ao site',
+    close: 'Ir para o blog',
   },
   ro: {
     toggle: 'CV',
@@ -166,7 +166,7 @@ export const CV: Record<Lang, CvText> = {
     interests: ['Geografie și hărți', 'Rețele de transport și infrastructură', 'Alte culturi și limbi', 'Călătorii low-cost'],
     hobbies: ['Alergare și concursuri', 'Drumeții lungi și ture cu bicicleta (70 km pe jos, 215 km cu bicicleta)', 'GeoGuessr', 'Călătorii'],
     print: 'Tipărește / salvează ca PDF',
-    close: 'Înapoi la site',
+    close: 'Mergi la blog',
   },
   el: {
     toggle: 'Βιογραφικό',
@@ -197,7 +197,7 @@ export const CV: Record<Lang, CvText> = {
     interests: ['Γεωγραφία και χάρτες', 'Δίκτυα μεταφορών και υποδομές', 'Άλλοι πολιτισμοί και γλώσσες', 'Οικονομικά ταξίδια'],
     hobbies: ['Τρέξιμο και αγώνες', 'Μεγάλες πεζοπορίες και ποδηλατάδες (70 km με τα πόδια, 215 km με ποδήλατο)', 'GeoGuessr', 'Ταξίδια'],
     print: 'Εκτύπωση / αποθήκευση ως PDF',
-    close: 'Πίσω στον ιστότοπο',
+    close: 'Στο ιστολόγιο',
   },
   ka: {
     toggle: 'CV',
@@ -228,6 +228,6 @@ export const CV: Record<Lang, CvText> = {
     interests: ['გეოგრაფია და რუკები', 'სატრანსპორტო ქსელები და ინფრასტრუქტურა', 'სხვა კულტურები და ენები', 'იაფი მოგზაურობა'],
     hobbies: ['სირბილი და შეჯიბრებები', 'გრძელი ლაშქრობები და ველოსიპედით მოგზაურობა (70 კმ ფეხით, 215 კმ ველოსიპედით)', 'GeoGuessr', 'მოგზაურობა'],
     print: 'ამობეჭდვა / PDF-ად შენახვა',
-    close: 'საიტზე დაბრუნება',
+    close: 'ბლოგზე გადასვლა',
   },
 };
