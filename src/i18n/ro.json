@@ -448,5 +448,15 @@
   "lay.changed": "Aranjament modificat",
   "lay.save": "Salvează",
   "lay.undo": "Anulează",
-  "lay.saved": "Salvat – online în ~1 min."
+  "lay.saved": "Salvat – online în ~1 min.",
+  "ed.on": "Editare pe pagină: PORNITĂ (apasă oriunde)",
+  "ed.off": "Editare pe pagină: OPRITĂ (linkurile merg)",
+  "ed.parent": "Selectează caseta din jur",
+  "ed.text": "Editează textul (sau dublu clic)",
+  "ed.subtitle": "Adaugă un subtitlu după",
+  "ed.paragraph": "Adaugă un paragraf după",
+  "ed.hide": "Ascunde / arată (Delete)",
+  "ed.reset": "Înapoi la original",
+  "ed.newSubtitle": "Subtitlu nou",
+  "ed.newParagraph": "Paragraf nou – scrie aici."
 }

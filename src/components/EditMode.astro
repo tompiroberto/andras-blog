@@ -1,0 +1,466 @@
+---
+/**
+ * Developer mode → editing on the page, PowerPoint-style: click anything to select it (a frame with
+ * eight handles), drag to move, drag a handle to resize (corners of pictures keep the proportions),
+ * double-click a text to rewrite it, add a subtitle or a paragraph after the selected element, hide it,
+ * or reset it. The edits live in a draft of src/data/edits.json (applied by src/components/SiteEdits.astro);
+ * DevMode's save bar commits it. Arrow keys nudge (Shift: 10 px), Delete hides, Esc deselects.
+ */
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const L = {
+  parent: t(lang, 'ed.parent'),
+  text: t(lang, 'ed.text'),
+  subtitle: t(lang, 'ed.subtitle'),
+  paragraph: t(lang, 'ed.paragraph'),
+  hide: t(lang, 'ed.hide'),
+  reset: t(lang, 'ed.reset'),
+  close: t(lang, 'facts.close'),
+  newSubtitle: t(lang, 'ed.newSubtitle'),
+  newParagraph: t(lang, 'ed.newParagraph'),
+};
+---
+
+<div class="ed-frame" hidden data-dev-ui data-ed-frame>
+  {['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((h) => <span class={`ed-h ed-h--${h}`} data-h={h} />)}
+  <div class="ed-tools" data-ed-tools>
+    <span class="ed-tools__name" data-ed-name></span>
+    <button type="button" data-ed-act="parent" title={L.parent}>⬑</button>
+    <button type="button" data-ed-act="text" title={L.text}>✎</button>
+    <button type="button" data-ed-act="h3" title={L.subtitle}>＋H</button>
+    <button type="button" data-ed-act="p" title={L.paragraph}>＋¶</button>
+    <button type="button" data-ed-act="hide" title={L.hide}>👁</button>
+    <button type="button" data-ed-act="reset" title={L.reset}>↺</button>
+    <button type="button" data-ed-act="close" title={L.close}>✕</button>
+  </div>
+  <span class="ed-size" data-ed-size></span>
+</div>
+<template data-ed-texts>{JSON.stringify(L)}</template>
+
+<style is:global>
+  /* added subtitles and paragraphs (visible for everyone) */
+  .ed-added--h3 {
+    margin: 0.8em 0 0.4em;
+    font-family: var(--font-heading);
+    font-size: var(--fs-h3);
+    line-height: 1.2;
+  }
+  .ed-added--p {
+    margin: 0 0 1em;
+  }
+  :root:not(.dev-mode) [data-ed-hidden] {
+    display: none !important;
+  }
+  :root.dev-mode [data-ed-hidden] {
+    opacity: 0.3;
+    outline: 2px dashed #ff4d4d;
+  }
+  :root.ed-on .ed-hover {
+    outline: 2px dashed #39ff14 !important;
+    outline-offset: 2px;
+    cursor: pointer;
+  }
+  :root.ed-on [contenteditable='true'] {
+    outline: 2px solid #ffd60a !important;
+    outline-offset: 3px;
+    cursor: text;
+  }
+  .ed-frame {
+    position: fixed;
+    z-index: 680;
+    border: 2px solid #39ff14;
+    box-shadow: 0 0 0 1px #000, 0 0 14px rgba(57, 255, 20, 0.5);
+    cursor: move;
+    touch-action: none;
+  }
+  .ed-frame[hidden] {
+    display: none;
+  }
+  .ed-frame.is-text {
+    pointer-events: none;
+  }
+  .ed-frame.is-text .ed-tools,
+  .ed-frame.is-text .ed-h {
+    pointer-events: auto;
+  }
+  .ed-h {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #000;
+    border-radius: 3px;
+    background: #39ff14;
+  }
+  .ed-h--nw { left: -7px; top: -7px; cursor: nwse-resize; }
+  .ed-h--n { left: calc(50% - 6px); top: -7px; cursor: ns-resize; }
+  .ed-h--ne { right: -7px; top: -7px; cursor: nesw-resize; }
+  .ed-h--e { right: -7px; top: calc(50% - 6px); cursor: ew-resize; }
+  .ed-h--se { right: -7px; bottom: -7px; cursor: nwse-resize; }
+  .ed-h--s { left: calc(50% - 6px); bottom: -7px; cursor: ns-resize; }
+  .ed-h--sw { left: -7px; bottom: -7px; cursor: nesw-resize; }
+  .ed-h--w { left: -7px; top: calc(50% - 6px); cursor: ew-resize; }
+  .ed-tools {
+    position: absolute;
+    left: -2px;
+    bottom: calc(100% + 8px);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid #39ff14;
+    border-radius: 9px;
+    background: #000;
+    font: 700 12px ui-monospace, Consolas, monospace;
+    white-space: nowrap;
+    cursor: default;
+  }
+  .ed-frame.is-low .ed-tools {
+    bottom: auto;
+    top: calc(100% + 8px);
+  }
+  .ed-tools__name {
+    padding: 0 6px;
+    color: #9be9a8;
+  }
+  .ed-tools button {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 6px;
+    border: 1px solid #1f6f2a;
+    border-radius: 6px;
+    background: #031a08;
+    color: #39ff14;
+    font: inherit;
+    cursor: pointer;
+  }
+  .ed-tools button:hover,
+  .ed-tools button:focus-visible {
+    background: #39ff14;
+    color: #000;
+  }
+  .ed-size {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: #000;
+    color: #39ff14;
+    font: 700 11px ui-monospace, Consolas, monospace;
+  }
+  .ed-frame.is-low .ed-size {
+    top: auto;
+    bottom: calc(100% + 6px);
+  }
+</style>
+
+<script>
+  type Style = { x?: number; y?: number; w?: number; h?: number; hidden?: boolean };
+  type Added = { id: string; after: string[]; tag: 'h3' | 'p'; text: string };
+  interface Edits {
+    style: Record<string, Record<string, Style>>;
+    text: Record<string, Record<string, string>>;
+    add: Record<string, Added[]>;
+  }
+  interface SiteEdits {
+    data: Edits;
+    resolve: (p: string[]) => HTMLElement | null;
+    pathOf: (el: Element) => string[];
+    styleEl: (el: HTMLElement, s: Style) => void;
+    added: (a: Added) => HTMLElement;
+    page: string;
+    full: string;
+  }
+
+  const siteEdits = (window as unknown as { __siteEdits?: SiteEdits }).__siteEdits;
+  const frameEl = document.querySelector<HTMLElement>('[data-ed-frame]');
+  if (siteEdits && frameEl) {
+    const api = siteEdits;
+    const frame = frameEl;
+    const html = document.documentElement;
+    const L = JSON.parse(document.querySelector<HTMLTemplateElement>('[data-ed-texts]')!.content.textContent ?? '{}');
+    const nameEl = frame.querySelector<HTMLElement>('[data-ed-name]')!;
+    const sizeEl = frame.querySelector<HTMLElement>('[data-ed-size]')!;
+    const draft: Edits = JSON.parse(JSON.stringify(api.data));
+    draft.style[api.page] ??= {};
+    draft.text[api.full] ??= {};
+    draft.add[api.full] ??= [];
+    let dirty = false;
+    let sel: HTMLElement | null = null;
+    let hover: HTMLElement | null = null;
+
+    const key = (el: Element) => JSON.stringify(api.pathOf(el));
+    const styleOf = (el: Element): Style => (draft.style[api.page][key(el)] ??= {});
+    const changed = () => {
+      dirty = true;
+      window.dispatchEvent(new Event('andras:dev-changed'));
+    };
+    // DevMode's save bar asks for the file
+    (window as unknown as { __editsDraft?: () => string | null }).__editsDraft = () => {
+      if (!dirty) return null;
+      // drop empty entries
+      for (const [k, s] of Object.entries(draft.style[api.page])) if (!s.x && !s.y && !s.w && !s.h && !s.hidden) delete draft.style[api.page][k];
+      return `${JSON.stringify(draft, null, 2)}\n`;
+    };
+
+    const isDevUi = (el: Element) => !!el.closest('[data-dev-ui], .dev-panel, .lay-bar, .dev-plus, .lay-save, .dev-gate, .dev-add-menu, .dev-toast, dialog, .site-header .brand');
+    const pickable = (t: EventTarget | null): HTMLElement | null => {
+      let el = t instanceof Element ? t : null;
+      while (el && !(el instanceof HTMLElement)) el = el.parentElement;
+      if (!el || isDevUi(el) || el === document.body || el === html || el.id === 'main') return null;
+      return el;
+    };
+    const textLike = (el: HTMLElement) => /^(H1|H2|H3|H4|H5|H6|P|LI|SPAN|A|FIGCAPTION|BLOCKQUOTE|LABEL|TIME|STRONG|EM|SMALL|BUTTON|DT|DD)$/.test(el.tagName) && !el.querySelector('img, svg, picture, ul, ol, div, p');
+
+    // ---- the frame follows the selected element ----
+    const place = () => {
+      if (!sel || !sel.isConnected) return deselect();
+      const r = sel.getBoundingClientRect();
+      const z = Number(getComputedStyle(html).zoom) || 1;
+      frame.style.left = `${r.left / z - 3}px`;
+      frame.style.top = `${r.top / z - 3}px`;
+      frame.style.width = `${r.width / z + 6}px`;
+      frame.style.height = `${r.height / z + 6}px`;
+      frame.classList.toggle('is-low', r.top / z < 110);
+      sizeEl.textContent = `${Math.round(sel.offsetWidth)} × ${Math.round(sel.offsetHeight)}`;
+    };
+    const select = (el: HTMLElement) => {
+      stopText();
+      sel = el;
+      frame.hidden = false;
+      nameEl.textContent = el.dataset.lay ?? (el.id ? `#${el.id}` : el.tagName.toLowerCase());
+      place();
+    };
+    function deselect() {
+      stopText();
+      sel = null;
+      frame.hidden = true;
+    }
+    addEventListener('scroll', () => sel && place(), true);
+    addEventListener('resize', () => sel && place());
+
+    // ---- edit mode on/off (follows developer mode; the panel button switches it) ----
+    const setOn = (on: boolean) => {
+      html.classList.toggle('ed-on', on);
+      if (!on) {
+        deselect();
+        hover?.classList.remove('ed-hover');
+      }
+    };
+    new MutationObserver(() => {
+      const dev = html.classList.contains('dev-mode');
+      if (!dev && html.classList.contains('ed-on')) setOn(false);
+    }).observe(html, { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('andras:edit-toggle', (e) => setOn((e as CustomEvent<boolean>).detail));
+    // developer mode may already be on when this script runs (saved in this browser)
+    if (html.classList.contains('dev-mode')) setOn(true);
+
+    document.addEventListener('mouseover', (e) => {
+      if (!html.classList.contains('ed-on') || drag) return;
+      const el = pickable(e.target);
+      if (el === hover) return;
+      hover?.classList.remove('ed-hover');
+      hover = el;
+      el?.classList.add('ed-hover');
+    });
+    // clicks select instead of following links / pressing buttons
+    document.addEventListener(
+      'click',
+      (e) => {
+        if (!html.classList.contains('ed-on')) return;
+        const el = pickable(e.target);
+        if (!el) return;
+        if (el.isContentEditable) return;
+        e.preventDefault();
+        e.stopPropagation();
+        select(el);
+      },
+      true,
+    );
+    document.addEventListener(
+      'dblclick',
+      (e) => {
+        if (!html.classList.contains('ed-on')) return;
+        const el = pickable(e.target);
+        if (!el) return;
+        e.preventDefault();
+        e.stopPropagation();
+        select(el);
+        startText();
+      },
+      true,
+    );
+
+    // ---- text editing ----
+    let editing: HTMLElement | null = null;
+    function startText() {
+      if (!sel) return;
+      if (!textLike(sel)) {
+        const inner = Array.from(sel.querySelectorAll<HTMLElement>('h1,h2,h3,h4,p,li,span,a,figcaption')).find(textLike);
+        if (!inner) return;
+        select(inner);
+      }
+      editing = sel!;
+      editing.dataset.edOrig ??= editing.textContent ?? '';
+      editing.contentEditable = 'true';
+      frame.classList.add('is-text');
+      editing.focus();
+      const range = document.createRange();
+      range.selectNodeContents(editing);
+      getSelection()?.removeAllRanges();
+      getSelection()?.addRange(range);
+    }
+    function stopText() {
+      if (!editing) return;
+      const el = editing;
+      editing = null;
+      el.contentEditable = 'false';
+      el.removeAttribute('contenteditable');
+      frame.classList.remove('is-text');
+      const txt = (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+      el.textContent = txt;
+      if (el.dataset.edId) {
+        const a = draft.add[api.full].find((x) => x.id === el.dataset.edId);
+        if (a && a.text !== txt) {
+          a.text = txt;
+          changed();
+        }
+      } else if (txt !== (el.dataset.edOrig ?? '').replace(/\s+/g, ' ').trim()) {
+        draft.text[api.full][key(el)] = txt;
+        changed();
+      }
+    }
+    document.addEventListener('keydown', (e) => {
+      if (editing) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          stopText();
+          place();
+        }
+        if (e.key === 'Escape') stopText();
+        return;
+      }
+      if (!sel || !html.classList.contains('ed-on')) return;
+      const step = e.shiftKey ? 10 : 1;
+      const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+      if (moves[e.key]) {
+        e.preventDefault();
+        const s = styleOf(sel);
+        s.x = (s.x ?? 0) + moves[e.key][0];
+        s.y = (s.y ?? 0) + moves[e.key][1];
+        api.styleEl(sel, s);
+        changed();
+        place();
+      } else if (e.key === 'Delete') {
+        act('hide');
+      } else if (e.key === 'Escape') {
+        deselect();
+      }
+    });
+
+    // ---- toolbar ----
+    function act(a: string) {
+      if (!sel) return;
+      if (a === 'close') return deselect();
+      if (a === 'parent') {
+        const p = pickable(sel.parentElement);
+        if (p) select(p);
+        return;
+      }
+      if (a === 'text') return startText();
+      if (a === 'hide') {
+        const s = styleOf(sel);
+        s.hidden = !s.hidden;
+        api.styleEl(sel, s);
+        changed();
+        return place();
+      }
+      if (a === 'reset') {
+        if (sel.dataset.edId) {
+          draft.add[api.full] = draft.add[api.full].filter((x) => x.id !== sel!.dataset.edId);
+          sel.remove();
+          changed();
+          return deselect();
+        }
+        const k = key(sel);
+        delete draft.style[api.page][k];
+        api.styleEl(sel, {});
+        if (draft.text[api.full][k] !== undefined) {
+          delete draft.text[api.full][k];
+          if (sel.dataset.edOrig !== undefined) sel.textContent = sel.dataset.edOrig;
+        }
+        changed();
+        return place();
+      }
+      if (a === 'h3' || a === 'p') {
+        const item: Added = { id: Date.now().toString(36), after: api.pathOf(sel), tag: a, text: a === 'h3' ? L.newSubtitle : L.newParagraph };
+        draft.add[api.full].push(item);
+        const n = api.added(item);
+        sel.after(n);
+        changed();
+        select(n);
+        startText();
+      }
+    }
+    // double-click on the selected element (the frame lies over it) rewrites its text
+    frame.addEventListener('dblclick', (e) => {
+      if ((e.target as Element).closest('[data-ed-tools]')) return;
+      startText();
+    });
+    frame.querySelectorAll<HTMLButtonElement>('[data-ed-act]').forEach((b) =>
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        act(b.dataset.edAct!);
+      }),
+    );
+
+    // ---- move (drag the frame) and resize (drag a handle) ----
+    let drag: { mode: string; px: number; py: number; s0: Style; w0: number; h0: number; k: number; ratio: number; moved?: boolean } | null = null;
+    frame.addEventListener('pointerdown', (e) => {
+      if (!sel || (e.target as Element).closest('[data-ed-tools]')) return;
+      e.preventDefault();
+      const handle = (e.target as HTMLElement).dataset.h;
+      const r = sel.getBoundingClientRect();
+      const w0 = sel.offsetWidth || r.width;
+      const h0 = sel.offsetHeight || r.height;
+      drag = { mode: handle ?? 'move', px: e.clientX, py: e.clientY, s0: { ...styleOf(sel) }, w0, h0, k: r.width / (w0 || 1) || 1, ratio: w0 / (h0 || 1) };
+      frame.setPointerCapture(e.pointerId);
+    });
+    frame.addEventListener('pointermove', (e) => {
+      if (!drag || !sel) return;
+      const dx = (e.clientX - drag.px) / drag.k;
+      const dy = (e.clientY - drag.py) / drag.k;
+      if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 3) return;
+      drag.moved = true;
+      const s = styleOf(sel);
+      const m = drag.mode;
+      if (m === 'move') {
+        s.x = Math.round((drag.s0.x ?? 0) + dx);
+        s.y = Math.round((drag.s0.y ?? 0) + dy);
+      } else {
+        let w = drag.w0 + (m.includes('e') ? dx : m.includes('w') ? -dx : 0);
+        let h = drag.h0 + (m.includes('s') ? dy : m.includes('n') ? -dy : 0);
+        w = Math.max(24, w);
+        h = Math.max(16, h);
+        // corners of pictures keep the proportions (like PowerPoint); hold Shift to stretch freely
+        const media = /^(IMG|PICTURE|VIDEO|FIGURE)$/.test(sel.tagName);
+        if (media && m.length === 2 && !e.shiftKey) h = w / drag.ratio;
+        if (m.includes('e') || m.includes('w')) s.w = Math.round(w);
+        if (m.includes('n') || m.includes('s') || (media && m.length === 2)) s.h = Math.round(h);
+        if (m.includes('w')) s.x = Math.round((drag.s0.x ?? 0) + (drag.w0 - w));
+        if (m.includes('n')) s.y = Math.round((drag.s0.y ?? 0) + (drag.h0 - h));
+      }
+      api.styleEl(sel, s);
+      place();
+    });
+    frame.addEventListener('pointerup', () => {
+      if (drag?.moved) changed();
+      drag = null;
+    });
+  }
+</script>

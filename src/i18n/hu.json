@@ -448,5 +448,15 @@
   "lay.changed": "Az elrendezés megváltozott",
   "lay.save": "Mentés",
   "lay.undo": "Visszavonás",
-  "lay.saved": "Mentve – élesben kb. 1 perc múlva."
+  "lay.saved": "Mentve – élesben kb. 1 perc múlva.",
+  "ed.on": "Szerkesztés az oldalon: BE (kattints bármire)",
+  "ed.off": "Szerkesztés az oldalon: KI (a linkek működnek)",
+  "ed.parent": "A körülötte lévő doboz kijelölése",
+  "ed.text": "Szöveg átírása (vagy dupla kattintás)",
+  "ed.subtitle": "Alcím hozzáadása utána",
+  "ed.paragraph": "Bekezdés hozzáadása utána",
+  "ed.hide": "Elrejtés / megjelenítés (Delete)",
+  "ed.reset": "Vissza az eredetire",
+  "ed.newSubtitle": "Új alcím",
+  "ed.newParagraph": "Új bekezdés – ide írj."
 }

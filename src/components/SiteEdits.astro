@@ -1,0 +1,107 @@
+---
+/**
+ * Edits made on the page in developer mode (src/data/edits.json, saved by src/components/EditMode.astro):
+ * moved / resized / hidden elements, rewritten texts and added subtitles or paragraphs. Applied for every
+ * visitor right after the page is parsed, before it is painted.
+ *
+ * An element is addressed by a path from the nearest stable anchor: ["lay:about", "div:0", "p:1"]
+ * (data-lay section, element id, an added element "ed:<id>", or the body), then tag:index steps that
+ * ignore the developer-mode helpers (data-dev-ui) and added elements (data-ed-id).
+ *   style: { "<page without language>": { "<path>": { x, y, w, h, hidden } } }  – same in every language
+ *   text:  { "<full path>": { "<path>": "new text" } }                            – per language
+ *   add:   { "<full path>": [{ id, after: <path>, tag: "h3" | "p", text }] }      – per language
+ */
+import edits from '../data/edits.json';
+---
+
+<script is:inline define:vars={{ edits }}>
+  var SKIP = function (e) {
+    return e.hasAttribute('data-dev-ui') || e.hasAttribute('data-ed-id');
+  };
+  function resolve(path) {
+    if (!path || !path.length) return null;
+    var first = path[0];
+    var i = first.indexOf(':');
+    var kind = first.slice(0, i);
+    var val = first.slice(i + 1);
+    var el = null;
+    if (kind === 'lay') el = document.querySelector('[data-lay="' + val + '"]');
+    else if (kind === 'id') el = document.getElementById(val);
+    else if (kind === 'ed') el = document.querySelector('[data-ed-id="' + val + '"]');
+    else if (kind === 'body') el = document.body;
+    for (var k = 1; k < path.length && el; k++) {
+      var p = path[k].split(':');
+      var n = Number(p[1]);
+      var c = 0;
+      var next = null;
+      for (var ch = el.firstElementChild; ch; ch = ch.nextElementSibling) {
+        if (SKIP(ch) || ch.tagName.toLowerCase() !== p[0]) continue;
+        if (c === n) {
+          next = ch;
+          break;
+        }
+        c++;
+      }
+      el = next;
+    }
+    return el;
+  }
+  function pathOf(el) {
+    var steps = [];
+    while (el && el !== document.body) {
+      if (el.hasAttribute('data-ed-id')) return ['ed:' + el.getAttribute('data-ed-id')].concat(steps);
+      if (el.hasAttribute('data-lay')) return ['lay:' + el.getAttribute('data-lay')].concat(steps);
+      if (el.id && el.id !== 'main' && document.querySelectorAll('[id="' + el.id + '"]').length === 1) return ['id:' + el.id].concat(steps);
+      var tag = el.tagName.toLowerCase();
+      var c = 0;
+      for (var s = el.previousElementSibling; s; s = s.previousElementSibling) if (!SKIP(s) && s.tagName.toLowerCase() === tag) c++;
+      steps.unshift(tag + ':' + c);
+      el = el.parentElement;
+    }
+    return ['body:'].concat(steps);
+  }
+  function styleEl(el, s) {
+    el.style.translate = s.x || s.y ? (s.x || 0) + 'px ' + (s.y || 0) + 'px' : '';
+    el.style.width = s.w ? s.w + 'px' : '';
+    el.style.maxWidth = s.w ? 'none' : '';
+    el.style.flexShrink = s.w ? '0' : '';
+    // a set height is the real height (like a PowerPoint box), also inside stretched grid/flex rows
+    el.style.height = s.h ? s.h + 'px' : '';
+    el.style.minHeight = s.h ? '0' : '';
+    el.style.alignSelf = s.h ? 'start' : '';
+    el.style.objectFit = s.h && el.tagName === 'IMG' ? 'cover' : '';
+    if (s.hidden) el.setAttribute('data-ed-hidden', '');
+    else el.removeAttribute('data-ed-hidden');
+  }
+  function added(a) {
+    var n = document.createElement(a.tag === 'p' ? 'p' : 'h3');
+    n.setAttribute('data-ed-id', a.id);
+    n.className = 'ed-added ed-added--' + (a.tag === 'p' ? 'p' : 'h3');
+    n.textContent = a.text;
+    return n;
+  }
+  var full = location.pathname;
+  var page = full.replace(/^\/[a-z]{2}(?=\/)/, '') || '/';
+  function apply() {
+    (edits.add[full] || []).forEach(function (a) {
+      var ref = resolve(a.after);
+      if (ref && !document.querySelector('[data-ed-id="' + a.id + '"]')) ref.after(added(a));
+    });
+    var texts = edits.text[full] || {};
+    Object.keys(texts).forEach(function (k) {
+      var el = resolve(JSON.parse(k));
+      if (el) el.textContent = texts[k];
+    });
+    var styles = edits.style[page] || {};
+    Object.keys(styles).forEach(function (k) {
+      var el = resolve(JSON.parse(k));
+      if (el) styleEl(el, styles[k]);
+    });
+  }
+  window.__siteEdits = { data: edits, resolve: resolve, pathOf: pathOf, styleEl: styleEl, added: added, page: page, full: full };
+  try {
+    apply();
+  } catch (e) {
+    console.warn('[site edits]', e);
+  }
+</script>

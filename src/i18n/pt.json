@@ -448,5 +448,15 @@
   "lay.changed": "Disposição alterada",
   "lay.save": "Guardar",
   "lay.undo": "Desfazer",
-  "lay.saved": "Guardado – online em ~1 min."
+  "lay.saved": "Guardado – online em ~1 min.",
+  "ed.on": "Edição na página: LIGADA (clica em qualquer coisa)",
+  "ed.off": "Edição na página: DESLIGADA (links funcionam)",
+  "ed.parent": "Selecionar a caixa à volta",
+  "ed.text": "Editar texto (ou duplo clique)",
+  "ed.subtitle": "Adicionar subtítulo a seguir",
+  "ed.paragraph": "Adicionar parágrafo a seguir",
+  "ed.hide": "Esconder / mostrar (Delete)",
+  "ed.reset": "Voltar ao original",
+  "ed.newSubtitle": "Novo subtítulo",
+  "ed.newParagraph": "Novo parágrafo – escreve aqui."
 }

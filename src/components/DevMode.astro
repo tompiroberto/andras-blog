@@ -11,6 +11,7 @@
 import Icon from './Icon.astro';
 import PhotoUpload from './PhotoUpload.astro';
 import PostEditor from './PostEditor.astro';
+import EditMode from './EditMode.astro';
 import site from '../data/site.json';
 import layout from '../data/layout.json';
 import { t, type Lang } from '../i18n';
@@ -33,6 +34,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   <div class="dev-panel__actions">
     <button type="button" class="dev-panel__btn" data-dev-new-post><Icon name="file-plus" size={16} />{t(lang, 'dev.newPost')}</button>
     <button type="button" class="dev-panel__btn" data-dev-upload><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</button>
+    <button type="button" class="dev-panel__btn dev-panel__edit" aria-pressed="true" data-dev-edit><Icon name="move" size={16} /><span data-dev-edit-label>{t(lang, 'ed.on')}</span></button>
     <a class="dev-panel__btn" href={`${REPO}/tree/main/src/content/posts`} target="_blank" rel="noopener"><Icon name="layout-dashboard" size={16} />{t(lang, 'dev.admin')}</a>
   </div>
   <fieldset class="dev-msg" data-dev-msg data-mode={site.messageMode}>
@@ -49,6 +51,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 </aside>
 <PhotoUpload lang={lang} />
 <PostEditor lang={lang} />
+<EditMode lang={lang} />
 <div class="dev-add-menu" hidden data-dev-add-menu>
   <button type="button" data-dev-add-pick="photo"><Icon name="image-plus" size={18} />{t(lang, 'dev.addPhoto')}</button>
   <button type="button" data-dev-add-pick="post"><Icon name="file-plus" size={18} />{t(lang, 'dev.addPost')}</button>
@@ -61,6 +64,8 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 </div>
 <template data-dev-laytitles>{JSON.stringify({ up: t(lang, 'lay.up'), down: t(lang, 'lay.down'), hide: t(lang, 'lay.hide'), width: t(lang, 'lay.width'), smaller: t(lang, 'lay.smaller'), bigger: t(lang, 'lay.bigger'), saving: t(lang, 'dev.msgSaving'), saved: t(lang, 'lay.saved'), widths: { narrow: t(lang, 'lay.w.narrow'), normal: t(lang, 'lay.w.normal'), wide: t(lang, 'lay.w.wide'), full: t(lang, 'lay.w.full') } })}</template>
 <template data-dev-layhidden>{JSON.stringify(layout.hidden)}</template>
+<template data-dev-edon>{t(lang, 'ed.on')}</template>
+<template data-dev-edoff>{t(lang, 'ed.off')}</template>
 <template data-dev-addlabel>{t(lang, 'dev.add')}</template>
 <canvas class="dev-rain" aria-hidden="true" data-dev-rain></canvas>
 <div class="dev-scan" aria-hidden="true"></div>
@@ -185,6 +190,10 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   }
   .dev-toast[hidden] {
     display: none;
+  }
+  .dev-panel__edit[aria-pressed='true'] {
+    border-color: #39d353;
+    background: #0f3d17;
   }
   .dev-msg {
     display: grid;
@@ -735,6 +744,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       const plus = document.createElement('button');
       plus.type = 'button';
       plus.className = 'dev-plus';
+      plus.setAttribute('data-dev-ui', '');
       plus.textContent = '+';
       plus.title = tpl('addlabel');
       plus.setAttribute('aria-label', tpl('addlabel'));
@@ -785,10 +795,18 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   const saveBar = document.querySelector<HTMLElement>('[data-lay-save]')!;
   const layStatus = saveBar.querySelector<HTMLElement>('[data-lay-status]')!;
   const sections = () => Array.from(document.querySelectorAll<HTMLElement>('main > [data-lay]'));
-  const changed = () => {
+  let layChanged = false;
+  const showSave = () => {
     saveBar.hidden = false;
     layStatus.textContent = '';
   };
+  const changed = () => {
+    layChanged = true;
+    showSave();
+  };
+  // edits on the page (EditMode) use the same save bar
+  window.addEventListener('andras:dev-changed', showSave);
+  const editsDraft = () => (window as unknown as { __editsDraft?: () => string | null }).__editsDraft?.() ?? null;
   const readLayout = () => {
     const order: string[] = [];
     const hidden: string[] = [];
@@ -816,6 +834,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       el.dataset.layWidth = currentWidth(el);
       const bar = document.createElement('div');
       bar.className = 'lay-bar';
+      bar.setAttribute('data-dev-ui', '');
       const btn = (label: string, title: string, fn: () => void) => {
         const b = document.createElement('button');
         b.type = 'button';
@@ -880,7 +899,12 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     if (!key) return;
     layStatus.textContent = layTitles.saving;
     try {
-      await commitFiles(key, [{ path: 'src/data/layout.json', text: `${JSON.stringify(readLayout(), null, 2)}\n` }], 'Layout: changed in developer mode');
+      const files = [];
+      if (layChanged) files.push({ path: 'src/data/layout.json', text: `${JSON.stringify(readLayout(), null, 2)}\n` });
+      const edits = editsDraft();
+      if (edits) files.push({ path: 'src/data/edits.json', text: edits });
+      if (!files.length) return void (layStatus.textContent = layTitles.saved);
+      await commitFiles(key, files, 'Page edits: changed in developer mode');
       try {
         localStorage.setItem(TOKEN_KEY, key);
       } catch {
@@ -892,12 +916,24 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     }
   });
 
+  // ---- edit mode (select / move / resize / rewrite on the page, src/components/EditMode.astro) ----
+  const editBtn = document.querySelector<HTMLButtonElement>('[data-dev-edit]');
+  const setEdit = (on: boolean) => {
+    window.dispatchEvent(new CustomEvent('andras:edit-toggle', { detail: on }));
+    if (editBtn) {
+      editBtn.setAttribute('aria-pressed', String(on));
+      editBtn.querySelector('[data-dev-edit-label]')!.textContent = tpl(on ? 'edon' : 'edoff');
+    }
+  };
+  editBtn?.addEventListener('click', () => setEdit(editBtn.getAttribute('aria-pressed') !== 'true'));
+
   const setDev = (on: boolean) => {
     html.classList.toggle('dev-mode', on);
     if (panel) panel.hidden = !on;
     if (on) {
       addPluses();
       addLayBars();
+      setEdit(true);
       startRain();
     } else {
       removePluses();

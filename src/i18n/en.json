@@ -448,5 +448,15 @@
   "lay.changed": "Layout changed",
   "lay.save": "Save",
   "lay.undo": "Undo",
-  "lay.saved": "Saved – live in ~1 min."
+  "lay.saved": "Saved – live in ~1 min.",
+  "ed.on": "Editing on page: ON (click anything)",
+  "ed.off": "Editing on page: OFF (links work)",
+  "ed.parent": "Select the surrounding box",
+  "ed.text": "Edit text (or double-click)",
+  "ed.subtitle": "Add a subtitle after it",
+  "ed.paragraph": "Add a paragraph after it",
+  "ed.hide": "Hide / show (Delete)",
+  "ed.reset": "Back to the original",
+  "ed.newSubtitle": "New subtitle",
+  "ed.newParagraph": "New paragraph – write here."
 }

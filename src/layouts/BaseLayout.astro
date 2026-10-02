@@ -30,6 +30,7 @@ import CountryView from '../components/CountryView.astro';
 import RouteView from '../components/RouteView.astro';
 import ZoomSpace from '../components/ZoomSpace.astro';
 import HorizonScene from '../components/HorizonScene.astro';
+import SiteEdits from '../components/SiteEdits.astro';
 import DevMode from '../components/DevMode.astro';
 import StreetView from '../components/StreetView.astro';
 import { VIEW_SESSION_KEY, STREET_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, MAP_MODE_STORAGE_KEY, CITIES_STORAGE_KEY, GRID_STORAGE_KEY, RIBBON_STORAGE_KEY, RIBBON_TRUE_STORAGE_KEY, THEME_STORAGE_KEY, ZOOM_STORAGE_KEY } from '../lib/constants';
@@ -149,6 +150,7 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
       <slot />
     </main>
     <Footer lang={lang} />
+    <SiteEdits />
     <Roadside />
     <ChileScroll lang={lang} />
     <RibbonSwitch lang={lang} />
