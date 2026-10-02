@@ -162,12 +162,16 @@ Ez az oldal nyitóoldala (lásd 0. pont). Letisztult, egyoldalas CV: tanulmányo
 ## 11. Fejlesztői mód (feltöltés)
 
 1. Kattints **5-ször gyorsan** a fejlécben az **András** feliratra vagy a földgömbre → „Fejlesztői mód BE”.
-2. Zöld panel jobbra lent: **Új bejegyzés**, **Fotó feltöltése**, **Médiatár**, **Szerkesztő**.
-3. A szerkesztő (`/admin`) **GitHub-bejelentkezést** kér (ingyenes; csak az tud menteni, akinek
-   írási joga van a repóhoz). Mentés után az
-   oldal kb. egy perc alatt frissül.
+2. Zöld panel jobbra lent – mindegyik gomb a GitHubot nyitja meg (be kell lenned lépve):
+   - **Új bejegyzés:** kitöltendő sablon (cím, dátum, kategória, nyelv, rövid leírás, szöveg).
+   - **Fotó feltöltése:** húzd be a képeket; a fájlnévből lesz a képaláírás
+     (pl. `Bali-rizsteraszok.jpg` → „Bali rizsteraszok”).
+   - **Kép bejegyzéshez:** kép feltöltése, amit aztán a bejegyzésbe teszel:
+     `![leírás](../../assets/posts/kepneve.jpg)`.
+   - **Bejegyzések szerkesztése:** a meglévő bejegyzések; nyiss meg egyet, és kattints a ceruzára.
+3. Végül a zöld **Commit changes** gomb (kétszer). Kb. egy perc múlva fent van az oldalon.
 4. Kikapcsolás: újabb 5 kattintás vagy az ✕ a panelen.
-Beállítás lépései: `README.md` → *Developer mode*.
+5. Ha utána a gépeden is dolgozol: előbb `git pull`.
 
 ---
 

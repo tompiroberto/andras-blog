@@ -39,7 +39,7 @@ const posts = defineCollection({
     }),
 });
 
-/** Photos uploaded in developer mode (Decap CMS, public/admin/config.yml) – shown in the gallery */
+/** Optional captions/places/dates for gallery photos (images themselves live in src/assets/photos) */
 const photos = defineCollection({
   loader: glob({ pattern: '**/*.{yml,yaml}', base: './src/content/photos' }),
   schema: ({ image }) =>

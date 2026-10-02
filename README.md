@@ -103,18 +103,14 @@ stored on the site, so no Netlify Forms or database is needed. Helpers: `src/lib
 ## Developer mode (uploading posts and photos)
 
 Click the header title (the globe or "András") **5 times quickly**: a small green panel opens with
-shortcuts into the editor at `/admin` (Decap CMS): new post, upload a photo, media library.
-The same 5 clicks turn it off again. The clicks only reveal the door – saving needs a login.
+links to GitHub's own editor pages – no setup, only the repository owner's GitHub login:
 
-**Online (free – GitHub login), once:**
-1. GitHub → Settings → Developer settings → OAuth Apps → *New OAuth App*.
-   Homepage URL: `https://<your-site>.netlify.app`, Authorization callback URL:
-   `https://api.netlify.com/auth/done`. Register, then *Generate a new client secret*.
-2. Netlify → Project configuration → Access & security → OAuth → *Install provider* → GitHub,
-   paste the Client ID and Client secret.
-3. Open `https://<your-site>/admin/` → *Login with GitHub*. Only accounts with write access to the
-   repository can publish. New posts are saved to `src/content/posts/`, photos to
-   `src/content/photos/` (pictures in `src/assets/`), and Netlify rebuilds the site (about a minute).
+- **New post:** a new file in `src/content/posts/` with the template and today's date filled in.
+- **Upload a photo:** upload into `src/assets/photos/`; every image there appears in the **Photos**
+  section, captioned from its file name.
+- **Image for a post:** upload into `src/assets/posts/`, then use it in a post as
+  `![description](../../assets/posts/name.jpg)` or as `cover: ../../assets/posts/name.jpg`.
+- **Edit posts:** the posts folder (open a file, pencil icon).
 
-**Locally:** run `npx decap-server` in a second terminal next to `npm run dev`, then open
-`http://localhost:4321/admin/` – no login needed, files are written straight into the project.
+Press **Commit changes**; Netlify rebuilds the site in about a minute. Afterwards run `git pull`
+locally before pushing your own changes.
