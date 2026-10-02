@@ -24,7 +24,7 @@ const TOPICS = [
 ---
 
 <dialog class="place-msg" data-place-msg data-email={site.email} aria-labelledby="place-msg-title">
-  <form class="place-msg__form" novalidate data-place-msg-form>
+  <form class="place-msg__form" novalidate data-place-msg-form data-msg-mode={site.messageMode}>
     <div class="place-msg__head">
       <span class="place-msg__icon" aria-hidden="true"><Icon name="map-pin" size={22} /></span>
       <div>
@@ -43,6 +43,7 @@ const TOPICS = [
       <label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off" /></label>
     </p>
 
+    <p class="place-msg__hint">{t(lang, 'msg.pick')}</p>
     <fieldset class="place-msg__topics">
       <legend class="visually-hidden">{t(lang, 'pm.topic')}</legend>
       {
@@ -159,6 +160,20 @@ const TOPICS = [
     border: var(--border);
     border-radius: 50%;
     background: var(--surface);
+  }
+  /* e-mail mode (site.json → messageMode): the topics open the e-mail app */
+  .place-msg__form[data-msg-mode='email'] .place-msg__fields,
+  .place-msg__form[data-msg-mode='email'] .place-msg__status,
+  .place-msg__form[data-msg-mode='email'] [data-place-msg-submit] {
+    display: none;
+  }
+  .place-msg__hint {
+    display: none;
+    margin: 0;
+    font-weight: 700;
+  }
+  .place-msg__form[data-msg-mode='email'] .place-msg__hint {
+    display: block;
   }
   .place-msg__topics {
     display: grid;
@@ -300,6 +315,14 @@ const TOPICS = [
       text.focus();
       text.setSelectionRange(text.value.length, text.value.length);
     }
+
+    // e-mail mode: picking a topic opens the e-mail app, with the place in the subject
+    form.addEventListener('click', (e) => {
+      const radio = (e.target as Element).closest<HTMLInputElement>('input[name="topic"]');
+      if (!radio || form.dataset.msgMode !== 'email') return;
+      const label = radio.closest('label')?.textContent?.trim() ?? '';
+      openMail(dialog.dataset.email!, `${place.value} – ${label}`, tpl(`start-${radio.value}`).replace('{place}', place.value));
+    });
 
     window.addEventListener(PLACE_MESSAGE_EVENT, (e) => open((e as CustomEvent<PlaceMessageDetail>).detail));
     form.addEventListener('change', (e) => {

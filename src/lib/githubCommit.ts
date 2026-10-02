@@ -50,6 +50,13 @@ export async function commitFiles(token: string, files: NewFile[], message: stri
   await gh(token, `/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: { sha: commit.sha } });
 }
 
+/** Current text of a file on the branch (UTF-8). */
+export async function readFile(token: string, path: string): Promise<string> {
+  const file = await gh<{ content: string }>(token, `/contents/${path}?ref=${BRANCH}`);
+  const bytes = Uint8Array.from(atob(file.content.replace(/\n/g, '')), (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
 /** true when the path already exists on the branch (a new post must not overwrite an old one) */
 export async function fileExists(token: string, path: string): Promise<boolean> {
   try {

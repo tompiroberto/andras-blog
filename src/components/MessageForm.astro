@@ -47,6 +47,7 @@ const TOPICS = [
         data-message-form
         data-email={site.email}
         data-subject={t(lang, 'msg.subject')}
+        data-msg-mode={site.messageMode}
       >
         <input type="hidden" name="form-name" value="message" />
         <input type="hidden" name="lang" value={lang} />
@@ -54,12 +55,13 @@ const TOPICS = [
           <label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off" /></label>
         </p>
 
+        <p class="mail-hint">{t(lang, 'msg.pick')}</p>
         <fieldset class="topics">
           <legend class="visually-hidden">{t(lang, 'pm.topic')}</legend>
           {
             TOPICS.map((tp, i) => (
               <label class="topic">
-                <input type="radio" name="topic" value={tp.id} checked={i === 0} data-label={t(lang, `msg.topic.${tp.id}`)} />
+                <input type="radio" name="topic" value={tp.id} checked={i === 0} data-label={t(lang, `msg.topic.${tp.id}`)} data-start={t(lang, `msg.start.${tp.id}`)} />
                 <span>
                   <Icon name={tp.icon} size={18} />
                   {t(lang, `msg.topic.${tp.id}`)}
@@ -182,6 +184,21 @@ const TOPICS = [
   .message__lead {
     font-size: clamp(18px, 1.5vw, 21px);
     margin-bottom: 24px;
+  }
+  /* "e-mail" message mode (site.json → messageMode, switched in developer mode): the topics open the
+     visitor's e-mail app, nothing is typed on the site */
+  form[data-msg-mode='email'] .field,
+  form[data-msg-mode='email'] [data-status],
+  form[data-msg-mode='email'] [data-submit] {
+    display: none;
+  }
+  .mail-hint {
+    display: none;
+    margin: 0 0 12px;
+    font-weight: 700;
+  }
+  form[data-msg-mode='email'] .mail-hint {
+    display: block;
   }
   .topics {
     display: flex;
@@ -362,6 +379,13 @@ const TOPICS = [
     const nameInput = form.elements.namedItem('name') as HTMLInputElement;
     const messageInput = form.elements.namedItem('message') as HTMLTextAreaElement;
     const max = Number(counter.dataset.max);
+
+    // e-mail mode: picking a topic opens the e-mail app with a started letter
+    form.addEventListener('click', (e) => {
+      const radio = (e.target as Element).closest<HTMLInputElement>('input[name="topic"]');
+      if (!radio || form.dataset.msgMode !== 'email') return;
+      openMail(form.dataset.email!, `${form.dataset.subject} – ${radio.dataset.label}`, radio.dataset.start!);
+    });
 
     const updateCounter = () => {
       const n = messageInput.value.length;

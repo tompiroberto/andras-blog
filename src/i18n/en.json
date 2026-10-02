@@ -424,5 +424,11 @@
   "upload.live": "new · online in ~1 min",
   "post.cropHint": "This is how it looks on the post card. Click where the important part is.",
   "post.cropAuto": "Automatic",
-  "gallery.toPost": "Open the post →"
+  "gallery.toPost": "Open the post →",
+  "dev.msgTitle": "“Message me” works by…",
+  "dev.msgForm": "writing on the site",
+  "dev.msgEmail": "opening the e-mail app",
+  "dev.msgSaving": "Saving…",
+  "dev.msgSaved": "Saved – it is like this here already, live in ~1 min.",
+  "dev.msgKey": "Paste your GitHub key (github_pat_…):"
 }

@@ -424,5 +424,11 @@
   "upload.live": "nou · online în ~1 min",
   "post.cropHint": "Așa va arăta pe cardul postării. Apasă unde e partea importantă.",
   "post.cropAuto": "Automat",
-  "gallery.toPost": "Deschide postarea →"
+  "gallery.toPost": "Deschide postarea →",
+  "dev.msgTitle": "„Scrie-mi” funcționează…",
+  "dev.msgForm": "scriind pe site",
+  "dev.msgEmail": "deschizând aplicația de e-mail",
+  "dev.msgSaving": "Se salvează…",
+  "dev.msgSaved": "Salvat – aici e deja așa, online în ~1 min.",
+  "dev.msgKey": "Lipește cheia GitHub (github_pat_…):"
 }

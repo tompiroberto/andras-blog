@@ -424,5 +424,11 @@
   "upload.live": "új · kb. 1 perc múlva élesben",
   "post.cropHint": "Így fog kinézni a poszt kártyáján. Kattints oda, ahol a lényeg van.",
   "post.cropAuto": "Automatikus",
-  "gallery.toPost": "A poszt megnyitása →"
+  "gallery.toPost": "A poszt megnyitása →",
+  "dev.msgTitle": "Az „Üzenj” működése",
+  "dev.msgForm": "írás az oldalon",
+  "dev.msgEmail": "e-mail-program megnyitása",
+  "dev.msgSaving": "Mentés…",
+  "dev.msgSaved": "Mentve – itt már így van, élesben kb. 1 perc múlva.",
+  "dev.msgKey": "Illeszd be a GitHub-kulcsod (github_pat_…):"
 }

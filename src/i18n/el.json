@@ -424,5 +424,11 @@
   "upload.live": "νέο · online σε ~1 λεπτό",
   "post.cropHint": "Έτσι θα φαίνεται στην κάρτα της ανάρτησης. Πάτα εκεί που είναι το σημαντικό.",
   "post.cropAuto": "Αυτόματο",
-  "gallery.toPost": "Άνοιγμα ανάρτησης →"
+  "gallery.toPost": "Άνοιγμα ανάρτησης →",
+  "dev.msgTitle": "Το «Γράψε μου» λειτουργεί…",
+  "dev.msgForm": "γράφοντας στον ιστότοπο",
+  "dev.msgEmail": "ανοίγοντας την εφαρμογή email",
+  "dev.msgSaving": "Αποθήκευση…",
+  "dev.msgSaved": "Αποθηκεύτηκε – εδώ ισχύει ήδη, online σε ~1 λεπτό.",
+  "dev.msgKey": "Επικόλλησε το κλειδί GitHub (github_pat_…):"
 }

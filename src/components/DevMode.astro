@@ -11,6 +11,7 @@
 import Icon from './Icon.astro';
 import PhotoUpload from './PhotoUpload.astro';
 import PostEditor from './PostEditor.astro';
+import site from '../data/site.json';
 import { t, type Lang } from '../i18n';
 
 interface Props {
@@ -33,7 +34,17 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     <button type="button" class="dev-panel__btn" data-dev-upload><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</button>
     <a class="dev-panel__btn" href={`${REPO}/tree/main/src/content/posts`} target="_blank" rel="noopener"><Icon name="layout-dashboard" size={16} />{t(lang, 'dev.admin')}</a>
   </div>
+  <fieldset class="dev-msg" data-dev-msg data-mode={site.messageMode}>
+    <legend>{t(lang, 'dev.msgTitle')}</legend>
+    <label><input type="radio" name="dev-msg-mode" value="form" checked={site.messageMode !== 'email'} /> {t(lang, 'dev.msgForm')}</label>
+    <label><input type="radio" name="dev-msg-mode" value="email" checked={site.messageMode === 'email'} /> {t(lang, 'dev.msgEmail')}</label>
+    <p class="dev-msg__status" role="status" data-dev-msg-status></p>
+  </fieldset>
   <p class="dev-panel__note">{t(lang, 'dev.note')}</p>
+  <template data-dev-msgsaving>{t(lang, 'dev.msgSaving')}</template>
+  <template data-dev-msgsaved>{t(lang, 'dev.msgSaved')}</template>
+  <template data-dev-msgkey>{t(lang, 'dev.msgKey')}</template>
+  <template data-dev-msgerror>{t(lang, 'upload.error')}</template>
 </aside>
 <PhotoUpload lang={lang} />
 <PostEditor lang={lang} />
@@ -164,6 +175,36 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     zoom: var(--inv-zoom, 1);
   }
   .dev-toast[hidden] {
+    display: none;
+  }
+  .dev-msg {
+    display: grid;
+    gap: 4px;
+    margin: 12px 0 0;
+    padding: 8px 10px 10px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+  }
+  .dev-msg legend {
+    padding: 0 4px;
+    color: #39d353;
+    font-weight: 700;
+  }
+  .dev-msg label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .dev-msg input {
+    accent-color: #39d353;
+  }
+  .dev-msg__status {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #9be9a8;
+  }
+  .dev-msg__status:empty {
     display: none;
   }
   /* the "+" buttons are added by the script, so their styles are global */
@@ -394,6 +435,8 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 </style>
 
 <script>
+  import { TOKEN_KEY, commitFiles, getToken, readFile } from '../lib/githubCommit';
+
   const KEY = 'andras-dev-mode';
   const CLICKS = 5;
   const WINDOW_MS = 3000;
@@ -557,6 +600,44 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   gate.addEventListener('click', (e) => {
     if (!(e.target as Element).closest('button') && !gateForm.hidden) gateInput.focus();
   });
+
+  // ---- "Message me" setting: write on the site, or open the e-mail app (site.json → messageMode) ----
+  const msgBox = document.querySelector<HTMLFieldSetElement>('[data-dev-msg]');
+  if (msgBox) {
+    const msgStatus = msgBox.querySelector<HTMLElement>('[data-dev-msg-status]')!;
+    const applyHere = (mode: string) => document.querySelectorAll<HTMLElement>('[data-msg-mode]').forEach((f) => (f.dataset.msgMode = mode));
+    msgBox.addEventListener('change', async (e) => {
+      const input = e.target as HTMLInputElement;
+      const mode = input.value;
+      const previous = msgBox.dataset.mode!;
+      let key = getToken();
+      if (!key) key = (window.prompt(tpl('msgkey')) ?? '').trim();
+      if (!key) {
+        msgBox.querySelector<HTMLInputElement>(`input[value="${previous}"]`)!.checked = true;
+        return;
+      }
+      msgBox.disabled = true;
+      msgStatus.textContent = tpl('msgsaving');
+      try {
+        const data = JSON.parse(await readFile(key, 'src/data/site.json'));
+        data.messageMode = mode;
+        await commitFiles(key, [{ path: 'src/data/site.json', text: `${JSON.stringify(data, null, 2)}\n` }], `Message me: ${mode === 'email' ? 'open the e-mail app' : 'write on the site'}`);
+        try {
+          localStorage.setItem(TOKEN_KEY, key);
+        } catch {
+          /* storage unavailable */
+        }
+        msgBox.dataset.mode = mode;
+        applyHere(mode);
+        msgStatus.textContent = tpl('msgsaved');
+      } catch (err) {
+        msgBox.querySelector<HTMLInputElement>(`input[value="${previous}"]`)!.checked = true;
+        msgStatus.textContent = tpl('msgerror').replace('{msg}', err instanceof Error ? err.message : String(err));
+      } finally {
+        msgBox.disabled = false;
+      }
+    });
+  }
 
   // "+" on every section (and on the places marked data-dev-add="photo" | "post", with data-dev-category)
   const menu = document.querySelector<HTMLElement>('[data-dev-add-menu]')!;

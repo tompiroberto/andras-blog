@@ -424,5 +424,11 @@
   "upload.live": "ახალი · ~1 წუთში საიტზე",
   "post.cropHint": "ასე გამოჩნდება პოსტის ბარათზე. დააჭირე იქ, სადაც მთავარია.",
   "post.cropAuto": "ავტომატური",
-  "gallery.toPost": "პოსტის გახსნა →"
+  "gallery.toPost": "პოსტის გახსნა →",
+  "dev.msgTitle": "„მომწერე“ მუშაობს…",
+  "dev.msgForm": "საიტზე წერით",
+  "dev.msgEmail": "ელფოსტის აპის გახსნით",
+  "dev.msgSaving": "ინახება…",
+  "dev.msgSaved": "შენახულია – აქ უკვე ასეა, საიტზე ~1 წუთში.",
+  "dev.msgKey": "ჩასვი GitHub-ის გასაღები (github_pat_…):"
 }

@@ -424,5 +424,11 @@
   "upload.live": "novo · online em ~1 min",
   "post.cropHint": "É assim que fica no cartão do post. Clica onde está o importante.",
   "post.cropAuto": "Automático",
-  "gallery.toPost": "Abrir o post →"
+  "gallery.toPost": "Abrir o post →",
+  "dev.msgTitle": "“Escreve-me” funciona…",
+  "dev.msgForm": "escrevendo no site",
+  "dev.msgEmail": "abrindo a app de e-mail",
+  "dev.msgSaving": "A guardar…",
+  "dev.msgSaved": "Guardado – aqui já está assim, online em ~1 min.",
+  "dev.msgKey": "Cola a tua chave do GitHub (github_pat_…):"
 }
