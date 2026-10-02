@@ -92,13 +92,15 @@ the CV back. The choice lives in `sessionStorage` (`andras-view`), read by the h
 ## Messages
 
 "Message me" and every "message me about this place" window are forms on the site (topic, name, contact,
-message). They are sent with **Netlify Forms** (part of the hosting, form name `message`; the static copy
-for detection is `public/__forms.html`, the sending code `src/lib/formHandler.ts`). If sending fails, the
-visitor's e-mail app opens with the message already written (`src/lib/mail.ts`).
+message), sent by `src/lib/formHandler.ts`:
 
-To get every message by e-mail: Netlify → Project configuration → Notifications → Emails and webhooks →
-Form submission notifications → Add notification → Email notification → form `message`, the address in
-`src/data/site.json`. Messages can also be read under **Forms → message**.
+1. **Formspree** (`FORMSPREE_ENDPOINT`, https://formspree.io/f/mbglvnoe) e-mails each message
+   (Free plan: about 50 a month). Subject, reply address and honeypot are filled in automatically.
+2. If Formspree fails (monthly limit, outage): **Netlify Forms** (form `message`, static copy in
+   `public/__forms.html`).
+3. If both fail: the visitor's e-mail app opens with the message already written (`src/lib/mail.ts`).
+
+The "Message me works by…" switch in developer mode can turn the forms into e-mail buttons instead.
 
 ## Notes
 
