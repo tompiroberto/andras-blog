@@ -1,0 +1,392 @@
+---
+/**
+ * Developer mode → "New post": write a post on the site (title, category, language, date, short text,
+ * cover photo, the text with pictures inserted) and publish it – one commit straight to GitHub
+ * (src/content/posts/<slug>.md + pictures in src/assets/posts), Netlify rebuilds in about a minute.
+ * Opened with window.dispatchEvent(new CustomEvent('andras:new-post', { detail: { category? } })).
+ */
+import Icon from './Icon.astro';
+import TokenField from './TokenField.astro';
+import { LOCALES, NATIVE_NAMES, t, type Lang } from '../i18n';
+import { CATEGORIES } from '../lib/constants';
+import { categoryMeta } from '../lib/categories';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<dialog class="ped" data-post-editor data-lang={lang} aria-labelledby="ped-title">
+  <form class="ped__form" novalidate data-ped-form>
+    <div class="ped__head">
+      <h2 id="ped-title"><Icon name="file-plus" size={22} />{t(lang, 'post.new')}</h2>
+      <button type="button" class="ped__x" aria-label={t(lang, 'facts.close')} data-ped-close><Icon name="x" size={20} /></button>
+    </div>
+
+    <label class="ped__field">
+      <span>{t(lang, 'post.title')} *</span>
+      <input name="title" type="text" maxlength="120" required />
+    </label>
+
+    <div class="ped__row">
+      <label class="ped__field">
+        <span>{t(lang, 'post.category')}</span>
+        <select name="category">
+          {CATEGORIES.map((c) => <option value={c}>{t(lang, categoryMeta(c).titleKey)}</option>)}
+        </select>
+      </label>
+      <label class="ped__field">
+        <span>{t(lang, 'post.lang')}</span>
+        <select name="lang">
+          {LOCALES.map((l) => <option value={l} selected={l === lang}>{NATIVE_NAMES[l]}</option>)}
+        </select>
+      </label>
+      <label class="ped__field">
+        <span>{t(lang, 'upload.date')}</span>
+        <input name="date" type="date" />
+      </label>
+    </div>
+
+    <label class="ped__field">
+      <span>{t(lang, 'post.excerpt')} *</span>
+      <input name="excerpt" type="text" maxlength="220" required />
+    </label>
+
+    <div class="ped__cover">
+      <label class="ped__pick">
+        <Icon name="image" size={20} />
+        <span data-ped-cover-label>{t(lang, 'post.cover')}</span>
+        <input type="file" accept="image/*" data-ped-cover />
+      </label>
+      <img class="ped__cover-img" alt="" hidden data-ped-cover-img />
+    </div>
+
+    <div class="ped__field">
+      <span class="ped__label-row">
+        <label for="ped-body">{t(lang, 'post.body')} *</label>
+        <label class="ped__insert">
+          <Icon name="image-plus" size={16} />{t(lang, 'post.insert')}
+          <input type="file" accept="image/*" multiple data-ped-insert />
+        </label>
+      </span>
+      <textarea id="ped-body" name="body" rows="12" required placeholder={t(lang, 'post.bodyHint')} data-ped-body></textarea>
+      <ul class="ped__thumbs" data-ped-thumbs></ul>
+    </div>
+
+    <TokenField lang={lang} />
+
+    <p class="ped__status" role="status" aria-live="polite" data-ped-status></p>
+    <button type="submit" class="btn btn--primary" data-ped-send>
+      <Icon name="send" size={18} />
+      <span data-ped-send-label>{t(lang, 'post.publish')}</span>
+    </button>
+  </form>
+  <template data-ped-text-publish>{t(lang, 'post.publish')}</template>
+  <template data-ped-text-publishing>{t(lang, 'post.publishing')}</template>
+  <template data-ped-text-done>{t(lang, 'post.done')}</template>
+  <template data-ped-text-open>{t(lang, 'post.open')}</template>
+  <template data-ped-text-required>{t(lang, 'post.required')}</template>
+  <template data-ped-text-needtoken>{t(lang, 'upload.needToken')}</template>
+  <template data-ped-text-error>{t(lang, 'upload.error')}</template>
+  <template data-ped-text-badimage>{t(lang, 'upload.badImage')}</template>
+</dialog>
+
+<style>
+  .ped {
+    width: min(760px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+    padding: 0;
+    border: var(--border);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 6px 6px 0 #39d353;
+    zoom: var(--inv-zoom, 1);
+  }
+  .ped::backdrop {
+    background: color-mix(in srgb, var(--ink) 50%, transparent);
+  }
+  .ped__form {
+    display: grid;
+    gap: 14px;
+    padding: 18px 20px 20px;
+  }
+  .ped__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .ped__head h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 22px;
+  }
+  .ped__x {
+    display: grid;
+    place-items: center;
+    width: var(--touch);
+    height: var(--touch);
+    border: var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+  }
+  .ped__row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .ped__field {
+    display: grid;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .ped__field input,
+  .ped__field select,
+  .ped__field textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 400;
+    font-size: 15px;
+  }
+  .ped__field textarea {
+    resize: vertical;
+    line-height: 1.5;
+  }
+  .ped__field [aria-invalid='true'] {
+    border-color: #c0142b;
+    box-shadow: 0 0 0 2px #c0142b;
+  }
+  .ped__label-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .ped__insert,
+  .ped__pick {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--violet-tint);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .ped__insert input,
+  .ped__pick input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .ped__insert:focus-within,
+  .ped__pick:focus-within {
+    outline: 3px solid var(--violet);
+    outline-offset: 2px;
+  }
+  .ped__cover {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .ped__cover-img {
+    width: 120px;
+    height: 72px;
+    object-fit: cover;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+  }
+  .ped__cover-img[hidden] {
+    display: none;
+  }
+  .ped__thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ped__thumbs img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+  }
+  .ped__status {
+    margin: 0;
+    font-weight: 700;
+    min-height: 1.2em;
+  }
+  .ped__status.is-error {
+    color: #c62828;
+  }
+  .ped__status.is-ok {
+    color: #1f7a3a;
+  }
+  .ped__status a {
+    margin-left: 6px;
+  }
+  @media (max-width: 560px) {
+    .ped__row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  import { commitFiles, fileExists, shrinkToJpeg, slugify, wireTokenField, type NewFile } from '../lib/githubCommit';
+
+  const dialog = document.querySelector<HTMLDialogElement>('[data-post-editor]');
+  if (dialog) {
+    const q = <T extends Element>(sel: string) => dialog.querySelector<T>(sel)!;
+    const text = (n: string) => q<HTMLTemplateElement>(`[data-ped-text-${n}]`).content.textContent ?? '';
+    const form = q<HTMLFormElement>('[data-ped-form]');
+    const field = <T extends HTMLElement>(name: string) => form.elements.namedItem(name) as unknown as T;
+    const body = q<HTMLTextAreaElement>('[data-ped-body]');
+    const coverInput = q<HTMLInputElement>('[data-ped-cover]');
+    const coverImg = q<HTMLImageElement>('[data-ped-cover-img]');
+    const insertInput = q<HTMLInputElement>('[data-ped-insert]');
+    const thumbs = q<HTMLUListElement>('[data-ped-thumbs]');
+    const status = q<HTMLElement>('[data-ped-status]');
+    const send = q<HTMLButtonElement>('[data-ped-send]');
+    const sendLabel = q<HTMLElement>('[data-ped-send-label]');
+    const token = wireTokenField(dialog);
+    let cover: File | null = null;
+    /** pictures put into the text: placeholder name in the markdown → file */
+    let inline = new Map<string, File>();
+
+    const say = (msg: string, kind: '' | 'ok' | 'error' = '') => {
+      status.textContent = msg;
+      status.className = `ped__status${kind ? ` is-${kind}` : ''}`;
+    };
+
+    window.addEventListener('andras:new-post', (e) => {
+      const category = (e as CustomEvent<{ category?: string }>).detail?.category;
+      if (category) field<HTMLSelectElement>('category').value = category;
+      const date = field<HTMLInputElement>('date');
+      if (!date.value) date.value = new Date().toISOString().slice(0, 10);
+      token.refresh();
+      say('');
+      if (!dialog.open) dialog.showModal();
+      field<HTMLInputElement>('title').focus();
+    });
+    q('[data-ped-close]').addEventListener('click', () => dialog.close());
+
+    coverInput.addEventListener('change', () => {
+      cover = coverInput.files?.[0] ?? null;
+      coverImg.hidden = !cover;
+      if (cover) coverImg.src = URL.createObjectURL(cover);
+    });
+
+    // "Insert picture": a placeholder line at the cursor; the real file name is set when publishing
+    insertInput.addEventListener('change', () => {
+      let snippet = '';
+      for (const file of Array.from(insertInput.files ?? [])) {
+        const key = `kep-${inline.size + 1}`;
+        inline.set(key, file);
+        snippet += `\n\n![${file.name.replace(/\.[^.]+$/, '')}](${key})\n\n`;
+        const li = document.createElement('li');
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.alt = key;
+        li.append(img);
+        thumbs.append(li);
+      }
+      const at = body.selectionStart ?? body.value.length;
+      body.value = body.value.slice(0, at) + snippet + body.value.slice(at);
+      body.focus();
+      insertInput.value = '';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = field<HTMLInputElement>('title');
+      const excerpt = field<HTMLInputElement>('excerpt');
+      const missing = [title, excerpt, body].filter((el) => !el.value.trim());
+      [title, excerpt, body].forEach((el) => el.toggleAttribute('aria-invalid', missing.includes(el)));
+      if (missing.length) return say(text('required'), 'error');
+      const key = token.read();
+      if (!key) return say(text('needtoken'), 'error');
+
+      send.disabled = true;
+      sendLabel.textContent = text('publishing');
+      say('');
+      try {
+        const date = field<HTMLInputElement>('date').value || new Date().toISOString().slice(0, 10);
+        const postLang = field<HTMLSelectElement>('lang').value;
+        let slug = slugify(title.value);
+        for (let n = 2; await fileExists(key, `src/content/posts/${slug}.md`); n++) slug = `${slugify(title.value)}-${n}`;
+
+        const files: NewFile[] = [];
+        const shrink = async (file: File) => {
+          try {
+            return await shrinkToJpeg(file, 2000);
+          } catch {
+            throw new Error(`${text('badimage')} (${file.name})`);
+          }
+        };
+        let markdown = body.value.trim();
+        let i = 1;
+        for (const [placeholder, file] of inline) {
+          if (!markdown.includes(`(${placeholder})`)) continue; // the picture was deleted from the text
+          const name = `${slug}-${i++}.jpg`;
+          files.push({ path: `src/assets/posts/${name}`, base64: await shrink(file) });
+          markdown = markdown.replaceAll(`(${placeholder})`, `(../../assets/posts/${name})`);
+        }
+        const front = [
+          '---',
+          `title: ${JSON.stringify(title.value.trim())}`,
+          `date: ${date}`,
+          `category: ${field<HTMLSelectElement>('category').value}`,
+          `lang: ${postLang}`,
+          `excerpt: ${JSON.stringify(excerpt.value.trim())}`,
+        ];
+        if (cover) {
+          files.push({ path: `src/assets/posts/${slug}-cover.jpg`, base64: await shrink(cover) });
+          front.push(`cover: ../../assets/posts/${slug}-cover.jpg`, `coverAlt: ${JSON.stringify(title.value.trim())}`);
+        }
+        front.push('---');
+        files.push({ path: `src/content/posts/${slug}.md`, text: `${front.join('\n')}\n\n${markdown}\n` });
+
+        await commitFiles(key, files, `Post: ${title.value.trim()} (written on the site)`);
+        token.saved();
+        form.reset();
+        field<HTMLSelectElement>('lang').value = dialog.dataset.lang!;
+        cover = null;
+        coverImg.hidden = true;
+        inline = new Map();
+        thumbs.replaceChildren();
+        say(text('done'), 'ok');
+        const link = document.createElement('a');
+        link.href = `/${dialog.dataset.lang}/posts/${slug}/`;
+        link.textContent = text('open');
+        status.append(link);
+      } catch (err) {
+        console.error('[new post]', err);
+        say(text('error').replace('{msg}', err instanceof Error ? err.message : String(err)), 'error');
+      } finally {
+        send.disabled = false;
+        sendLabel.textContent = text('publish');
+      }
+    });
+  }
+</script>

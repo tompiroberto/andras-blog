@@ -50,6 +50,61 @@ export async function commitFiles(token: string, files: NewFile[], message: stri
   await gh(token, `/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: { sha: commit.sha } });
 }
 
+/** true when the path already exists on the branch (a new post must not overwrite an old one) */
+export async function fileExists(token: string, path: string): Promise<boolean> {
+  try {
+    await gh(token, `/contents/${path}?ref=${BRANCH}`);
+    return true;
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('GitHub 404')) return false;
+    throw err;
+  }
+}
+
+export function getToken(): string {
+  try {
+    return localStorage.getItem(TOKEN_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Wires a TokenField inside `root`: shows the key box or the "key saved" line. Returns read() – the saved
+ * key or the typed one – and saved(), to call after a successful commit (keeps the typed key).
+ */
+export function wireTokenField(root: ParentNode): { refresh: () => void; read: () => string; saved: () => void } {
+  const box = root.querySelector<HTMLElement>('[data-token-box]')!;
+  const input = root.querySelector<HTMLInputElement>('[data-token-input]')!;
+  const savedLine = root.querySelector<HTMLElement>('[data-token-saved]')!;
+  const refresh = () => {
+    const has = !!getToken();
+    box.hidden = has;
+    savedLine.hidden = !has;
+  };
+  root.querySelector('[data-token-forget]')!.addEventListener('click', () => {
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch {
+      /* storage unavailable */
+    }
+    refresh();
+  });
+  return {
+    refresh,
+    read: () => getToken() || input.value.trim(),
+    saved: () => {
+      try {
+        if (input.value.trim()) localStorage.setItem(TOKEN_KEY, input.value.trim());
+      } catch {
+        /* storage unavailable: the key is asked again next time */
+      }
+      input.value = '';
+      refresh();
+    },
+  };
+}
+
 /** Phone photos are huge: scale to at most `max` px on the long side and save as JPEG (base64, no prefix). */
 export async function shrinkToJpeg(file: File, max = 2400, quality = 0.85): Promise<string> {
   const bitmap = await createImageBitmap(file);

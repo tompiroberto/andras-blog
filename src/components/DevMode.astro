@@ -1,12 +1,14 @@
 ---
 /**
- * Developer mode: click the header title (the globe or "András") 5 times quickly. A small panel opens
- * with a photo uploader (photos + descriptions, src/components/PhotoUpload.astro) and shortcuts to
- * GitHub's own editor pages: a new post (pre-filled template), images for posts, the posts folder. Saving there ("Commit changes") needs the repository owner's GitHub login – the 5 clicks only
- * reveal the door. Netlify rebuilds the site after every commit.
+ * Developer mode: click the header title (the globe or "András") 5 times quickly. Then a green "+" shows
+ * on every section (photo or post; on Explore cards / category pages the post gets that category), and a
+ * small panel opens. Photos (with descriptions, src/components/PhotoUpload.astro) and posts (with pictures,
+ * src/components/PostEditor.astro) are published from the site straight to GitHub; Netlify rebuilds the
+ * site in about a minute. Publishing needs the owner's GitHub key – the 5 clicks only reveal the door.
  */
 import Icon from './Icon.astro';
 import PhotoUpload from './PhotoUpload.astro';
+import PostEditor from './PostEditor.astro';
 import { t, type Lang } from '../i18n';
 
 interface Props {
@@ -15,19 +17,6 @@ interface Props {
 
 const { lang } = Astro.props;
 const REPO = 'https://github.com/tompiroberto/andras-blog';
-/** {date} is filled in on click */
-const POST_TEMPLATE = `---
-title: 'Cím ide'
-date: {date}
-category: adventures # adventures | erasmus | random
-lang: ${lang} # en | hu | pt | ro | el | ka
-excerpt: 'Egy-két mondat, ami a kártyán látszik.'
----
-
-Ide írd a bejegyzést. Új bekezdés: hagyj ki egy üres sort.
-
-<!-- Kép a szövegbe: töltsd fel a "Kép bejegyzéshez" gombbal, aztán ide írd: ![leírás](../../assets/posts/kepneve.jpg) -->
-`;
 ---
 
 <aside class="dev-panel" hidden data-dev-panel aria-labelledby="dev-title">
@@ -38,14 +27,19 @@ Ide írd a bejegyzést. Új bekezdés: hagyj ki egy üres sort.
   </div>
   <p class="dev-panel__text">{t(lang, 'dev.text')}</p>
   <div class="dev-panel__actions">
-    <a class="dev-panel__btn" href={`${REPO}/new/main/src/content/posts`} target="_blank" rel="noopener" data-dev-new-post data-template={POST_TEMPLATE}><Icon name="file-plus" size={16} />{t(lang, 'dev.newPost')}</a>
+    <button type="button" class="dev-panel__btn" data-dev-new-post><Icon name="file-plus" size={16} />{t(lang, 'dev.newPost')}</button>
     <button type="button" class="dev-panel__btn" data-dev-upload><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</button>
-    <a class="dev-panel__btn" href={`${REPO}/upload/main/src/assets/posts`} target="_blank" rel="noopener"><Icon name="images" size={16} />{t(lang, 'dev.media')}</a>
     <a class="dev-panel__btn" href={`${REPO}/tree/main/src/content/posts`} target="_blank" rel="noopener"><Icon name="layout-dashboard" size={16} />{t(lang, 'dev.admin')}</a>
   </div>
   <p class="dev-panel__note">{t(lang, 'dev.note')}</p>
 </aside>
 <PhotoUpload lang={lang} />
+<PostEditor lang={lang} />
+<div class="dev-add-menu" hidden data-dev-add-menu>
+  <button type="button" data-dev-add-pick="photo"><Icon name="image-plus" size={18} />{t(lang, 'dev.addPhoto')}</button>
+  <button type="button" data-dev-add-pick="post"><Icon name="file-plus" size={18} />{t(lang, 'dev.addPost')}</button>
+</div>
+<template data-dev-addlabel>{t(lang, 'dev.add')}</template>
 <p class="dev-toast" hidden role="status" data-dev-toast></p>
 <template data-dev-on>{t(lang, 'dev.on')}</template>
 <template data-dev-offmsg>{t(lang, 'dev.offMsg')}</template>
@@ -156,6 +150,66 @@ Ide írd a bejegyzést. Új bekezdés: hagyj ki egy üres sort.
   .dev-toast[hidden] {
     display: none;
   }
+  /* the "+" buttons are added by the script, so their styles are global */
+  :global(.dev-plus-host) {
+    position: relative;
+  }
+  :global(.dev-plus) {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border: 2px solid #1b1b24;
+    border-radius: 50%;
+    background: #39d353;
+    color: #0d1117;
+    font: 800 30px/1 ui-monospace, Consolas, monospace;
+    box-shadow: 3px 3px 0 #1b1b24;
+    cursor: pointer;
+    animation: dev-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 150ms;
+  }
+  :global(.dev-plus:hover),
+  :global(.dev-plus:focus-visible) {
+    transform: rotate(90deg) scale(1.08);
+  }
+  .dev-add-menu {
+    position: fixed;
+    z-index: 700;
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+    border: 2px solid #1b1b24;
+    border-radius: 14px;
+    background: #0d1117;
+    box-shadow: 4px 4px 0 #39d353;
+  }
+  .dev-add-menu[hidden] {
+    display: none;
+  }
+  .dev-add-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border: 1px solid #30363d;
+    border-radius: 9px;
+    background: none;
+    color: #d6f5d6;
+    font: 700 14px ui-monospace, Consolas, monospace;
+    text-align: left;
+    cursor: pointer;
+  }
+  .dev-add-menu button:hover,
+  .dev-add-menu button:focus-visible {
+    background: #39d353;
+    color: #0d1117;
+  }
   @keyframes dev-in {
     from {
       opacity: 0;
@@ -180,9 +234,64 @@ Ide írd a bejegyzést. Új bekezdés: hagyj ki egy üres sort.
     window.clearTimeout(toastTimer);
     toastTimer = window.setTimeout(() => (toast.hidden = true), 1600);
   };
+  // "+" on every section (and on the places marked data-dev-add="photo" | "post", with data-dev-category)
+  const menu = document.querySelector<HTMLElement>('[data-dev-add-menu]')!;
+  let menuCategory: string | undefined;
+  const openPhoto = () => window.dispatchEvent(new Event('andras:upload-photos'));
+  const openPost = (category?: string) => window.dispatchEvent(new CustomEvent('andras:new-post', { detail: { category } }));
+  const hideMenu = () => (menu.hidden = true);
+  const addPluses = () => {
+    document.querySelectorAll<HTMLElement>('main .section, [data-dev-add]').forEach((host) => {
+      if (host.querySelector(':scope > .dev-plus')) return;
+      const plus = document.createElement('button');
+      plus.type = 'button';
+      plus.className = 'dev-plus';
+      plus.textContent = '+';
+      plus.title = tpl('addlabel');
+      plus.setAttribute('aria-label', tpl('addlabel'));
+      plus.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const kind = host.dataset.devAdd;
+        if (kind === 'photo') return openPhoto();
+        if (kind === 'post') return openPost(host.dataset.devCategory);
+        menuCategory = host.dataset.devCategory;
+        // the page may be zoomed (html zoom): the menu lives in the same zoomed space
+        const z = Number(getComputedStyle(document.documentElement).zoom) || 1;
+        const r = plus.getBoundingClientRect();
+        menu.hidden = false;
+        menu.style.top = `${r.bottom / z + 8}px`;
+        menu.style.left = `${Math.max(8, r.right / z - menu.offsetWidth)}px`;
+        menu.querySelector('button')!.focus();
+      });
+      host.classList.add('dev-plus-host');
+      host.append(plus);
+    });
+  };
+  const removePluses = () => {
+    document.querySelectorAll('.dev-plus').forEach((b) => b.remove());
+    document.querySelectorAll('.dev-plus-host').forEach((h) => h.classList.remove('dev-plus-host'));
+    hideMenu();
+  };
+  menu.querySelectorAll<HTMLButtonElement>('[data-dev-add-pick]').forEach((b) =>
+    b.addEventListener('click', () => {
+      hideMenu();
+      if (b.dataset.devAddPick === 'photo') openPhoto();
+      else openPost(menuCategory);
+    }),
+  );
+  document.addEventListener('click', (e) => {
+    if (!menu.hidden && !menu.contains(e.target as Node)) hideMenu();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideMenu();
+  });
+
   const setDev = (on: boolean) => {
     html.classList.toggle('dev-mode', on);
     if (panel) panel.hidden = !on;
+    if (on) addPluses();
+    else removePluses();
     try {
       if (on) localStorage.setItem(KEY, '1');
       else localStorage.removeItem(KEY);
@@ -190,14 +299,8 @@ Ide írd a bejegyzést. Új bekezdés: hagyj ki egy üres sort.
       /* storage unavailable */
     }
   };
-  document.querySelector('[data-dev-upload]')?.addEventListener('click', () => window.dispatchEvent(new Event('andras:upload-photos')));
-  // "New post": GitHub's new-file page with the template and today's date already filled in
-  document.querySelector<HTMLAnchorElement>('[data-dev-new-post]')?.addEventListener('click', (e) => {
-    const a = e.currentTarget as HTMLAnchorElement;
-    const date = new Date().toISOString().slice(0, 10);
-    const value = a.dataset.template!.replace('{date}', date);
-    a.href = `${a.href.split('?')[0]}?filename=${date}-uj-bejegyzes.md&value=${encodeURIComponent(value)}`;
-  });
+  document.querySelector('[data-dev-upload]')?.addEventListener('click', openPhoto);
+  document.querySelector('[data-dev-new-post]')?.addEventListener('click', () => openPost());
   try {
     if (localStorage.getItem(KEY) === '1') setDev(true);
   } catch {

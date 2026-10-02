@@ -1,0 +1,88 @@
+---
+/**
+ * The GitHub key box shared by the developer-mode uploaders (photos, posts). The key is asked once and
+ * kept in this browser (src/lib/githubCommit.ts → getToken/saveToken/forgetToken); each dialog's script
+ * wires it with wireTokenField().
+ */
+import Icon from './Icon.astro';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<div class="tok" data-token-box>
+  <label class="tok__field">
+    <span>{t(lang, 'upload.token')}</span>
+    <input type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…" data-token-input />
+  </label>
+  <p class="tok__help">
+    {t(lang, 'upload.tokenHelp')}{' '}
+    <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">{t(lang, 'upload.tokenLink')}</a>
+  </p>
+</div>
+<p class="tok__saved" hidden data-token-saved>
+  <Icon name="key-round" size={16} />{t(lang, 'upload.tokenSaved')}
+  <button type="button" data-token-forget>{t(lang, 'upload.forget')}</button>
+</p>
+
+<style>
+  .tok {
+    display: grid;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 14px;
+    background: #0d1117;
+    color: #d6f5d6;
+  }
+  .tok[hidden] {
+    display: none;
+  }
+  .tok__field {
+    display: grid;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .tok__field input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid #30363d;
+    border-radius: 10px;
+    background: #161b22;
+    color: #d6f5d6;
+    font: inherit;
+    font-size: 15px;
+  }
+  .tok a {
+    color: #39d353;
+    font-weight: 700;
+  }
+  .tok__help {
+    margin: 0;
+    font-size: 13px;
+  }
+  .tok__saved {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin: 0;
+    font-size: 14px;
+  }
+  .tok__saved[hidden] {
+    display: none;
+  }
+  .tok__saved button {
+    padding: 2px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+  }
+</style>

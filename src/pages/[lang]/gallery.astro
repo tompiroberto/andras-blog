@@ -24,7 +24,7 @@ const photos = await Promise.all(
 ---
 
 <BaseLayout lang={lang} title={t(lang, 'gallery.title')}>
-  <section class="section gallery">
+  <section class="section gallery" data-dev-add="photo">
     <div class="container">
       <p class="gallery__back">
         <a href={localePath(lang)}><Icon name="arrow-left" size={18} />{t(lang, 'posts.back')}</a>

@@ -5,6 +5,7 @@
  * in one commit straight to GitHub (src/lib/githubCommit.ts); Netlify rebuilds, and the gallery shows them.
  */
 import Icon from './Icon.astro';
+import TokenField from './TokenField.astro';
 import { t, type Lang } from '../i18n';
 
 interface Props {
@@ -34,20 +35,7 @@ const { lang } = Astro.props;
       <input type="date" name="date" data-upload-date />
     </label>
 
-    <div class="upl__token" data-upload-token-box>
-      <label class="upl__field">
-        <span>{t(lang, 'upload.token')}</span>
-        <input type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…" data-upload-token />
-      </label>
-      <p class="upl__help">
-        {t(lang, 'upload.tokenHelp')}
-        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">{t(lang, 'upload.tokenLink')}</a>
-      </p>
-    </div>
-    <p class="upl__saved" hidden data-upload-token-saved>
-      <Icon name="key-round" size={16} />{t(lang, 'upload.tokenSaved')}
-      <button type="button" data-upload-forget>{t(lang, 'upload.forget')}</button>
-    </p>
+    <TokenField lang={lang} />
 
     <p class="upl__status" role="status" aria-live="polite" data-upload-status></p>
     <button type="submit" class="btn btn--primary" data-upload-send>
@@ -73,6 +61,7 @@ const { lang } = Astro.props;
   <template data-upl-text-needphoto>{t(lang, 'upload.needPhoto')}</template>
   <template data-upl-text-needcaption>{t(lang, 'upload.needCaption')}</template>
   <template data-upl-text-needtoken>{t(lang, 'upload.needToken')}</template>
+  <template data-upl-text-live>{t(lang, 'upload.live')}</template>
   <template data-upl-text-badimage>{t(lang, 'upload.badImage')}</template>
 </dialog>
 
@@ -202,44 +191,6 @@ const { lang } = Astro.props;
   .upl__date {
     max-width: 220px;
   }
-  .upl__token {
-    display: grid;
-    gap: 6px;
-    padding: 12px;
-    border-radius: 14px;
-    background: #0d1117;
-    color: #d6f5d6;
-  }
-  .upl__token[hidden] {
-    display: none;
-  }
-  .upl__token a {
-    color: #39d353;
-    font-weight: 700;
-  }
-  .upl__help {
-    margin: 0;
-    font-size: 13px;
-  }
-  .upl__saved {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 10px;
-    margin: 0;
-    font-size: 14px;
-  }
-  .upl__saved[hidden] {
-    display: none;
-  }
-  .upl__saved button {
-    padding: 2px 10px;
-    border: 2px solid var(--ink);
-    border-radius: 999px;
-    background: var(--surface);
-    font-size: 13px;
-    font-weight: 700;
-  }
   .upl__status {
     margin: 0;
     font-weight: 700;
@@ -263,7 +214,7 @@ const { lang } = Astro.props;
 </style>
 
 <script>
-  import { TOKEN_KEY, commitFiles, shrinkToJpeg, slugify, type NewFile } from '../lib/githubCommit';
+  import { commitFiles, shrinkToJpeg, slugify, wireTokenField, type NewFile } from '../lib/githubCommit';
 
   const dialog = document.querySelector<HTMLDialogElement>('[data-upload]');
   if (dialog) {
@@ -274,25 +225,31 @@ const { lang } = Astro.props;
     const list = q<HTMLUListElement>('[data-upload-list]');
     const rowTpl = q<HTMLTemplateElement>('[data-upl-row]');
     const dateInput = q<HTMLInputElement>('[data-upload-date]');
-    const tokenBox = q<HTMLElement>('[data-upload-token-box]');
-    const tokenInput = q<HTMLInputElement>('[data-upload-token]');
-    const tokenSaved = q<HTMLElement>('[data-upload-token-saved]');
     const status = q<HTMLElement>('[data-upload-status]');
     const send = q<HTMLButtonElement>('[data-upload-send]');
     const sendLabel = q<HTMLElement>('[data-upload-send-label]');
     const picked = new Map<HTMLLIElement, File>();
 
-    const getToken = () => {
-      try {
-        return localStorage.getItem(TOKEN_KEY) ?? '';
-      } catch {
-        return '';
-      }
-    };
-    const showTokenState = () => {
-      const has = !!getToken();
-      tokenBox.hidden = has;
-      tokenSaved.hidden = !has;
+    const token = wireTokenField(dialog);
+
+    /** the new photos show up in the gallery on this page right away (the live site follows in ~1 minute) */
+    const preview = (src: string, caption: string, place: string) => {
+      const grid = document.querySelector('.photos__grid, .gallery__grid');
+      if (!grid) return;
+      const li = document.createElement('li');
+      li.style.cssText = 'margin:0 0 18px;border:3px solid var(--ink);border-radius:var(--radius-card);overflow:hidden;background:var(--surface);box-shadow:5px 5px 0 #39d353;break-inside:avoid;position:relative';
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = caption;
+      img.style.cssText = 'display:block;width:100%;height:auto;max-height:420px;object-fit:cover';
+      const p = document.createElement('p');
+      p.style.cssText = 'margin:0;padding:10px 14px;font-weight:700';
+      p.textContent = place ? `${caption} · ${place}` : caption;
+      const badge = document.createElement('span');
+      badge.textContent = text('live');
+      badge.style.cssText = 'position:absolute;top:8px;left:8px;padding:3px 10px;border-radius:999px;background:#0d1117;color:#39d353;font:700 12px ui-monospace,monospace';
+      li.append(img, p, badge);
+      grid.prepend(li);
     };
     const say = (msg: string, kind: '' | 'ok' | 'error' = '') => {
       status.textContent = msg;
@@ -301,7 +258,7 @@ const { lang } = Astro.props;
 
     const open = () => {
       if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
-      showTokenState();
+      token.refresh();
       say('');
       if (!dialog.open) dialog.showModal();
     };
@@ -325,14 +282,6 @@ const { lang } = Astro.props;
       list.querySelector<HTMLInputElement>('.upl__row:last-child .upl__caption')?.focus();
     });
 
-    q('[data-upload-forget]').addEventListener('click', () => {
-      try {
-        localStorage.removeItem(TOKEN_KEY);
-      } catch {
-        /* storage unavailable */
-      }
-      showTokenState();
-    });
     q('[data-upload-close]').addEventListener('click', () => dialog.close());
 
     form.addEventListener('submit', async (e) => {
@@ -342,8 +291,8 @@ const { lang } = Astro.props;
       const missing = rows.filter((r) => !r.querySelector<HTMLInputElement>('.upl__caption')!.value.trim());
       missing.forEach((r) => r.querySelector('.upl__caption')!.setAttribute('aria-invalid', 'true'));
       if (missing.length) return say(text('needcaption'), 'error');
-      const token = getToken() || tokenInput.value.trim();
-      if (!token) return say(text('needtoken'), 'error');
+      const key = token.read();
+      if (!key) return say(text('needtoken'), 'error');
 
       send.disabled = true;
       sendLabel.textContent = text('sending');
@@ -351,6 +300,7 @@ const { lang } = Astro.props;
       try {
         const date = dateInput.value || new Date().toISOString().slice(0, 10);
         const files: NewFile[] = [];
+        const previews: [string, string, string][] = [];
         for (const row of rows) {
           const caption = row.querySelector<HTMLInputElement>('.upl__caption')!.value.trim();
           const place = row.querySelector<HTMLInputElement>('.upl__place')!.value.trim();
@@ -362,23 +312,19 @@ const { lang } = Astro.props;
             throw new Error(`${text('badimage')} (${picked.get(row)!.name})`);
           }
           files.push({ path: `src/assets/photos/${name}.jpg`, base64 });
+          previews.push([`data:image/jpeg;base64,${base64}`, caption, place]);
           // JSON strings are valid YAML, so quotes and colons in the description cannot break the file
           const yml = [`image: ../../assets/photos/${name}.jpg`, `caption: ${JSON.stringify(caption)}`, place && `place: ${JSON.stringify(place)}`, `date: ${date}`].filter(Boolean).join('\n');
           files.push({ path: `src/content/photos/${name}.yml`, text: `${yml}\n` });
         }
-        await commitFiles(token, files, `Photos: ${rows.length} new (uploaded from the site)`);
-        try {
-          localStorage.setItem(TOKEN_KEY, token);
-        } catch {
-          /* storage unavailable: the key is asked again next time */
-        }
-        tokenInput.value = '';
+        await commitFiles(key, files, `Photos: ${rows.length} new (uploaded from the site)`);
+        token.saved();
+        previews.reverse().forEach(([src, caption, place]) => preview(src, caption, place));
         rows.forEach((r) => {
           URL.revokeObjectURL(r.querySelector<HTMLImageElement>('.upl__thumb')!.src);
           picked.delete(r);
           r.remove();
         });
-        showTokenState();
         say(text('done'), 'ok');
       } catch (err) {
         console.error('[photo upload]', err);

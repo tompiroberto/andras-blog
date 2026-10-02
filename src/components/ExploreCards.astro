@@ -21,7 +21,7 @@ const { lang } = Astro.props;
     <ul class="explore__grid">
       {
         CATEGORY_META.map((c, i) => (
-          <li class:list={['card', 'card--hover', 'explore-card', 'reveal', { 'card--violet': i % 2 === 1 }]}>
+          <li class:list={['card', 'card--hover', 'explore-card', 'reveal', { 'card--violet': i % 2 === 1 }]} data-dev-add="post" data-dev-category={c.slug}>
             <IconCircle icon={c.icon} variant={c.tone} size="lg" />
             <h3>{t(lang, c.titleKey)}</h3>
             <div class="explore-card__small" aria-hidden="true">
