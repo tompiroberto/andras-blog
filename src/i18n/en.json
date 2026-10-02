@@ -560,5 +560,6 @@
   "pub.note": "Saving is free; each Publish uses 15 of the 300 monthly Netlify credits – so publish many changes at once.",
   "pub.busy": "Publishing…",
   "pub.done": "🚀 Published – the site updates in about a minute.",
-  "pub.none": "Nothing new is saved in this browser. Publish anyway? (15 credits)"
+  "pub.none": "Nothing new is saved in this browser. Publish anyway? (15 credits)",
+  "dev.provider": "Messages are delivered by…"
 }

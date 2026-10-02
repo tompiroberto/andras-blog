@@ -560,5 +560,6 @@
   "pub.note": "Salvarea e gratuită; fiecare publicare folosește 15 din cele 300 de credite Netlify lunare – publică multe modificări odată.",
   "pub.busy": "Se publică…",
   "pub.done": "🚀 Publicat – site-ul se actualizează în aproximativ un minut.",
-  "pub.none": "Nu e nimic nou salvat în acest browser. Publici oricum? (15 credite)"
+  "pub.none": "Nu e nimic nou salvat în acest browser. Publici oricum? (15 credite)",
+  "dev.provider": "Mesajele sunt livrate prin…"
 }

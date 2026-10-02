@@ -966,10 +966,10 @@ const planetStart = (i: number) => (i * 137) % 360; // spread the planets around
         .filter((it) => it.r.width > 0 && it.r.height > 0)
         .sort((a, b) => b.fs - a.fs);
       const kept: DOMRect[] = [];
-      const GAP = 10;
+      const GAP = 22;
       const area = map.getBoundingClientRect();
-      const cols = Math.max(3, Math.round(area.width / 170));
-      const rows = Math.max(2, Math.round(area.height / 110));
+      const cols = Math.max(3, Math.round(area.width / 260));
+      const rows = Math.max(2, Math.round(area.height / 170));
       const taken = new Set<string>();
       for (const it of items) {
         const cx = (it.r.left + it.r.width / 2 - area.left) / area.width;

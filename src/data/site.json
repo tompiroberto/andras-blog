@@ -63,5 +63,6 @@
       "key": "lang.georgian",
       "level": "learning"
     }
-  ]
+  ],
+  "formProvider": "formspree"
 }

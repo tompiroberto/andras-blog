@@ -560,5 +560,6 @@
   "pub.note": "Guardar é grátis; cada publicação usa 15 dos 300 créditos mensais do Netlify – publica muitas alterações de uma vez.",
   "pub.busy": "A publicar…",
   "pub.done": "🚀 Publicado – o site atualiza em cerca de um minuto.",
-  "pub.none": "Não há nada novo guardado neste navegador. Publicar mesmo assim? (15 créditos)"
+  "pub.none": "Não há nada novo guardado neste navegador. Publicar mesmo assim? (15 créditos)",
+  "dev.provider": "As mensagens são entregues por…"
 }

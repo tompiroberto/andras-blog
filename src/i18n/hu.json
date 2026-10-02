@@ -560,5 +560,6 @@
   "pub.note": "A mentés ingyenes; minden közzététel a havi 300 Netlify-kreditből 15-öt használ – ezért egyszerre sok változást tegyél közzé.",
   "pub.busy": "Közzététel…",
   "pub.done": "🚀 Közzétéve – kb. egy perc múlva frissül az oldal.",
-  "pub.none": "Ebben a böngészőben nincs új mentett változás. Mégis közzéteszed? (15 kredit)"
+  "pub.none": "Ebben a böngészőben nincs új mentett változás. Mégis közzéteszed? (15 kredit)",
+  "dev.provider": "Az üzeneteket továbbítja…"
 }

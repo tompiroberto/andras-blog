@@ -24,7 +24,7 @@ const TOPICS = [
 ---
 
 <dialog class="place-msg" data-place-msg data-email={site.email} aria-labelledby="place-msg-title">
-  <form class="place-msg__form" novalidate data-place-msg-form data-msg-mode={site.messageMode}>
+  <form class="place-msg__form" novalidate data-place-msg-form data-msg-mode={site.messageMode} data-provider={site.formProvider}>
     <div class="place-msg__head">
       <span class="place-msg__icon" aria-hidden="true"><Icon name="map-pin" size={22} /></span>
       <div>

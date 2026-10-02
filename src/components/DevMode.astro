@@ -55,7 +55,13 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     <button type="button" class="dev-theme__reset" data-theme-reset>{t(lang, 'dev.theme.reset')}</button>
     <p class="dev-msg__status">{t(lang, 'dev.theme.hint')}</p>
   </fieldset>
-  <fieldset class="dev-msg" data-dev-msg data-mode={site.messageMode}>
+  <fieldset class="dev-msg" data-dev-setting="formProvider" data-mode={site.formProvider}>
+    <legend>{t(lang, 'dev.provider')}</legend>
+    <label><input type="radio" name="dev-provider" value="formspree" checked={site.formProvider !== 'netlify'} /> Formspree</label>
+    <label><input type="radio" name="dev-provider" value="netlify" checked={site.formProvider === 'netlify'} /> Netlify Forms</label>
+    <p class="dev-msg__status" role="status" data-dev-msg-status></p>
+  </fieldset>
+  <fieldset class="dev-msg" data-dev-setting="messageMode" data-mode={site.messageMode}>
     <legend>{t(lang, 'dev.msgTitle')}</legend>
     <label><input type="radio" name="dev-msg-mode" value="form" checked={site.messageMode !== 'email'} /> {t(lang, 'dev.msgForm')}</label>
     <label><input type="radio" name="dev-msg-mode" value="email" checked={site.messageMode === 'email'} /> {t(lang, 'dev.msgEmail')}</label>
@@ -851,43 +857,44 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     if (!(e.target as Element).closest('button') && !gateForm.hidden) gateInput.focus();
   });
 
-  // ---- "Message me" setting: write on the site, or open the e-mail app (site.json → messageMode) ----
-  const msgBox = document.querySelector<HTMLFieldSetElement>('[data-dev-msg]');
-  if (msgBox) {
-    const msgStatus = msgBox.querySelector<HTMLElement>('[data-dev-msg-status]')!;
-    const applyHere = (mode: string) => document.querySelectorAll<HTMLElement>('[data-msg-mode]').forEach((f) => (f.dataset.msgMode = mode));
-    msgBox.addEventListener('change', async (e) => {
-      const input = e.target as HTMLInputElement;
-      const mode = input.value;
-      const previous = msgBox.dataset.mode!;
+  // ---- site settings in src/data/site.json, switched from the panel (saved like everything else) ----
+  //   messageMode:  write on the site / open the e-mail app      → data-msg-mode on the forms
+  //   formProvider: Formspree / Netlify Forms (the other is the backup) → data-provider on the forms
+  const SETTING_ATTR: Record<string, string> = { messageMode: 'msgMode', formProvider: 'provider' };
+  document.querySelectorAll<HTMLFieldSetElement>('[data-dev-setting]').forEach((box) => {
+    const setting = box.dataset.devSetting!;
+    const status = box.querySelector<HTMLElement>('[data-dev-msg-status]')!;
+    const applyHere = (value: string) =>
+      document.querySelectorAll<HTMLElement>(`[data-${setting === 'messageMode' ? 'msg-mode' : 'provider'}]`).forEach((f) => (f.dataset[SETTING_ATTR[setting]] = value));
+    box.addEventListener('change', async (e) => {
+      const value = (e.target as HTMLInputElement).value;
+      const previous = box.dataset.mode!;
+      const undo = () => (box.querySelector<HTMLInputElement>(`input[value="${previous}"]`)!.checked = true);
       let key = getToken();
       if (!key) key = (window.prompt(tpl('msgkey')) ?? '').trim();
-      if (!key) {
-        msgBox.querySelector<HTMLInputElement>(`input[value="${previous}"]`)!.checked = true;
-        return;
-      }
-      msgBox.disabled = true;
-      msgStatus.textContent = tpl('msgsaving');
+      if (!key) return undo();
+      box.disabled = true;
+      status.textContent = tpl('msgsaving');
       try {
         const data = JSON.parse(await readFile(key, 'src/data/site.json'));
-        data.messageMode = mode;
-        await commitFiles(key, [{ path: 'src/data/site.json', text: `${JSON.stringify(data, null, 2)}\n` }], `Message me: ${mode === 'email' ? 'open the e-mail app' : 'write on the site'}`);
+        data[setting] = value;
+        await commitFiles(key, [{ path: 'src/data/site.json', text: `${JSON.stringify(data, null, 2)}\n` }], `Setting: ${setting} = ${value}`);
         try {
           localStorage.setItem(TOKEN_KEY, key);
         } catch {
           /* storage unavailable */
         }
-        msgBox.dataset.mode = mode;
-        applyHere(mode);
-        msgStatus.textContent = tpl('msgsaved');
+        box.dataset.mode = value;
+        applyHere(value);
+        status.textContent = tpl('msgsaved');
       } catch (err) {
-        msgBox.querySelector<HTMLInputElement>(`input[value="${previous}"]`)!.checked = true;
-        msgStatus.textContent = tpl('msgerror').replace('{msg}', err instanceof Error ? err.message : String(err));
+        undo();
+        status.textContent = tpl('msgerror').replace('{msg}', err instanceof Error ? err.message : String(err));
       } finally {
-        msgBox.disabled = false;
+        box.disabled = false;
       }
     });
-  }
+  });
 
   // "+" on every section (and on the places marked data-dev-add="photo" | "post", with data-dev-category)
   const menu = document.querySelector<HTMLElement>('[data-dev-add-menu]')!;

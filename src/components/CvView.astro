@@ -4,6 +4,8 @@
  * with a sidebar, printable / savable as PDF. "Go to the blog" (top right) opens the blog; the header's CV
  * switch brings the CV back. Content in src/data/cv.ts.
  */
+import fs from 'node:fs';
+import path from 'node:path';
 import Icon from './Icon.astro';
 import { CV, type CvItem } from '../data/cv';
 import site from '../data/site.json';
@@ -15,6 +17,10 @@ interface Props {
 
 const { lang } = Astro.props;
 const cv = CV[lang];
+/** full name: Hungarian order in Hungarian, given names first everywhere else */
+const fullName = lang === 'hu' ? 'Vásárhelyi András Péter' : 'András Péter Vásárhelyi';
+/** the CV photo is optional: shown when public/images/cv-photo.jpg exists */
+const hasPhoto = fs.existsSync(path.resolve(process.cwd(), 'public/images/cv-photo.jpg'));
 const main: { title: string; items: CvItem[] }[] = [
   { title: cv.h.education, items: cv.education },
   { title: cv.h.erasmus, items: cv.erasmus },
@@ -48,8 +54,9 @@ const main: { title: string; items: CvItem[] }[] = [
 
   <article class="cv-sheet">
     <header class="cv-sheet__head">
-      <div>
-        <h1 class="cv-sheet__name">{site.owner}</h1>
+      {hasPhoto && <img class="cv-sheet__photo" src="/images/cv-photo.jpg" alt={fullName} width="132" height="132" />}
+      <div class="cv-sheet__who">
+        <h1 class="cv-sheet__name">{fullName}</h1>
         <p class="cv-sheet__role">{cv.role}</p>
       </div>
       <p class="cv-sheet__title">{cv.title}</p>
@@ -202,6 +209,19 @@ const main: { title: string; items: CvItem[] }[] = [
     gap: 8px 24px;
     padding: 32px 36px 24px;
     border-bottom: 3px solid var(--violet);
+  }
+  .cv-sheet__photo {
+    flex: none;
+    width: 132px;
+    height: 132px;
+    border: 3px solid var(--violet);
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 4px 4px 0 #1b1b24;
+  }
+  .cv-sheet__who {
+    flex: 1;
+    min-width: 0;
   }
   .cv-sheet__name {
     margin: 0;

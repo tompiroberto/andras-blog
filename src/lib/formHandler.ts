@@ -2,8 +2,10 @@
  * Contact-form transport, kept separate from the UI. Every message form on the site ("Message me" and
  * the "message me about this place" window) sends through submitForm():
  *
- * 1. Formspree (FORMSPREE_ENDPOINT) – e-mails the message; Free plan: about 50 messages a month.
- * 2. If that fails (monthly limit, network…): Netlify Forms, the static copy in public/__forms.html.
+ * 1. The chosen service (site.json → formProvider, switched in developer mode; the form carries it as
+ *    data-provider): Formspree (FORMSPREE_ENDPOINT, Free plan about 50 messages a month) or Netlify Forms
+ *    (the static copy in public/__forms.html).
+ * 2. If that fails (monthly limit, network…): the other one.
  * 3. If both fail, the form itself opens the visitor's e-mail app with the message (src/lib/mail.ts).
  */
 export const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mbglvnoe';
@@ -47,10 +49,11 @@ async function viaNetlify(form: HTMLFormElement): Promise<void> {
 }
 
 export async function submitForm(form: HTMLFormElement): Promise<void> {
+  const [first, second] = form.dataset.provider === 'netlify' ? [viaNetlify, viaFormspree] : [viaFormspree, viaNetlify];
   try {
-    await viaFormspree(form);
+    await first(form);
   } catch (err) {
-    console.warn('[form] Formspree did not take it, trying Netlify Forms', err);
-    await viaNetlify(form);
+    console.warn('[form] the first service did not take it, trying the other one', err);
+    await second(form);
   }
 }
