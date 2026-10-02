@@ -50,14 +50,14 @@ export const CV: Record<Lang, CvText> = {
   en: {
     toggle: 'CV',
     title: 'Curriculum Vitae',
-    role: 'Skyrunning national team athlete · final-year student · future geography student at ELTE',
+    role: 'Final-year student · future geography student at ELTE · skyrunning national team athlete',
     location: 'Budapest, Hungary',
     profile:
-      'Hungarian national team skyrunner and a final-year student at Budapesti Fazekas Mihály Gimnázium on the geography track, going on to study geography at ELTE. Tough and reliable in physically demanding work, an experienced volunteer at international sports events and a participant in two Erasmus+ youth projects. Interested in geography and maps, and in how transport networks and infrastructure work.',
+      'Final-year student at Budapesti Fazekas Mihály Gimnázium on the geography track, going on to study geography at ELTE. Interested in geography and maps, and in how transport networks and infrastructure work. A participant in two Erasmus+ youth projects and a regular volunteer; tough and reliable in physically demanding work. Member of the Hungarian national skyrunning team.',
     h: { profile: 'Profile', education: 'Education', erasmus: 'International projects', work: 'Work experience', volunteering: 'Volunteering', languages: 'Languages', sport: 'Sport', interests: 'Interests', hobbies: 'Hobbies', contact: 'Contact', self: 'How I see myself' },
     education: [
       { when: '2027 –', what: 'Geography', where: 'Eötvös Loránd University (ELTE), Budapest', note: 'Starting after secondary school' },
-      { when: '– 2027', what: 'Secondary school, geography track', where: 'Budapesti Fazekas Mihály Gimnázium' },
+      { when: '– 2027', what: 'Secondary school, geography track', where: 'Budapesti Fazekas Mihály Gimnázium', note: 'Straight-A student' },
     ],
     erasmus: [
       { when: 'Sep 2026', what: 'Erasmus+ project: digitalisation and AI', where: 'Greece', note: '37 participants from 4 countries' },
@@ -68,11 +68,12 @@ export const CV: Record<Lang, CvText> = {
       { what: 'Organising school events', where: 'Budapesti Fazekas Mihály Gimnázium' },
     ],
     volunteering: [
-      { what: 'World Athletics Championships', where: 'Budapest', note: 'Volunteer' },
-      { what: 'Youth and Lifelong Learning Foundation', note: 'Volunteer in youth programmes' },
+      { what: 'World Athletics Ultimate Championship', note: 'Volunteer' },
+      { what: 'DevYou – Developing Youth Foundation (Fejlődő Ifjúságért Alapítvány)', note: 'Volunteer' },
+      { what: 'Tudatos Ifjúságért Alapítvány (Foundation for Conscious Youth)', note: 'Volunteer in youth programmes' },
     ],
     languages: [['Hungarian', 'native'], ['English', 'B2'], ['German', 'A2'], ['Spanish', 'learning'], ['Georgian', 'learning']],
-    sport: ['Hungarian skyrunning national team – Youth World Championships 2026 (Vertical and Sky)', `Personal bests: ${PB}`, 'Split 10k – 2nd overall (34:40)'],
+    sport: [`Personal bests: ${PB}`, 'Split 10k – 2nd overall (34:40)', 'Hungarian skyrunning national team – Youth World Championships 2026 (Vertical and Sky)'],
     interests: ['Geography and maps', 'Transport networks and infrastructure', 'Other cultures and languages', 'Low-budget travel'],
     hobbies: ['Running and racing', 'Long walks and bike rides (70 km on foot, 215 km by bike)', 'GeoGuessr', 'Travelling'],
     self: ['Persistent – I very rarely get tired', 'I see the big picture and pay attention to detail', 'I keep an eye on as many things as I can – and on the people around me', 'Straight-A student at school', 'A fast learner when something interests me', 'I commit to things quickly and wholeheartedly'],
@@ -82,14 +83,14 @@ export const CV: Record<Lang, CvText> = {
   hu: {
     toggle: 'Önéletrajz',
     title: 'Önéletrajz',
-    role: 'Skyrunning-válogatott sportoló · végzős gimnazista · leendő ELTE-s földrajz szakos',
+    role: 'Végzős gimnazista · leendő ELTE-s földrajz szakos · skyrunning-válogatott sportoló',
     location: 'Budapest, Magyarország',
     profile:
-      'Skyrunningban válogatott sportoló, végzős diák a Budapesti Fazekas Mihály Gimnázium földrajz irányán; tanulmányaimat az ELTE földrajz szakán folytatom. Fizikailag megterhelő munkában is kitartó és megbízható vagyok, nemzetközi sporteseményeken önkénteskedtem, és két Erasmus+ ifjúsági projektben vettem részt. Érdekel a földrajz és a térképek világa, valamint az, hogyan működnek a közlekedési hálózatok és az infrastruktúra.',
+      'Végzős diák vagyok a Budapesti Fazekas Mihály Gimnázium földrajz irányán; tanulmányaimat az ELTE földrajz szakán folytatom. Érdekel a földrajz és a térképek világa, valamint az, hogyan működnek a közlekedési hálózatok és az infrastruktúra. Két Erasmus+ ifjúsági projektben vettem részt, rendszeresen önkénteskedem, és fizikailag megterhelő munkában is kitartó és megbízható vagyok. Skyrunningban a magyar válogatott tagja vagyok.',
     h: { profile: 'Bemutatkozás', education: 'Tanulmányok', erasmus: 'Nemzetközi projektek', work: 'Munkatapasztalat', volunteering: 'Önkéntesség', languages: 'Nyelvek', sport: 'Sport', interests: 'Érdeklődés', hobbies: 'Hobbik', contact: 'Elérhetőség', self: 'Ahogy én látom magam' },
     education: [
       { when: '2027 –', what: 'Földrajz', where: 'Eötvös Loránd Tudományegyetem (ELTE), Budapest', note: 'Az érettségi után kezdem' },
-      { when: '– 2027', what: 'Gimnázium, földrajz irány', where: 'Budapesti Fazekas Mihály Gimnázium' },
+      { when: '– 2027', what: 'Gimnázium, földrajz irány', where: 'Budapesti Fazekas Mihály Gimnázium', note: 'Kitűnő tanuló' },
     ],
     erasmus: [
       { when: '2026. szept.', what: 'Erasmus+ projekt: digitalizáció és MI', where: 'Görögország', note: '37 résztvevő 4 országból' },
@@ -100,11 +101,12 @@ export const CV: Record<Lang, CvText> = {
       { what: 'Iskolai rendezvények szervezése', where: 'Budapesti Fazekas Mihály Gimnázium' },
     ],
     volunteering: [
-      { what: 'Atlétikai világbajnokság', where: 'Budapest', note: 'Önkéntes' },
-      { what: 'Youth and Lifelong Learning Foundation (ifjúsági alapítvány)', note: 'Önkéntes ifjúsági programokban' },
+      { what: 'World Athletics Ultimate Championship', note: 'Önkéntes' },
+      { what: 'DevYou (Developing Youth – Fejlődő Ifjúságért Alapítvány)', note: 'Önkéntes' },
+      { what: 'Tudatos Ifjúságért Alapítvány', note: 'Önkéntes ifjúsági programokban' },
     ],
     languages: [['magyar', 'anyanyelv'], ['angol', 'B2'], ['német', 'A2'], ['spanyol', 'tanulom'], ['grúz', 'tanulom']],
-    sport: ['Magyar skyrunning-válogatott – ifjúsági világbajnokság 2026 (vertikál és sky)', `Egyéni csúcsok: ${PB}`, 'Split 10k – abszolút 2. hely (34:40)'],
+    sport: [`Egyéni csúcsok: ${PB}`, 'Split 10k – abszolút 2. hely (34:40)', 'Magyar skyrunning-válogatott – ifjúsági világbajnokság 2026 (vertikál és sky)'],
     interests: ['Földrajz és térképek', 'Közlekedési hálózatok és infrastruktúra', 'Más kultúrák és nyelvek', 'Olcsó utazás'],
     hobbies: ['Futás és versenyzés', 'Hosszú gyaloglások és biciklitúrák (70 km gyalog, 215 km biciklivel)', 'GeoGuessr', 'Utazás'],
     self: ['Kitartó vagyok – csak nagyon ritkán fáradok el', 'Jól átlátom a dolgokat, és figyelek a részletekre', 'Igyekszem minél több mindenre figyelni – a körülöttem lévő emberekre is', 'Az iskolában kitűnő tanuló vagyok', 'Gyorsan tanulok, ha valami érdekel', 'Hamar és teljes szívvel elköteleződöm egy-egy ügy mellett'],
@@ -114,14 +116,14 @@ export const CV: Record<Lang, CvText> = {
   pt: {
     toggle: 'CV',
     title: 'Curriculum Vitae',
-    role: 'Atleta da seleção de skyrunning · finalista do secundário · futuro estudante de Geografia na ELTE',
+    role: 'Finalista do secundário · futuro estudante de Geografia na ELTE · atleta da seleção de skyrunning',
     location: 'Budapeste, Hungria',
     profile:
-      'Atleta da seleção húngara de skyrunning e finalista na Budapesti Fazekas Mihály Gimnázium, na área de Geografia; vou continuar a estudar Geografia na ELTE. Resistente e de confiança em trabalho fisicamente exigente, voluntário com experiência em eventos desportivos internacionais e participante em dois projetos juvenis Erasmus+. Interessa-me a geografia e os mapas, e o funcionamento das redes de transporte e das infraestruturas.',
+      'Finalista na Budapesti Fazekas Mihály Gimnázium, na área de Geografia; vou continuar a estudar Geografia na ELTE. Interessa-me a geografia e os mapas, e o funcionamento das redes de transporte e das infraestruturas. Participei em dois projetos juvenis Erasmus+, faço voluntariado regularmente e sou resistente e de confiança em trabalho fisicamente exigente. Atleta da seleção húngara de skyrunning.',
     h: { profile: 'Perfil', education: 'Formação', erasmus: 'Projetos internacionais', work: 'Experiência profissional', volunteering: 'Voluntariado', languages: 'Línguas', sport: 'Desporto', interests: 'Interesses', hobbies: 'Passatempos', contact: 'Contacto', self: 'Como me vejo' },
     education: [
       { when: '2027 –', what: 'Geografia', where: 'Universidade Eötvös Loránd (ELTE), Budapeste', note: 'Depois do secundário' },
-      { when: '– 2027', what: 'Ensino secundário, área de Geografia', where: 'Budapesti Fazekas Mihály Gimnázium' },
+      { when: '– 2027', what: 'Ensino secundário, área de Geografia', where: 'Budapesti Fazekas Mihály Gimnázium', note: 'Aluno de excelência' },
     ],
     erasmus: [
       { when: 'set. 2026', what: 'Projeto Erasmus+: digitalização e IA', where: 'Grécia', note: '37 participantes de 4 países' },
@@ -132,11 +134,12 @@ export const CV: Record<Lang, CvText> = {
       { what: 'Organização de eventos escolares', where: 'Budapesti Fazekas Mihály Gimnázium' },
     ],
     volunteering: [
-      { what: 'Campeonato do Mundo de Atletismo', where: 'Budapeste', note: 'Voluntário' },
-      { what: 'Youth and Lifelong Learning Foundation', note: 'Voluntário em programas juvenis' },
+      { what: 'World Athletics Ultimate Championship', note: 'Voluntário' },
+      { what: 'DevYou – Developing Youth Foundation (Fejlődő Ifjúságért Alapítvány)', note: 'Voluntário' },
+      { what: 'Tudatos Ifjúságért Alapítvány (Fundação para uma Juventude Consciente)', note: 'Voluntário em programas juvenis' },
     ],
     languages: [['Húngaro', 'nativo'], ['Inglês', 'B2'], ['Alemão', 'A2'], ['Espanhol', 'a aprender'], ['Georgiano', 'a aprender']],
-    sport: ['Seleção húngara de skyrunning – Campeonato do Mundo Jovem 2026 (Vertical e Sky)', `Recordes pessoais: ${PB}`, 'Split 10k – 2.º lugar absoluto (34:40)'],
+    sport: [`Recordes pessoais: ${PB}`, 'Split 10k – 2.º lugar absoluto (34:40)', 'Seleção húngara de skyrunning – Campeonato do Mundo Jovem 2026 (Vertical e Sky)'],
     interests: ['Geografia e mapas', 'Redes de transporte e infraestruturas', 'Outras culturas e línguas', 'Viagens low-cost'],
     hobbies: ['Corrida e provas', 'Longas caminhadas e voltas de bicicleta (70 km a pé, 215 km de bicicleta)', 'GeoGuessr', 'Viajar'],
     self: ['Persistente – raramente me canso', 'Tenho visão de conjunto e atenção ao detalhe', 'Presto atenção a tudo o que posso – e às pessoas à minha volta', 'Aluno de excelência na escola', 'Aprendo depressa quando algo me interessa', 'Comprometo-me depressa e de corpo e alma'],
@@ -146,14 +149,14 @@ export const CV: Record<Lang, CvText> = {
   ro: {
     toggle: 'CV',
     title: 'Curriculum Vitae',
-    role: 'Sportiv în lotul național de skyrunning · elev în anul terminal · viitor student la Geografie, ELTE',
+    role: 'Elev în anul terminal · viitor student la Geografie, ELTE · sportiv în lotul național de skyrunning',
     location: 'Budapesta, Ungaria',
     profile:
-      'Sportiv în lotul național de skyrunning al Ungariei și elev în anul terminal la Budapesti Fazekas Mihály Gimnázium, profil geografie; îmi continui studiile la Geografie la ELTE. Rezistent și de încredere în munca fizică solicitantă, voluntar cu experiență la evenimente sportive internaționale și participant la două proiecte de tineret Erasmus+. Mă interesează geografia și hărțile, precum și felul în care funcționează rețelele de transport și infrastructura.',
+      'Elev în anul terminal la Budapesti Fazekas Mihály Gimnázium, profil geografie; îmi continui studiile la Geografie la ELTE. Mă interesează geografia și hărțile, precum și felul în care funcționează rețelele de transport și infrastructura. Am participat la două proiecte de tineret Erasmus+, fac voluntariat în mod regulat și sunt rezistent și de încredere în munca fizică solicitantă. Sportiv în lotul național de skyrunning al Ungariei.',
     h: { profile: 'Profil', education: 'Educație', erasmus: 'Proiecte internaționale', work: 'Experiență de muncă', volunteering: 'Voluntariat', languages: 'Limbi', sport: 'Sport', interests: 'Interese', hobbies: 'Hobby-uri', contact: 'Contact', self: 'Cum mă văd' },
     education: [
       { when: '2027 –', what: 'Geografie', where: 'Universitatea Eötvös Loránd (ELTE), Budapesta', note: 'După liceu' },
-      { when: '– 2027', what: 'Liceu, profil geografie', where: 'Budapesti Fazekas Mihály Gimnázium' },
+      { when: '– 2027', what: 'Liceu, profil geografie', where: 'Budapesti Fazekas Mihály Gimnázium', note: 'Elev eminent' },
     ],
     erasmus: [
       { when: 'sept. 2026', what: 'Proiect Erasmus+: digitalizare și IA', where: 'Grecia', note: '37 de participanți din 4 țări' },
@@ -164,11 +167,12 @@ export const CV: Record<Lang, CvText> = {
       { what: 'Organizarea evenimentelor școlare', where: 'Budapesti Fazekas Mihály Gimnázium' },
     ],
     volunteering: [
-      { what: 'Campionatul Mondial de Atletism', where: 'Budapesta', note: 'Voluntar' },
-      { what: 'Youth and Lifelong Learning Foundation', note: 'Voluntar în programe pentru tineri' },
+      { what: 'World Athletics Ultimate Championship', note: 'Voluntar' },
+      { what: 'DevYou – Developing Youth Foundation (Fejlődő Ifjúságért Alapítvány)', note: 'Voluntar' },
+      { what: 'Tudatos Ifjúságért Alapítvány (Fundația pentru un Tineret Conștient)', note: 'Voluntar în programe pentru tineri' },
     ],
     languages: [['Maghiară', 'nativă'], ['Engleză', 'B2'], ['Germană', 'A2'], ['Spaniolă', 'în curs de învățare'], ['Georgiană', 'în curs de învățare']],
-    sport: ['Lotul național de skyrunning al Ungariei – Campionatul Mondial de Tineret 2026 (Vertical și Sky)', `Recorduri personale: ${PB}`, 'Split 10k – locul 2 la general (34:40)'],
+    sport: [`Recorduri personale: ${PB}`, 'Split 10k – locul 2 la general (34:40)', 'Lotul național de skyrunning al Ungariei – Campionatul Mondial de Tineret 2026 (Vertical și Sky)'],
     interests: ['Geografie și hărți', 'Rețele de transport și infrastructură', 'Alte culturi și limbi', 'Călătorii low-cost'],
     hobbies: ['Alergare și concursuri', 'Drumeții lungi și ture cu bicicleta (70 km pe jos, 215 km cu bicicleta)', 'GeoGuessr', 'Călătorii'],
     self: ['Perseverent – foarte rar obosesc', 'Am o imagine de ansamblu și atenție la detalii', 'Sunt atent la cât mai multe lucruri – și la oamenii din jurul meu', 'Elev eminent la școală', 'Învăț repede când ceva mă interesează', 'Mă implic repede și din toată inima'],
@@ -178,14 +182,14 @@ export const CV: Record<Lang, CvText> = {
   el: {
     toggle: 'Βιογραφικό',
     title: 'Βιογραφικό σημείωμα',
-    role: 'Αθλητής εθνικής ομάδας skyrunning · μαθητής τελευταίας τάξης · μελλοντικός φοιτητής Γεωγραφίας στο ELTE',
+    role: 'Μαθητής τελευταίας τάξης · μελλοντικός φοιτητής Γεωγραφίας στο ELTE · αθλητής εθνικής ομάδας skyrunning',
     location: 'Βουδαπέστη, Ουγγαρία',
     profile:
-      'Αθλητής της εθνικής ομάδας skyrunning της Ουγγαρίας και μαθητής τελευταίας τάξης στο Budapesti Fazekas Mihály Gimnázium, με κατεύθυνση Γεωγραφία· συνεχίζω σπουδές Γεωγραφίας στο ELTE. Αντέχω και είμαι αξιόπιστος σε σωματικά απαιτητική δουλειά, έχω εμπειρία ως εθελοντής σε διεθνείς αθλητικές διοργανώσεις και συμμετείχα σε δύο προγράμματα νέων Erasmus+. Με ενδιαφέρουν η γεωγραφία και οι χάρτες, καθώς και το πώς λειτουργούν τα δίκτυα μεταφορών και οι υποδομές.',
+      'Μαθητής τελευταίας τάξης στο Budapesti Fazekas Mihály Gimnázium, με κατεύθυνση Γεωγραφία· συνεχίζω σπουδές Γεωγραφίας στο ELTE. Με ενδιαφέρουν η γεωγραφία και οι χάρτες, καθώς και το πώς λειτουργούν τα δίκτυα μεταφορών και οι υποδομές. Συμμετείχα σε δύο προγράμματα νέων Erasmus+, κάνω τακτικά εθελοντισμό και είμαι ανθεκτικός και αξιόπιστος σε σωματικά απαιτητική δουλειά. Αθλητής της εθνικής ομάδας skyrunning της Ουγγαρίας.',
     h: { profile: 'Προφίλ', education: 'Εκπαίδευση', erasmus: 'Διεθνή προγράμματα', work: 'Επαγγελματική εμπειρία', volunteering: 'Εθελοντισμός', languages: 'Γλώσσες', sport: 'Αθλητισμός', interests: 'Ενδιαφέροντα', hobbies: 'Χόμπι', contact: 'Επικοινωνία', self: 'Πώς βλέπω τον εαυτό μου' },
     education: [
       { when: '2027 –', what: 'Γεωγραφία', where: 'Πανεπιστήμιο Eötvös Loránd (ELTE), Βουδαπέστη', note: 'Μετά το λύκειο' },
-      { when: '– 2027', what: 'Λύκειο, κατεύθυνση Γεωγραφίας', where: 'Budapesti Fazekas Mihály Gimnázium' },
+      { when: '– 2027', what: 'Λύκειο, κατεύθυνση Γεωγραφίας', where: 'Budapesti Fazekas Mihály Gimnázium', note: 'Άριστος μαθητής' },
     ],
     erasmus: [
       { when: 'Σεπ. 2026', what: 'Πρόγραμμα Erasmus+: ψηφιοποίηση και ΤΝ', where: 'Ελλάδα', note: '37 συμμετέχοντες από 4 χώρες' },
@@ -196,11 +200,12 @@ export const CV: Record<Lang, CvText> = {
       { what: 'Οργάνωση σχολικών εκδηλώσεων', where: 'Budapesti Fazekas Mihály Gimnázium' },
     ],
     volunteering: [
-      { what: 'Παγκόσμιο Πρωτάθλημα Στίβου', where: 'Βουδαπέστη', note: 'Εθελοντής' },
-      { what: 'Youth and Lifelong Learning Foundation', note: 'Εθελοντής σε προγράμματα νέων' },
+      { what: 'World Athletics Ultimate Championship', note: 'Εθελοντής' },
+      { what: 'DevYou – Developing Youth Foundation (Fejlődő Ifjúságért Alapítvány)', note: 'Εθελοντής' },
+      { what: 'Tudatos Ifjúságért Alapítvány (Ίδρυμα για μια Συνειδητή Νεολαία)', note: 'Εθελοντής σε προγράμματα νέων' },
     ],
     languages: [['Ουγγρικά', 'μητρική'], ['Αγγλικά', 'B2'], ['Γερμανικά', 'A2'], ['Ισπανικά', 'μαθαίνω'], ['Γεωργιανά', 'μαθαίνω']],
-    sport: ['Εθνική ομάδα skyrunning Ουγγαρίας – Παγκόσμιο Πρωτάθλημα Νέων 2026 (Vertical και Sky)', `Ατομικά ρεκόρ: ${PB}`, 'Split 10k – 2η θέση γενικής (34:40)'],
+    sport: [`Ατομικά ρεκόρ: ${PB}`, 'Split 10k – 2η θέση γενικής (34:40)', 'Εθνική ομάδα skyrunning Ουγγαρίας – Παγκόσμιο Πρωτάθλημα Νέων 2026 (Vertical και Sky)'],
     interests: ['Γεωγραφία και χάρτες', 'Δίκτυα μεταφορών και υποδομές', 'Άλλοι πολιτισμοί και γλώσσες', 'Οικονομικά ταξίδια'],
     hobbies: ['Τρέξιμο και αγώνες', 'Μεγάλες πεζοπορίες και ποδηλατάδες (70 km με τα πόδια, 215 km με ποδήλατο)', 'GeoGuessr', 'Ταξίδια'],
     self: ['Επίμονος – πολύ σπάνια κουράζομαι', 'Βλέπω τη συνολική εικόνα και προσέχω τις λεπτομέρειες', 'Προσέχω όσο το δυνατόν περισσότερα – και τους ανθρώπους γύρω μου', 'Άριστος μαθητής στο σχολείο', 'Μαθαίνω γρήγορα όταν κάτι με ενδιαφέρει', 'Δεσμεύομαι γρήγορα και ολόψυχα'],
@@ -210,14 +215,14 @@ export const CV: Record<Lang, CvText> = {
   ka: {
     toggle: 'CV',
     title: 'რეზიუმე',
-    role: 'სკაირანინგის ნაკრების სპორტსმენი · დამამთავრებელი კლასის მოსწავლე · ELTE-ს გეოგრაფიის მომავალი სტუდენტი',
+    role: 'დამამთავრებელი კლასის მოსწავლე · ELTE-ს გეოგრაფიის მომავალი სტუდენტი · სკაირანინგის ნაკრების სპორტსმენი',
     location: 'ბუდაპეშტი, უნგრეთი',
     profile:
-      'უნგრეთის სკაირანინგის ნაკრების სპორტსმენი და ბუდაპეშტის ფაზეკაშ მიჰაის გიმნაზიის დამამთავრებელი კლასის მოსწავლე, გეოგრაფიის მიმართულებით; სწავლას ELTE-ში გეოგრაფიაზე ვაგრძელებ. ფიზიკურად მძიმე სამუშაოშიც გამძლე და სანდო ვარ, მოხალისედ ვმუშაობდი საერთაშორისო სპორტულ ღონისძიებებზე და ორ Erasmus+ ახალგაზრდულ პროექტში მივიღე მონაწილეობა. მაინტერესებს გეოგრაფია და რუკები, ასევე ის, როგორ მუშაობს სატრანსპორტო ქსელები და ინფრასტრუქტურა.',
+      'ბუდაპეშტის ფაზეკაშ მიჰაის გიმნაზიის დამამთავრებელი კლასის მოსწავლე ვარ, გეოგრაფიის მიმართულებით; სწავლას ELTE-ში გეოგრაფიაზე ვაგრძელებ. მაინტერესებს გეოგრაფია და რუკები, ასევე ის, როგორ მუშაობს სატრანსპორტო ქსელები და ინფრასტრუქტურა. ორ Erasmus+ ახალგაზრდულ პროექტში მივიღე მონაწილეობა, რეგულარულად ვარ მოხალისე და ფიზიკურად მძიმე სამუშაოშიც გამძლე და სანდო ვარ. უნგრეთის სკაირანინგის ნაკრების სპორტსმენი ვარ.',
     h: { profile: 'პროფილი', education: 'განათლება', erasmus: 'საერთაშორისო პროექტები', work: 'სამუშაო გამოცდილება', volunteering: 'მოხალისეობა', languages: 'ენები', sport: 'სპორტი', interests: 'ინტერესები', hobbies: 'ჰობი', contact: 'კონტაქტი', self: 'როგორ ვხედავ საკუთარ თავს' },
     education: [
       { when: '2027 –', what: 'გეოგრაფია', where: 'ეოტვოშ ლორანდის უნივერსიტეტი (ELTE), ბუდაპეშტი', note: 'სკოლის დამთავრების შემდეგ' },
-      { when: '– 2027', what: 'საშუალო სკოლა, გეოგრაფიის მიმართულება', where: 'Budapesti Fazekas Mihály Gimnázium' },
+      { when: '– 2027', what: 'საშუალო სკოლა, გეოგრაფიის მიმართულება', where: 'Budapesti Fazekas Mihály Gimnázium', note: 'ფრიადოსანი' },
     ],
     erasmus: [
       { when: '2026 სექტ.', what: 'Erasmus+ პროექტი: ციფრიზაცია და ხელოვნური ინტელექტი', where: 'საბერძნეთი', note: '37 მონაწილე 4 ქვეყნიდან' },
@@ -228,11 +233,12 @@ export const CV: Record<Lang, CvText> = {
       { what: 'სასკოლო ღონისძიებების ორგანიზება', where: 'Budapesti Fazekas Mihály Gimnázium' },
     ],
     volunteering: [
-      { what: 'მსოფლიო ჩემპიონატი მძლეოსნობაში', where: 'ბუდაპეშტი', note: 'მოხალისე' },
-      { what: 'Youth and Lifelong Learning Foundation', note: 'მოხალისე ახალგაზრდულ პროგრამებში' },
+      { what: 'World Athletics Ultimate Championship', note: 'მოხალისე' },
+      { what: 'DevYou – Developing Youth Foundation (Fejlődő Ifjúságért Alapítvány)', note: 'მოხალისე' },
+      { what: 'Tudatos Ifjúságért Alapítvány (ცნობიერი ახალგაზრდობის ფონდი)', note: 'მოხალისე ახალგაზრდულ პროგრამებში' },
     ],
     languages: [['უნგრული', 'მშობლიური'], ['ინგლისური', 'B2'], ['გერმანული', 'A2'], ['ესპანური', 'ვსწავლობ'], ['ქართული', 'ვსწავლობ']],
-    sport: ['უნგრეთის სკაირანინგის ნაკრები – ახალგაზრდული მსოფლიო ჩემპიონატი 2026 (ვერტიკალი და სკაი)', `პირადი რეკორდები: ${PB}`, 'Split 10k – აბსოლუტურ ჩათვლაში მე-2 ადგილი (34:40)'],
+    sport: [`პირადი რეკორდები: ${PB}`, 'Split 10k – აბსოლუტურ ჩათვლაში მე-2 ადგილი (34:40)', 'უნგრეთის სკაირანინგის ნაკრები – ახალგაზრდული მსოფლიო ჩემპიონატი 2026 (ვერტიკალი და სკაი)'],
     interests: ['გეოგრაფია და რუკები', 'სატრანსპორტო ქსელები და ინფრასტრუქტურა', 'სხვა კულტურები და ენები', 'იაფი მოგზაურობა'],
     hobbies: ['სირბილი და შეჯიბრებები', 'გრძელი ლაშქრობები და ველოსიპედით მოგზაურობა (70 კმ ფეხით, 215 კმ ველოსიპედით)', 'GeoGuessr', 'მოგზაურობა'],
     self: ['გამძლე ვარ – ძალიან იშვიათად ვიღლები', 'კარგად ვხედავ მთლიან სურათს და ყურადღებას ვაქცევ დეტალებს', 'ვცდილობ, რაც შეიძლება ბევრ რამეს მივაქციო ყურადღება – ჩემ გარშემო მყოფ ადამიანებსაც', 'სკოლაში ფრიადოსანი ვარ', 'სწრაფად ვსწავლობ, თუ რამე მაინტერესებს', 'სწრაფად და მთელი გულით ვერთვები საქმეში'],
