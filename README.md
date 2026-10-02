@@ -112,8 +112,13 @@ Click the header title (the globe or "András") **5 times quickly**: a small gre
 links to GitHub's own editor pages – no setup, only the repository owner's GitHub login:
 
 - **New post:** a new file in `src/content/posts/` with the template and today's date filled in.
-- **Upload a photo:** upload into `src/assets/photos/`; every image there appears in the **Photos**
-  section, captioned from its file name.
+- **Upload photos (with description):** a window on the site: pick photos, write a description (and
+  place) for each, set the date, press Upload. Photos are shrunk to JPEG and saved to
+  `src/assets/photos/`, descriptions to `src/content/photos/*.yml`, in one commit through the GitHub
+  API. The first time it asks for a GitHub key: github.com/settings/personal-access-tokens/new →
+  Repository access: *Only select repositories* → `andras-blog` → Permissions: *Contents: Read and
+  write* → Generate. The key stays in that browser's localStorage ("Forget key" removes it).
+  Photos appear on the home page (newest 6) and on the gallery page `/[lang]/gallery/`.
 - **Image for a post:** upload into `src/assets/posts/`, then use it in a post as
   `![description](../../assets/posts/name.jpg)` or as `cover: ../../assets/posts/name.jpg`.
 - **Edit posts:** the posts folder (open a file, pencil icon).

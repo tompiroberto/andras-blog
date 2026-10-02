@@ -1,0 +1,269 @@
+---
+/**
+ * Gallery: every photo (src/lib/photos.ts), newest first. A click opens a large view with the
+ * description, place and date; arrows / swipe-free buttons step through the photos.
+ */
+import { Image, getImage } from 'astro:assets';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import Icon from '../../components/Icon.astro';
+import { getPhotos } from '../../lib/photos';
+import { HTML_LANG, langStaticPaths, localePath, t, type Lang } from '../../i18n';
+
+export const getStaticPaths = langStaticPaths;
+
+const lang = Astro.params.lang as Lang;
+const fmt = new Intl.DateTimeFormat(HTML_LANG[lang], { year: 'numeric', month: 'long', day: 'numeric' });
+const photos = await Promise.all(
+  (await getPhotos()).map(async (p) => ({
+    ...p,
+    large: (await getImage({ src: p.image, width: Math.min(1800, p.image.width) })).src,
+    when: p.date ? fmt.format(p.date) : '',
+  })),
+);
+---
+
+<BaseLayout lang={lang} title={t(lang, 'gallery.title')}>
+  <section class="section gallery">
+    <div class="container">
+      <p class="gallery__back">
+        <a href={localePath(lang)}><Icon name="arrow-left" size={18} />{t(lang, 'posts.back')}</a>
+      </p>
+      <SectionHeading icon="camera" as="h1">{t(lang, 'gallery.title')}</SectionHeading>
+      <p class="gallery__lead">{t(lang, 'gallery.lead')}</p>
+
+      {photos.length === 0 && <p class="gallery__empty">{t(lang, 'gallery.empty')}</p>}
+
+      <ul class="gallery__grid">
+        {
+          photos.map((p, i) => (
+            <li class="gallery__item">
+              <button type="button" class="gallery__open" data-index={i} data-large={p.large} data-caption={p.caption} data-place={p.place ?? ''} data-when={p.when}>
+                <Image src={p.image} alt={p.caption} widths={[360, 720]} sizes="(max-width: 600px) 100vw, 360px" loading={i < 6 ? 'eager' : 'lazy'} />
+              </button>
+              <p class="gallery__caption">{p.caption}</p>
+              {(p.place || p.when) && (
+                <p class="gallery__meta">
+                  {p.place && (
+                    <span>
+                      <Icon name="map-pin" size={14} />
+                      {p.place}
+                    </span>
+                  )}
+                  {p.when && <span>{p.when}</span>}
+                </p>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <dialog class="lightbox" data-lightbox aria-label={t(lang, 'gallery.title')}>
+    <figure class="lightbox__figure">
+      <img class="lightbox__img" alt="" data-lb-img />
+      <figcaption class="lightbox__text">
+        <strong data-lb-caption></strong>
+        <span class="lightbox__meta" data-lb-meta></span>
+      </figcaption>
+    </figure>
+    <button type="button" class="lightbox__btn lightbox__close" aria-label={t(lang, 'facts.close')} data-lb-close><Icon name="x" size={22} /></button>
+    <button type="button" class="lightbox__btn lightbox__prev" aria-label={t(lang, 'gallery.prev')} data-lb-step="-1"><Icon name="chevron-left" size={26} /></button>
+    <button type="button" class="lightbox__btn lightbox__next" aria-label={t(lang, 'gallery.next')} data-lb-step="1"><Icon name="chevron-right" size={26} /></button>
+  </dialog>
+</BaseLayout>
+
+<style>
+  .gallery__back a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+  }
+  .gallery__lead {
+    max-width: 640px;
+    margin: 0 0 28px;
+    font-size: var(--fs-body);
+  }
+  .gallery__empty {
+    font-weight: 700;
+  }
+  .gallery__grid {
+    columns: 3 300px;
+    column-gap: 18px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .gallery__item {
+    break-inside: avoid;
+    margin: 0 0 18px;
+    border: var(--border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow-yellow);
+  }
+  .gallery__item:nth-child(even) {
+    box-shadow: var(--shadow-violet);
+  }
+  .gallery__open {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+    overflow: hidden;
+  }
+  .gallery__open :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: transform var(--t-med) var(--ease);
+  }
+  .gallery__open:hover :global(img),
+  .gallery__open:focus-visible :global(img) {
+    transform: scale(1.04);
+  }
+  .gallery__caption {
+    margin: 0;
+    padding: 12px 14px 0;
+    font-weight: 700;
+  }
+  .gallery__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin: 4px 0 0;
+    padding: 0 14px;
+    font-size: var(--fs-tiny);
+    color: var(--muted);
+  }
+  .gallery__meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .gallery__item > :last-child {
+    padding-bottom: 12px;
+  }
+
+  .lightbox {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgba(10, 10, 20, 0.94);
+    color: #fff;
+    zoom: var(--inv-zoom, 1);
+  }
+  .lightbox::backdrop {
+    background: transparent;
+  }
+  .lightbox__figure {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    height: 100%;
+    margin: 0;
+    padding: 56px 64px 24px;
+  }
+  .lightbox__img {
+    max-width: 100%;
+    max-height: calc(100vh - 170px);
+    object-fit: contain;
+    border-radius: 8px;
+  }
+  .lightbox__text {
+    display: grid;
+    gap: 4px;
+    max-width: 720px;
+    text-align: center;
+  }
+  .lightbox__text strong {
+    font-size: 18px;
+  }
+  .lightbox__meta {
+    font-size: 14px;
+    opacity: 0.8;
+  }
+  .lightbox__btn {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+  .lightbox__btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
+  .lightbox__close {
+    top: 14px;
+    right: 14px;
+  }
+  .lightbox__prev,
+  .lightbox__next {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .lightbox__prev {
+    left: 10px;
+  }
+  .lightbox__next {
+    right: 10px;
+  }
+  @media (max-width: 600px) {
+    .lightbox__figure {
+      padding: 64px 12px 80px;
+    }
+    .lightbox__prev,
+    .lightbox__next {
+      top: auto;
+      bottom: 16px;
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  const box = document.querySelector<HTMLDialogElement>('[data-lightbox]');
+  const items = Array.from(document.querySelectorAll<HTMLButtonElement>('.gallery__open'));
+  if (box && items.length) {
+    const img = box.querySelector<HTMLImageElement>('[data-lb-img]')!;
+    const caption = box.querySelector<HTMLElement>('[data-lb-caption]')!;
+    const meta = box.querySelector<HTMLElement>('[data-lb-meta]')!;
+    let at = 0;
+
+    const show = (i: number) => {
+      at = (i + items.length) % items.length;
+      const d = items[at].dataset;
+      img.src = d.large!;
+      img.alt = d.caption!;
+      caption.textContent = d.caption!;
+      meta.textContent = [d.place, d.when].filter(Boolean).join(' · ');
+      if (!box.open) box.showModal();
+    };
+
+    items.forEach((b, i) => b.addEventListener('click', () => show(i)));
+    box.querySelectorAll<HTMLButtonElement>('[data-lb-step]').forEach((b) => b.addEventListener('click', () => show(at + Number(b.dataset.lbStep))));
+    box.querySelector('[data-lb-close]')!.addEventListener('click', () => box.close());
+    box.addEventListener('click', (e) => {
+      if (e.target === box || e.target === box.querySelector('.lightbox__figure')) box.close();
+    });
+    box.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') show(at - 1);
+      if (e.key === 'ArrowRight') show(at + 1);
+    });
+  }
+</script>

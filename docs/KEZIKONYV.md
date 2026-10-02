@@ -24,7 +24,7 @@ a **földgömb + nyelvkód** gombbal lehet váltani.
 | **Ikonsor** | Futás, stoppolás, térképek, olcsó utazás, nyelvek, sokat evés. |
 | **Rólam** | Bemutatkozó szöveg, nyelvek, fotó, egyéni csúcsok (3 km 9:29, 5 km 16:20, 10 km 34:40), versenyek. |
 | **Felfedezés** | Három kategória: Kalandok, Erasmus+, Random dolgok. Alatta a **Merre jártam** térkép: a térkép ikonra kattintva töltődik be; vidd az egeret egy ország fölé (telefonon koppints rá). |
-| **Fotók** | A fejlesztői módban feltöltött képek (addig nem látszik, amíg nincs fotó). |
+| **Galéria** | A legújabb 6 fotó, alatta **Az összes fotó** gomb: a galériaoldalon minden kép leírással, helyszínnel, dátummal; kattintásra nagyban, nyilakkal lapozható. |
 | **Jövőbeli tervek** | Öt állomás: stoppolás Chilében, Grúzia, még több stoppolás, Patagónia olcsón, 10 km 33 perc alatt. |
 | **Üzenj** | Üzenetküldő az oldalon: téma (ötlet / csatlakoznék / munka), név, elérhetőség, üzenet. Ha a küldés nem sikerül, megnyílik az e-mail-program a megírt üzenettel. |
 | **Kapcsolat (lábléc)** | E-mail, Strava, Instagram, Facebook, támogatói logók, adatvédelem, **kenyérszámláló**. |
@@ -164,14 +164,25 @@ Ez az oldal nyitóoldala (lásd 0. pont). Letisztult, egyoldalas CV: tanulmányo
 1. Kattints **5-ször gyorsan** a fejlécben az **András** feliratra vagy a földgömbre → „Fejlesztői mód BE”.
 2. Zöld panel jobbra lent – mindegyik gomb a GitHubot nyitja meg (be kell lenned lépve):
    - **Új bejegyzés:** kitöltendő sablon (cím, dátum, kategória, nyelv, rövid leírás, szöveg).
-   - **Fotó feltöltése:** húzd be a képeket; a fájlnévből lesz a képaláírás
-     (pl. `Bali-rizsteraszok.jpg` → „Bali rizsteraszok”).
+   - **Fotók feltöltése (leírással):** ez nem a GitHubot nyitja, hanem egy ablakot az oldalon:
+     képek kiválasztása → mindegyikhez **leírás** (kötelező) és **hely** (nem kötelező) → dátum →
+     **Feltöltés**. Kb. egy perc múlva ott vannak a Galériában.
+     Első alkalommal **GitHub-kulcsot** kér (lásd lent), utána a böngésző megjegyzi.
    - **Kép bejegyzéshez:** kép feltöltése, amit aztán a bejegyzésbe teszel:
      `![leírás](../../assets/posts/kepneve.jpg)`.
    - **Bejegyzések szerkesztése:** a meglévő bejegyzések; nyiss meg egyet, és kattints a ceruzára.
-3. Végül a zöld **Commit changes** gomb (kétszer). Kb. egy perc múlva fent van az oldalon.
+3. A GitHubos gomboknál végül a zöld **Commit changes** gomb (kétszer). Kb. egy perc múlva fent van az oldalon.
 4. Kikapcsolás: újabb 5 kattintás vagy az ✕ a panelen.
 5. Ha utána a gépeden is dolgozol: előbb `git pull`.
+
+**GitHub-kulcs a fotófeltöltéshez (egyszer kell):**
+1. A feltöltő ablakban kattints a **Kulcs létrehozása** linkre (vagy: github.com/settings/personal-access-tokens/new).
+2. *Token name:* pl. `fotofeltoltes`; *Expiration:* pl. 1 év.
+3. *Repository access:* **Only select repositories** → `andras-blog`.
+4. *Permissions → Repository permissions → Contents:* **Read and write**.
+5. **Generate token**, másold ki (`github_pat_…`), és illeszd be a feltöltő ablakba.
+A kulcs csak abban a böngészőben marad; idegen gépen használat után nyomd meg a **Kulcs törlése** gombot.
+Fotó leírását később a GitHubon, a `src/content/photos` mappában lehet átírni (ceruza ikon).
 
 ---
 

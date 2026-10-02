@@ -1,11 +1,12 @@
 ---
 /**
  * Developer mode: click the header title (the globe or "András") 5 times quickly. A small panel opens
- * with shortcuts to GitHub's own editor pages: a new post (pre-filled template), photo upload, the posts
- * folder. Saving there ("Commit changes") needs the repository owner's GitHub login – the 5 clicks only
+ * with a photo uploader (photos + descriptions, src/components/PhotoUpload.astro) and shortcuts to
+ * GitHub's own editor pages: a new post (pre-filled template), images for posts, the posts folder. Saving there ("Commit changes") needs the repository owner's GitHub login – the 5 clicks only
  * reveal the door. Netlify rebuilds the site after every commit.
  */
 import Icon from './Icon.astro';
+import PhotoUpload from './PhotoUpload.astro';
 import { t, type Lang } from '../i18n';
 
 interface Props {
@@ -38,12 +39,13 @@ Ide írd a bejegyzést. Új bekezdés: hagyj ki egy üres sort.
   <p class="dev-panel__text">{t(lang, 'dev.text')}</p>
   <div class="dev-panel__actions">
     <a class="dev-panel__btn" href={`${REPO}/new/main/src/content/posts`} target="_blank" rel="noopener" data-dev-new-post data-template={POST_TEMPLATE}><Icon name="file-plus" size={16} />{t(lang, 'dev.newPost')}</a>
-    <a class="dev-panel__btn" href={`${REPO}/upload/main/src/assets/photos`} target="_blank" rel="noopener"><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</a>
+    <button type="button" class="dev-panel__btn" data-dev-upload><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</button>
     <a class="dev-panel__btn" href={`${REPO}/upload/main/src/assets/posts`} target="_blank" rel="noopener"><Icon name="images" size={16} />{t(lang, 'dev.media')}</a>
     <a class="dev-panel__btn" href={`${REPO}/tree/main/src/content/posts`} target="_blank" rel="noopener"><Icon name="layout-dashboard" size={16} />{t(lang, 'dev.admin')}</a>
   </div>
   <p class="dev-panel__note">{t(lang, 'dev.note')}</p>
 </aside>
+<PhotoUpload lang={lang} />
 <p class="dev-toast" hidden role="status" data-dev-toast></p>
 <template data-dev-on>{t(lang, 'dev.on')}</template>
 <template data-dev-offmsg>{t(lang, 'dev.offMsg')}</template>
@@ -118,6 +120,11 @@ Ide írd a bejegyzést. Új bekezdés: hagyj ki egy üres sort.
     gap: 6px;
   }
   .dev-panel__btn {
+    width: 100%;
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -183,6 +190,7 @@ Ide írd a bejegyzést. Új bekezdés: hagyj ki egy üres sort.
       /* storage unavailable */
     }
   };
+  document.querySelector('[data-dev-upload]')?.addEventListener('click', () => window.dispatchEvent(new Event('andras:upload-photos')));
   // "New post": GitHub's new-file page with the template and today's date already filled in
   document.querySelector<HTMLAnchorElement>('[data-dev-new-post]')?.addEventListener('click', (e) => {
     const a = e.currentTarget as HTMLAnchorElement;
