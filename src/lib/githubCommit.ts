@@ -1,6 +1,10 @@
 /**
  * Developer mode: write files straight into the GitHub repository from the browser, as ONE commit
- * (Git Data API), so Netlify rebuilds once. Needs a fine-grained personal access token with
+ * (Git Data API).
+ *
+ * Saving and publishing are separate, because every Netlify deploy costs credits (Free plan: 300 a
+ * month, 15 per production deploy): saves are committed with "[skip netlify]" (safe on GitHub, no
+ * deploy) and counted; publishSite() then puts everything online with a single deploy. Needs a fine-grained personal access token with
  * "Contents: read and write" on this repository only; it is kept in this browser's localStorage.
  */
 export const REPO = 'tompiroberto/andras-blog';
@@ -32,7 +36,39 @@ async function gh<T>(token: string, path: string, init?: { method?: string; body
   return (await res.json()) as T;
 }
 
+export const PENDING_KEY = 'andras-pending';
+export const PENDING_EVENT = 'andras:pending';
+
+export function pendingCount(): number {
+  try {
+    return Number(localStorage.getItem(PENDING_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+function setPending(n: number) {
+  try {
+    localStorage.setItem(PENDING_KEY, String(n));
+  } catch {
+    /* storage unavailable */
+  }
+  window.dispatchEvent(new CustomEvent(PENDING_EVENT, { detail: n }));
+}
+
+/** Save to GitHub without a deploy (it waits for "Publish"). */
 export async function commitFiles(token: string, files: NewFile[], message: string): Promise<void> {
+  await commitRaw(token, files, `${message} [skip netlify]`);
+  setPending(pendingCount() + 1);
+}
+
+/** One deploy for everything saved so far. */
+export async function publishSite(token: string): Promise<void> {
+  const n = pendingCount();
+  await commitRaw(token, [{ path: 'src/data/published.json', text: `${JSON.stringify({ at: new Date().toISOString() }, null, 2)}\n` }], `Publish the site (${n} saved change${n === 1 ? '' : 's'})`);
+  setPending(0);
+}
+
+async function commitRaw(token: string, files: NewFile[], message: string): Promise<void> {
   const ref = await gh<{ object: { sha: string } }>(token, `/git/ref/heads/${BRANCH}`);
   const parent = ref.object.sha;
   const head = await gh<{ tree: { sha: string } }>(token, `/git/commits/${parent}`);

@@ -81,10 +81,18 @@ function open(button: HTMLElement) {
   const left = Math.max(visLeft + 8, Math.min(visRight - width - 8, centre - width / 2));
   box.style.left = `${left}px`;
   box.style.top = `${(br.bottom - rr.top) / k + 14}px`;
+  // a box opened from the sticky header must not slide under it
+  if (button.closest('.site-header')) box.style.zIndex = '80';
   box.style.setProperty('--arrow-x', `${centre - left}px`);
 
   button.setAttribute('aria-expanded', 'true');
   current = { box, button };
+}
+
+/** (Re)open the box of this button – also when it is already open (e.g. with a new text). */
+export function showInfoBox(button: HTMLElement): void {
+  close(false);
+  open(button);
 }
 
 export function wireInfoBoxes(scope: ParentNode = document): void {

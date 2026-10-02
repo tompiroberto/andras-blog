@@ -31,6 +31,10 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     <button type="button" class="dev-panel__close" aria-label={t(lang, 'dev.off')} title={t(lang, 'dev.off')} data-dev-off><Icon name="x" size={16} /></button>
   </div>
   <p class="dev-panel__text">{t(lang, 'dev.text')}</p>
+  <button type="button" class="dev-publish" data-dev-publish>
+    🚀 <span>{t(lang, 'pub.button')}</span> <b class="dev-publish__n" data-dev-pending>0</b>
+  </button>
+  <p class="dev-publish__note">{t(lang, 'pub.note')}</p>
   <div class="dev-panel__actions">
     <button type="button" class="dev-panel__btn" data-dev-new-post><Icon name="file-plus" size={16} />{t(lang, 'dev.newPost')}</button>
     <button type="button" class="dev-panel__btn" data-dev-upload><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</button>
@@ -73,6 +77,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 <div class="lay-save" hidden data-lay-save>
   <span>{t(lang, 'lay.changed')}</span>
   <button type="button" class="lay-save__ok" data-lay-commit>{t(lang, 'lay.saveNow')}</button>
+  <button type="button" class="lay-save__pub" data-dev-publish>🚀 {t(lang, 'pub.button')} <b data-dev-pending>0</b></button>
   <button type="button" data-ed-undo title="Ctrl+Z">↶</button>
   <button type="button" data-ed-redo title="Ctrl+Y">↷</button>
   <button type="button" data-lay-undo>{t(lang, 'lay.undo')}</button>
@@ -80,6 +85,9 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 </div>
 <template data-dev-laytitles>{JSON.stringify({ up: t(lang, 'lay.up'), down: t(lang, 'lay.down'), hide: t(lang, 'lay.hide'), width: t(lang, 'lay.width'), smaller: t(lang, 'lay.smaller'), bigger: t(lang, 'lay.bigger'), saving: t(lang, 'dev.msgSaving'), saved: t(lang, 'lay.saved'), autosave: t(lang, 'lay.autosave'), needKey: t(lang, 'lay.needKey'), widths: { narrow: t(lang, 'lay.w.narrow'), normal: t(lang, 'lay.w.normal'), wide: t(lang, 'lay.w.wide'), full: t(lang, 'lay.w.full') } })}</template>
 <template data-dev-layhidden>{JSON.stringify(layout.hidden)}</template>
+<template data-dev-pubbusy>{t(lang, 'pub.busy')}</template>
+<template data-dev-pubdone>{t(lang, 'pub.done')}</template>
+<template data-dev-pubnone>{t(lang, 'pub.none')}</template>
 <template data-dev-edon>{t(lang, 'ed.on')}</template>
 <template data-dev-edoff>{t(lang, 'ed.off')}</template>
 <template data-dev-addlabel>{t(lang, 'dev.add')}</template>
@@ -217,6 +225,39 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   .dev-panel {
     max-height: calc(100vh - 32px);
     overflow: auto;
+  }
+  .dev-publish {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 9px 12px;
+    border: 2px solid #39d353;
+    border-radius: 10px;
+    background: #39d353;
+    color: #0d1117;
+    font: 800 14px ui-monospace, Consolas, monospace;
+    cursor: pointer;
+  }
+  .dev-publish:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+  .dev-publish__n,
+  .lay-save__pub b {
+    margin-left: auto;
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #0d1117;
+    color: #39d353;
+    text-align: center;
+  }
+  .dev-publish__note {
+    margin: 4px 0 0;
+    font-size: 11px;
+    color: #9be9a8;
   }
   .dev-panel__post {
     display: grid;
@@ -370,6 +411,12 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     color: #39ff14;
     font: inherit;
     cursor: pointer;
+  }
+  .lay-save .lay-save__pub {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    border-color: #39ff14;
   }
   .lay-save .lay-save__ok {
     background: #39ff14;
@@ -606,9 +653,41 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 </style>
 
 <script>
-  import { TOKEN_KEY, commitFiles, getToken, readFile } from '../lib/githubCommit';
+  import { PENDING_EVENT, TOKEN_KEY, commitFiles, getToken, pendingCount, publishSite, readFile } from '../lib/githubCommit';
 
   const KEY = 'andras-dev-mode';
+
+  // ---- 🚀 Publish: one deploy for everything saved (saves alone cost no Netlify credits) ----
+  const pubButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-dev-publish]'));
+  const showPending = () => document.querySelectorAll<HTMLElement>('[data-dev-pending]').forEach((b) => (b.textContent = String(pendingCount())));
+  window.addEventListener(PENDING_EVENT, showPending);
+  showPending();
+  pubButtons.forEach((btn) =>
+    btn.addEventListener('click', async () => {
+      const t = (n: string) => document.querySelector<HTMLTemplateElement>(`[data-dev-${n}]`)?.content.textContent ?? '';
+      const toast = document.querySelector<HTMLElement>('[data-dev-toast]');
+      const tell = (msg: string) => {
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.hidden = false;
+        window.setTimeout(() => (toast.hidden = true), 3200);
+      };
+      if (!pendingCount() && !window.confirm(t('pubnone'))) return;
+      let key = getToken();
+      if (!key) key = (window.prompt(t('msgkey')) ?? '').trim();
+      if (!key) return;
+      pubButtons.forEach((b) => (b.disabled = true));
+      tell(t('pubbusy'));
+      try {
+        await publishSite(key);
+        tell(t('pubdone'));
+      } catch (err) {
+        tell(t('msgerror').replace('{msg}', err instanceof Error ? err.message : String(err)));
+      } finally {
+        pubButtons.forEach((b) => (b.disabled = false));
+      }
+    }),
+  );
   const CLICKS = 5;
   const WINDOW_MS = 3000;
   const html = document.documentElement;
@@ -874,7 +953,8 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   const layStatus = saveBar.querySelector<HTMLElement>('[data-lay-status]')!;
   const sections = () => Array.from(document.querySelectorAll<HTMLElement>('main > [data-lay]'));
   let layChanged = false;
-  // every change is saved by itself AUTOSAVE_MS after the last one (one commit = one site rebuild)
+  // every change is saved by itself AUTOSAVE_MS after the last one – to GitHub only (no deploy, no credits);
+  // the 🚀 Publish button puts the saved changes online
   const AUTOSAVE_MS = 15000;
   let autoTimer = 0;
   let saving = false;

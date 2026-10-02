@@ -1264,3 +1264,75 @@ select {
   display: none !important;
 }
 
+/* PUM! burst (Header.astro): comic words, confetti and Nutella jars flying out of the motto */
+.pum-burst {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+  zoom: var(--inv-zoom, 1);
+}
+.pum-burst > span {
+  position: absolute;
+  will-change: transform, opacity;
+}
+.pum-burst__word {
+  padding: 4px 10px;
+  border: 2px solid #141a33;
+  border-radius: 14px;
+  background: #ffd60a;
+  color: #141a33;
+  font: 900 20px 'Unbounded', system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 3px 3px 0 #141a33;
+}
+.pum-burst__word:nth-child(3n + 2) {
+  background: #7b2ff7;
+  color: #fff;
+}
+.pum-burst__word:nth-child(3n + 3) {
+  background: #ff4d6d;
+  color: #fff;
+}
+.pum-burst__confetti i {
+  display: block;
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+}
+.pum-burst__jar {
+  font-size: 34px;
+}
+.pum-burst__flash {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, #ffd60a 45%, transparent 70%);
+}
+.pum-burst__ring {
+  width: 80px;
+  height: 80px;
+  border: 6px solid #ffd60a;
+  border-radius: 50%;
+}
+.pum-burst__ring--1 {
+  border-color: #7b2ff7;
+  border-width: 4px;
+}
+.pum-burst__line {
+  width: 70px;
+  height: 6px;
+  border-radius: 3px;
+  background: #141a33;
+  transform-origin: 0 50%;
+}
+.pum-burst__big {
+  font: 900 clamp(90px, 18vw, 260px) / 1 'Unbounded', system-ui, sans-serif;
+  color: #ffd60a;
+  -webkit-text-stroke: 6px #141a33;
+  text-shadow:
+    10px 10px 0 #7b2ff7,
+    20px 20px 0 #ff4d6d;
+  white-space: nowrap;
+}
+

@@ -117,7 +117,7 @@ const citiesToggle = {
     </button>
     </div>
     <!-- the motto, in the free space after the buttons -->
-    <span class="pum" aria-label="PUM! – motto">PUM!</span>
+    <button type="button" class="pum" data-pum data-info-title={t(lang, 'pum.title')} data-ideas={JSON.stringify(t(lang, 'pum.ideas').split('|'))} aria-label={t(lang, 'pum.label')} title={t(lang, 'pum.label')}>PUM!</button>
   </div>
 
   <div class="mobile-menu" id="mobile-menu" hidden data-mobile-menu>
@@ -209,9 +209,33 @@ const citiesToggle = {
     -webkit-text-stroke: 2px var(--ink);
     text-shadow: 4px 4px 0 var(--yellow);
     transform: translateY(-50%) rotate(-8deg);
-    pointer-events: none;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
     user-select: none;
     animation: pum-in 900ms cubic-bezier(0.34, 1.56, 0.64, 1) both 300ms;
+  }
+  .pum:hover {
+    color: var(--yellow);
+    text-shadow: 4px 4px 0 var(--violet);
+  }
+  .pum.is-boom {
+    animation: pum-boom 760ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes pum-boom {
+    15% {
+      transform: translateY(-50%) rotate(-30deg) scale(1.6);
+    }
+    35% {
+      transform: translateY(-50%) rotate(350deg) scale(0.8);
+    }
+    60% {
+      transform: translateY(-50%) rotate(345deg) scale(1.2);
+    }
+    100% {
+      transform: translateY(-50%) rotate(352deg) scale(1);
+    }
   }
   /* mid-size screens: the buttons reach the right edge, so the stamp is smaller and sits in the corner */
   @media (max-width: 1279px) {
@@ -442,4 +466,109 @@ const citiesToggle = {
       if (e.matches && !menu.hidden) setOpen(false);
     });
   }
+</script>
+
+<script>
+  import { showInfoBox } from '../lib/infobox';
+
+  // PUM!: every click bursts (comic words, confetti, Nutella jars) and suggests a random adventure
+  document.querySelectorAll<HTMLButtonElement>('[data-pum]').forEach((pum) => {
+    const ideas: string[] = JSON.parse(pum.dataset.ideas || '[]');
+    const WORDS = ['PUM!', 'BUMM!', 'ZÚM!', 'PUFF!', 'WOW!', 'PUM PUM!'];
+    const COLORS = ['#ffd60a', '#7b2ff7', '#ff4d6d', '#39d353', '#00c2ff', '#ff8a00'];
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let last = -1;
+
+    const burst = () => {
+      if (reduced) return;
+      const r = pum.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const layer = document.createElement('div');
+      layer.className = 'pum-burst';
+      layer.setAttribute('aria-hidden', 'true');
+      document.body.append(layer);
+      const at = (el: HTMLElement, x = cx, y = cy) => {
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        layer.append(el);
+        return el;
+      };
+      const piece = (html: string, cls: string, dist: number, angle: number, spin: number, ms: number, delay = 0) => {
+        const el = document.createElement('span');
+        el.className = cls;
+        el.innerHTML = html;
+        at(el);
+        const dx = Math.cos(angle) * dist;
+        const dy = Math.sin(angle) * dist;
+        el.animate(
+          [
+            { transform: 'translate(-50%, -50%) scale(0.1) rotate(0deg)', opacity: 1 },
+            { transform: `translate(calc(-50% + ${dx * 0.75}px), calc(-50% + ${dy * 0.75}px)) scale(1.25) rotate(${spin * 0.6}deg)`, opacity: 1, offset: 0.55 },
+            { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy + 70}px)) scale(0.9) rotate(${spin}deg)`, opacity: 0 },
+          ],
+          { duration: ms, delay, easing: 'cubic-bezier(0.15, 0.85, 0.3, 1)', fill: 'both' },
+        );
+      };
+      // 1) a flash and two shock-wave rings
+      const flash = at(Object.assign(document.createElement('span'), { className: 'pum-burst__flash' }));
+      flash.animate([{ opacity: 0.9, transform: 'translate(-50%, -50%) scale(0.2)' }, { opacity: 0, transform: 'translate(-50%, -50%) scale(3)' }], { duration: 450, easing: 'ease-out', fill: 'forwards' });
+      [0, 140].forEach((delay, i) => {
+        const ring = at(Object.assign(document.createElement('span'), { className: `pum-burst__ring pum-burst__ring--${i}` }));
+        ring.animate([{ opacity: 1, transform: 'translate(-50%, -50%) scale(0.1)' }, { opacity: 0, transform: 'translate(-50%, -50%) scale(5)' }], { duration: 900, delay, easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)', fill: 'both' });
+      });
+      // 2) comic action lines all around
+      for (let i = 0; i < 16; i++) {
+        const line = at(Object.assign(document.createElement('span'), { className: 'pum-burst__line' }));
+        const a = (i / 16) * 360 + Math.random() * 10;
+        line.animate(
+          [
+            { transform: `translate(-50%, -50%) rotate(${a}deg) translateX(30px) scaleX(0.1)`, opacity: 1 },
+            { transform: `translate(-50%, -50%) rotate(${a}deg) translateX(150px) scaleX(1)`, opacity: 1, offset: 0.5 },
+            { transform: `translate(-50%, -50%) rotate(${a}deg) translateX(240px) scaleX(0.2)`, opacity: 0 },
+          ],
+          { duration: 650, easing: 'ease-out', fill: 'both' },
+        );
+      }
+      // 3) a giant PUM! in the middle of the screen
+      const big = at(Object.assign(document.createElement('span'), { className: 'pum-burst__big', textContent: 'PUM!' }), window.innerWidth / 2, window.innerHeight / 2);
+      big.animate(
+        [
+          { transform: 'translate(-50%, -50%) scale(0.2) rotate(-25deg)', opacity: 0 },
+          { transform: 'translate(-50%, -50%) scale(1.25) rotate(-8deg)', opacity: 1, offset: 0.25 },
+          { transform: 'translate(-50%, -50%) scale(1) rotate(-6deg)', opacity: 1, offset: 0.7 },
+          { transform: 'translate(-50%, -50%) scale(1.6) rotate(-4deg)', opacity: 0 },
+        ],
+        { duration: 1300, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)', fill: 'both' },
+      );
+      // 4) words, confetti and Nutella jars
+      const words = [...WORDS].sort(() => Math.random() - 0.5).slice(0, 5);
+      words.forEach((w, i) => piece(w, 'pum-burst__word', 140 + Math.random() * 90, Math.PI * (0.05 + 0.9 * (i / (words.length - 1))), (Math.random() - 0.5) * 50, 1300, i * 60));
+      for (let i = 0; i < 40; i++) {
+        const c = COLORS[i % COLORS.length];
+        piece(`<i style="background:${c}"></i>`, 'pum-burst__confetti', 90 + Math.random() * 260, Math.random() * Math.PI * 2, (Math.random() - 0.5) * 900, 1000 + Math.random() * 700);
+      }
+      for (let i = 0; i < 4; i++) piece('🫙', 'pum-burst__jar', 140 + Math.random() * 140, Math.PI * (0.1 + Math.random() * 0.8), (Math.random() - 0.5) * 720, 1500, 80 * i);
+      // 5) the page content shakes once (not <body>: a transform there would move the fixed layers)
+      document.querySelector('main')?.animate(
+        [{ transform: 'translate(0, 0)' }, { transform: 'translate(-6px, 3px)' }, { transform: 'translate(5px, -4px)' }, { transform: 'translate(-3px, 2px)' }, { transform: 'translate(0, 0)' }],
+        { duration: 380, easing: 'ease-out' },
+      );
+      setTimeout(() => layer.remove(), 2300);
+    };
+
+    pum.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pum.classList.remove('is-boom');
+      void pum.offsetWidth;
+      pum.classList.add('is-boom');
+      burst();
+      if (!ideas.length) return;
+      let i = Math.floor(Math.random() * ideas.length);
+      if (i === last) i = (i + 1) % ideas.length;
+      last = i;
+      pum.dataset.infoText = ideas[i];
+      showInfoBox(pum);
+    });
+  });
 </script>

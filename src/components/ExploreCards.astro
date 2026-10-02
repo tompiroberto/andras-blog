@@ -48,7 +48,7 @@ const mapText = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
           <IconCircle icon="flag" size="xs" variant="yellow" />
         </div>
         <p>{mapText}</p>
-        <a class="link-arrow explore-card__link" href={localePath(lang, 'map')}>
+        <a class="link-arrow explore-card__link" href={localePath(lang, 'map')} data-open-mapmode>
           {t(lang, 'map.cardLink')}
         </a>
       </li>
@@ -98,3 +98,15 @@ const mapText = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
     }
   }
 </style>
+
+<script>
+  // "Where I've been" opens the world map theme (the globe) – the map page stays as the fallback
+  document.querySelectorAll<HTMLAnchorElement>('[data-open-mapmode]').forEach((a) =>
+    a.addEventListener('click', (e) => {
+      const toggle = document.querySelector<HTMLButtonElement>('[data-html-toggle="map-mode"]');
+      if (!toggle) return;
+      e.preventDefault();
+      if (!document.documentElement.classList.contains('map-mode')) toggle.click();
+    }),
+  );
+</script>
