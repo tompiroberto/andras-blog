@@ -37,6 +37,20 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     <button type="button" class="dev-panel__btn dev-panel__edit" aria-pressed="true" data-dev-edit><Icon name="move" size={16} /><span data-dev-edit-label>{t(lang, 'ed.on')}</span></button>
     <a class="dev-panel__btn" href={`${REPO}/tree/main/src/content/posts`} target="_blank" rel="noopener"><Icon name="layout-dashboard" size={16} />{t(lang, 'dev.admin')}</a>
   </div>
+  <div class="dev-panel__post" hidden data-dev-post>
+    <button type="button" class="dev-panel__btn" data-dev-post-edit><Icon name="file-pen" size={16} />{t(lang, 'dev.postEdit')}</button>
+    <button type="button" class="dev-panel__btn dev-panel__btn--danger" data-dev-post-delete><Icon name="trash-2" size={16} />{t(lang, 'dev.postDelete')}</button>
+  </div>
+  <button type="button" class="dev-panel__btn dev-panel__preview" data-dev-preview><Icon name="eye" size={16} />{t(lang, 'dev.preview')}</button>
+  <fieldset class="dev-msg dev-theme" data-dev-theme>
+    <legend>{t(lang, 'dev.theme')}</legend>
+    <label><input type="color" data-theme-key="violet" /> {t(lang, 'dev.theme.violet')}</label>
+    <label><input type="color" data-theme-key="yellow" /> {t(lang, 'dev.theme.yellow')}</label>
+    <label><input type="color" data-theme-key="bg" /> {t(lang, 'dev.theme.bg')}</label>
+    <label><input type="color" data-theme-key="ink" /> {t(lang, 'dev.theme.ink')}</label>
+    <button type="button" class="dev-theme__reset" data-theme-reset>{t(lang, 'dev.theme.reset')}</button>
+    <p class="dev-msg__status">{t(lang, 'dev.theme.hint')}</p>
+  </fieldset>
   <fieldset class="dev-msg" data-dev-msg data-mode={site.messageMode}>
     <legend>{t(lang, 'dev.msgTitle')}</legend>
     <label><input type="radio" name="dev-msg-mode" value="form" checked={site.messageMode !== 'email'} /> {t(lang, 'dev.msgForm')}</label>
@@ -59,6 +73,8 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 <div class="lay-save" hidden data-lay-save>
   <span>{t(lang, 'lay.changed')}</span>
   <button type="button" class="lay-save__ok" data-lay-commit>{t(lang, 'lay.saveNow')}</button>
+  <button type="button" data-ed-undo title="Ctrl+Z">↶</button>
+  <button type="button" data-ed-redo title="Ctrl+Y">↷</button>
   <button type="button" data-lay-undo>{t(lang, 'lay.undo')}</button>
   <span class="lay-save__status" data-lay-status></span>
 </div>
@@ -81,6 +97,9 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     <button type="button" class="dev-gate__abort" data-dev-gate-abort>[ESC] abort</button>
   </div>
 </div>
+<button type="button" class="dev-preview-exit" hidden data-dev-ui data-dev-preview-exit>◀ {t(lang, 'dev.previewExit')}</button>
+<template data-dev-postconfirm>{t(lang, 'dev.postConfirm')}</template>
+<template data-dev-postdeleted>{t(lang, 'dev.postDeleted')}</template>
 <p class="dev-toast" hidden role="status" data-dev-toast></p>
 <template data-dev-on>{t(lang, 'dev.on')}</template>
 <template data-dev-offmsg>{t(lang, 'dev.offMsg')}</template>
@@ -194,6 +213,65 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   .dev-panel__edit[aria-pressed='true'] {
     border-color: #39d353;
     background: #0f3d17;
+  }
+  .dev-panel {
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+  }
+  .dev-panel__post {
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .dev-panel__post[hidden] {
+    display: none;
+  }
+  .dev-panel__btn--danger {
+    border-color: #6f1f1f !important;
+    color: #ff8080 !important;
+  }
+  .dev-panel__preview {
+    margin-top: 8px;
+  }
+  .dev-theme label {
+    font-size: 12px;
+  }
+  .dev-theme input[type='color'] {
+    width: 34px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid #39d353;
+    background: none;
+  }
+  .dev-theme__reset {
+    justify-self: start;
+    margin-top: 4px;
+    padding: 3px 8px;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    background: none;
+    color: #d6f5d6;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .dev-preview-exit {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 700;
+    padding: 10px 16px;
+    border: 2px solid #1b1b24;
+    border-radius: 999px;
+    background: #0d1117;
+    color: #39d353;
+    font: 700 13px ui-monospace, Consolas, monospace;
+    box-shadow: 4px 4px 0 #39d353;
+    cursor: pointer;
+    zoom: var(--inv-zoom, 1);
+  }
+  .dev-preview-exit[hidden] {
+    display: none;
   }
   .dev-msg {
     display: grid;
@@ -919,6 +997,8 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       if (layChanged) files.push({ path: 'src/data/layout.json', text: `${JSON.stringify(readLayout(), null, 2)}\n` });
       const edits = editsDraft();
       if (edits) files.push({ path: 'src/data/edits.json', text: edits });
+      const pictures = (window as unknown as { __editsFiles?: () => { path: string; base64: string }[] }).__editsFiles?.() ?? [];
+      files.push(...pictures);
       if (!files.length) return void (layStatus.textContent = layTitles.saved);
       await commitFiles(key, files, 'Page edits: changed in developer mode');
       try {
@@ -927,6 +1007,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
         /* storage unavailable */
       }
       layChanged = false;
+      (window as unknown as { __editsSaved?: () => void }).__editsSaved?.();
       layStatus.textContent = layTitles.saved;
     } catch (err) {
       layStatus.textContent = tpl('msgerror').replace('{msg}', err instanceof Error ? err.message : String(err));
@@ -939,6 +1020,66 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     }
   }
   saveBar.querySelector('[data-lay-commit]')!.addEventListener('click', () => void saveNow());
+  saveBar.querySelector('[data-ed-undo]')!.addEventListener('click', () => window.dispatchEvent(new Event('andras:undo')));
+  saveBar.querySelector('[data-ed-redo]')!.addEventListener('click', () => window.dispatchEvent(new Event('andras:redo')));
+
+  // ---- theme colours (saved in src/data/edits.json, shown in the visitor preview) ----
+  const themeBox = document.querySelector<HTMLElement>('[data-dev-theme]');
+  if (themeBox) {
+    const fill = () => {
+      const theme = (window as unknown as { __editsTheme?: () => Record<string, string> }).__editsTheme?.() ?? {};
+      const probe = getComputedStyle(document.documentElement);
+      const defaults: Record<string, string> = { violet: '#7b2ff7', yellow: '#ffd60a', bg: '#f5f7ff', ink: '#141a33' };
+      themeBox.querySelectorAll<HTMLInputElement>('[data-theme-key]').forEach((i) => {
+        i.value = theme[i.dataset.themeKey!] ?? defaults[i.dataset.themeKey!] ?? probe.getPropertyValue(`--${i.dataset.themeKey}`).trim();
+      });
+    };
+    setTimeout(fill);
+    themeBox.querySelectorAll<HTMLInputElement>('[data-theme-key]').forEach((i) =>
+      i.addEventListener('input', () => window.dispatchEvent(new CustomEvent('andras:theme', { detail: { key: i.dataset.themeKey, value: i.value } }))),
+    );
+    themeBox.querySelector('[data-theme-reset]')!.addEventListener('click', () => {
+      for (const k of ['violet', 'yellow', 'bg', 'ink']) window.dispatchEvent(new CustomEvent('andras:theme', { detail: { key: k, value: null } }));
+      fill();
+    });
+  }
+
+  // ---- edit / delete the post on a post page ----
+  const postSlug = location.pathname.match(/^\/[a-z]{2}\/posts\/([^/]+)\/?$/)?.[1];
+  const postBox = document.querySelector<HTMLElement>('[data-dev-post]');
+  if (postSlug && postBox) {
+    postBox.hidden = false;
+    postBox.querySelector('[data-dev-post-edit]')!.addEventListener('click', () => window.dispatchEvent(new CustomEvent('andras:edit-post', { detail: { slug: postSlug } })));
+    postBox.querySelector('[data-dev-post-delete]')!.addEventListener('click', async () => {
+      if (!window.confirm(tpl('postconfirm'))) return;
+      let key = getToken();
+      if (!key) key = (window.prompt(tpl('msgkey')) ?? '').trim();
+      if (!key) return;
+      try {
+        await commitFiles(key, [{ path: `src/content/posts/${postSlug}.md`, delete: true }], `Post deleted on the site: ${postSlug}`);
+        say(tpl('postdeleted'));
+        setTimeout(() => (location.href = `/${location.pathname.split('/')[1]}/`), 1600);
+      } catch (err) {
+        say(tpl('msgerror').replace('{msg}', err instanceof Error ? err.message : String(err)));
+      }
+    });
+  }
+
+  // ---- preview as a visitor: developer look and tools off until "back" ----
+  const previewExit = document.querySelector<HTMLButtonElement>('[data-dev-preview-exit]')!;
+  document.querySelector('[data-dev-preview]')?.addEventListener('click', () => {
+    setDev(false);
+    try {
+      localStorage.setItem(KEY, '1');
+    } catch {
+      /* storage unavailable */
+    }
+    previewExit.hidden = false;
+  });
+  previewExit.addEventListener('click', () => {
+    previewExit.hidden = true;
+    setDev(true);
+  });
 
   // ---- edit mode (select / move / resize / rewrite on the page, src/components/EditMode.astro) ----
   const editBtn = document.querySelector<HTMLButtonElement>('[data-dev-edit]');

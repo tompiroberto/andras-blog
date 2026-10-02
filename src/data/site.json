@@ -20,17 +20,20 @@
     {
       "distance": "3 km",
       "time": "9:29",
-      "ringFill": 0.72
+      "ringFill": 0.72,
+      "id": "3k"
     },
     {
       "distance": "5 km",
       "time": "16:20",
-      "ringFill": 0.8
+      "ringFill": 0.8,
+      "id": "5k"
     },
     {
       "distance": "10 km",
       "time": "34:40",
-      "ringFill": 0.88
+      "ringFill": 0.88,
+      "id": "10k"
     }
   ],
   "raceBadges": [

@@ -38,7 +38,8 @@ function open(button: HTMLElement) {
 
   const head = document.createElement('div');
   head.className = 'infobox__head';
-  const icon = button.querySelector('svg');
+  // data-info-icon picks the icon when the button holds several pictures (e.g. the record rings)
+  const icon = button.querySelector(button.dataset.infoIcon ?? 'svg');
   if (icon) {
     const holder = document.createElement('span');
     holder.className = 'infobox__icon';

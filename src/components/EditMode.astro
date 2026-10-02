@@ -14,6 +14,9 @@ interface Props {
 
 const { lang } = Astro.props;
 const L = {
+  dup: t(lang, 'ed.dup'),
+  img: t(lang, 'ed.img'),
+  noImg: t(lang, 'ed.noImg'),
   style: t(lang, 'ed.style'),
   color: t(lang, 'ed.color'),
   bg: t(lang, 'ed.bg'),
@@ -46,11 +49,14 @@ const L = {
     <button type="button" data-ed-act="h3" title={L.subtitle}>＋H</button>
     <button type="button" data-ed-act="p" title={L.paragraph}>＋¶</button>
     <button type="button" data-ed-act="style" title={L.style}>🎨</button>
+    <button type="button" data-ed-act="dup" title={L.dup}>⧉</button>
+    <button type="button" data-ed-act="img" title={L.img}>🖼</button>
     <button type="button" data-ed-act="hide" title={L.hide}>👁</button>
     <button type="button" data-ed-act="reset" title={L.reset}>↺</button>
     <button type="button" data-ed-act="close" title={L.close}>✕</button>
   </div>
   <span class="ed-size" data-ed-size></span>
+  <input type="file" accept="image/*" class="ed-imgfile" tabindex="-1" aria-hidden="true" data-ed-imgfile />
   <div class="ed-style" hidden data-ed-style>
     <label>{L.color} <input type="color" data-st="color" /></label>
     <label>{L.bg} <input type="color" data-st="bg" /><button type="button" data-st-clear="bg" title={L.none}>∅</button></label>
@@ -175,6 +181,14 @@ const L = {
     background: #39ff14;
     color: #000;
   }
+  /* invisible but not display:none – some browsers refuse to open a hidden file picker */
+  .ed-imgfile {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
   .ed-style {
     position: absolute;
     left: -2px;
@@ -245,19 +259,24 @@ const L = {
 </style>
 
 <script>
-  type Style = { x?: number; y?: number; w?: number; h?: number; hidden?: boolean; color?: string; bg?: string; font?: string; fs?: number; fw?: string; r?: number };
-  type Added = { id: string; after: string[]; tag: 'h3' | 'p'; text: string };
+  import { shrinkToJpeg } from '../lib/githubCommit';
+
+  type Theme = { violet?: string; yellow?: string; bg?: string; ink?: string };
+  type Style = { src?: string; x?: number; y?: number; w?: number; h?: number; hidden?: boolean; color?: string; bg?: string; font?: string; fs?: number; fw?: string; r?: number };
+  type Added = { id: string; after: string[]; tag?: 'h3' | 'p'; text?: string; clone?: string[] };
   interface Edits {
     style: Record<string, Record<string, Style>>;
     text: Record<string, Record<string, string>>;
     add: Record<string, Added[]>;
+    theme?: Theme;
   }
   interface SiteEdits {
     data: Edits;
     resolve: (p: string[]) => HTMLElement | null;
     pathOf: (el: Element) => string[];
     styleEl: (el: HTMLElement, s: Style) => void;
-    added: (a: Added) => HTMLElement;
+    added: (a: Added) => HTMLElement | null;
+    applyTheme: (t: Theme) => void;
     page: string;
     full: string;
   }
@@ -282,10 +301,107 @@ const L = {
 
     const key = (el: Element) => JSON.stringify(api.pathOf(el));
     const styleOf = (el: Element): Style => (draft.style[api.page][key(el)] ??= {});
+    draft.theme ??= {};
+    // ---- undo / redo: snapshots of the draft ----
+    let history = [JSON.stringify(draft)];
+    let pos = 0;
+    let recordTimer = 0;
+    const record = () => {
+      window.clearTimeout(recordTimer);
+      const snap = JSON.stringify(draft);
+      if (snap === history[pos]) return;
+      history = history.slice(0, pos + 1);
+      history.push(snap);
+      if (history.length > 200) history.shift();
+      pos = history.length - 1;
+    };
     const changed = () => {
       dirty = true;
       window.dispatchEvent(new Event('andras:dev-changed'));
+      window.clearTimeout(recordTimer);
+      recordTimer = window.setTimeout(record, 350);
     };
+    /** show a draft on the page: added elements, texts, styles and colours */
+    const show = (prev: Edits, next: Edits) => {
+      document.querySelectorAll('[data-ed-id]').forEach((n) => n.remove());
+      for (const a of next.add[api.full] ?? []) {
+        const ref = api.resolve(a.after);
+        const n = api.added(a);
+        if (ref && n) ref.after(n);
+      }
+      const texts = new Set([...Object.keys(prev.text[api.full] ?? {}), ...Object.keys(next.text[api.full] ?? {})]);
+      for (const k of texts) {
+        const el = api.resolve(JSON.parse(k));
+        if (!el) continue;
+        const t = next.text[api.full]?.[k];
+        if (t !== undefined) {
+          el.dataset.edOrig ??= el.textContent ?? '';
+          el.textContent = t;
+        } else if (el.dataset.edOrig !== undefined) el.textContent = el.dataset.edOrig;
+      }
+      const styles = new Set([...Object.keys(prev.style[api.page] ?? {}), ...Object.keys(next.style[api.page] ?? {})]);
+      for (const k of styles) {
+        const el = api.resolve(JSON.parse(k));
+        if (!el) continue;
+        const st = next.style[api.page]?.[k] ?? {};
+        // a replaced picture not yet on the server is shown from memory
+        api.styleEl(el, st.src && previews.has(st.src) ? { ...st, src: previews.get(st.src) } : st);
+      }
+      api.applyTheme(next.theme ?? {});
+    };
+    const step = (dir: -1 | 1) => {
+      stopText();
+      record();
+      const to = pos + dir;
+      if (to < 0 || to >= history.length) return;
+      const prev: Edits = JSON.parse(history[pos]);
+      const next: Edits = JSON.parse(history[to]);
+      pos = to;
+      draft.style = next.style;
+      draft.text = next.text;
+      draft.add = next.add;
+      draft.theme = next.theme ?? {};
+      draft.style[api.page] ??= {};
+      draft.text[api.full] ??= {};
+      draft.add[api.full] ??= [];
+      show(prev, next);
+      dirty = true;
+      window.dispatchEvent(new Event('andras:dev-changed'));
+      if (sel && !sel.isConnected) deselect();
+      else if (sel) place();
+    };
+    window.addEventListener('andras:undo', () => step(-1));
+    window.addEventListener('andras:redo', () => step(1));
+    document.addEventListener('keydown', (e) => {
+      if (!html.classList.contains('dev-mode') || editing || !(e.ctrlKey || e.metaKey)) return;
+      const t = e.target as HTMLElement;
+      if (t.closest('input, textarea, select, [contenteditable="true"]')) return;
+      const k = e.key.toLowerCase();
+      if (k === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        step(-1);
+      } else if (k === 'y' || (k === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        step(1);
+      }
+    });
+
+    // ---- the site's colours (developer panel → "Theme colours") ----
+    window.addEventListener('andras:theme', (e) => {
+      const { key: k, value } = (e as CustomEvent<{ key: keyof Theme; value: string | null }>).detail;
+      if (value) draft.theme![k] = value;
+      else delete draft.theme![k];
+      api.applyTheme(draft.theme!);
+      changed();
+    });
+    (window as unknown as { __editsTheme?: () => Theme }).__editsTheme = () => draft.theme ?? {};
+
+    // ---- pictures put on the page (replaced images): files to commit with the next save ----
+    const pendingFiles = new Map<string, string>();
+    const previews = new Map<string, string>();
+    (window as unknown as { __editsFiles?: () => { path: string; base64: string }[] }).__editsFiles = () =>
+      [...pendingFiles].map(([path, base64]) => ({ path, base64 }));
+    (window as unknown as { __editsSaved?: () => void }).__editsSaved = () => pendingFiles.clear();
     // DevMode's save bar asks for the file
     (window as unknown as { __editsDraft?: () => string | null }).__editsDraft = () => {
       if (!dirty) return null;
@@ -461,6 +577,23 @@ const L = {
         return;
       }
       if (a === 'text') return startText();
+      if (a === 'dup') {
+        // a copy right after it: a new card, a new plan note … (texts can be rewritten, the copy moved)
+        const item: Added = { id: Date.now().toString(36), after: api.pathOf(sel), clone: api.pathOf(sel) };
+        const n = api.added(item);
+        if (!n) return;
+        draft.add[api.full].push(item);
+        sel.after(n);
+        changed();
+        return select(n);
+      }
+      if (a === 'img') {
+        const img = sel.tagName === 'IMG' ? sel : sel.querySelector<HTMLElement>('img');
+        if (!img) return void (sizeEl.textContent = L.noImg);
+        select(img);
+        imgFile.click();
+        return;
+      }
       if (a === 'style') {
         stylePanel.hidden = !stylePanel.hidden;
         if (!stylePanel.hidden) fillStylePanel();
@@ -492,8 +625,9 @@ const L = {
       }
       if (a === 'h3' || a === 'p') {
         const item: Added = { id: Date.now().toString(36), after: api.pathOf(sel), tag: a, text: a === 'h3' ? L.newSubtitle : L.newParagraph };
-        draft.add[api.full].push(item);
         const n = api.added(item);
+        if (!n) return;
+        draft.add[api.full].push(item);
         sel.after(n);
         changed();
         select(n);
@@ -511,6 +645,38 @@ const L = {
         act(b.dataset.edAct!);
       }),
     );
+
+    // ---- replace a picture: the 🖼 button, or drop a file onto any picture ----
+    const imgFile = frame.querySelector<HTMLInputElement>('[data-ed-imgfile]')!;
+    const replaceImage = async (img: HTMLElement, file: File) => {
+      const base64 = await shrinkToJpeg(file, 2000).catch(() => null);
+      if (!base64) return;
+      const path = `public/uploads/${Date.now().toString(36)}.jpg`;
+      pendingFiles.set(path, base64);
+      const s = styleOf(img);
+      s.src = path.replace(/^public/, '');
+      // until the site is rebuilt the new file only exists here: show it from memory
+      previews.set(s.src, `data:image/jpeg;base64,${base64}`);
+      api.styleEl(img, { ...s, src: previews.get(s.src) });
+      changed();
+      if (sel === img) place();
+    };
+    imgFile.addEventListener('change', () => {
+      const f = imgFile.files?.[0];
+      if (f && sel) void replaceImage(sel, f);
+      imgFile.value = '';
+    });
+    document.addEventListener('dragover', (e) => {
+      if (html.classList.contains('ed-on') && (e.target as Element).closest?.('img')) e.preventDefault();
+    });
+    document.addEventListener('drop', (e) => {
+      const img = (e.target as Element).closest?.('img') as HTMLElement | null;
+      const f = e.dataTransfer?.files?.[0];
+      if (!html.classList.contains('ed-on') || !img || !f || !f.type.startsWith('image/')) return;
+      e.preventDefault();
+      select(img);
+      void replaceImage(img, f);
+    });
 
     // ---- colours, font, size, weight, corners ----
     const toHex = (c: string) => {

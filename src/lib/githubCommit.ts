@@ -7,7 +7,7 @@ export const REPO = 'tompiroberto/andras-blog';
 export const BRANCH = 'main';
 export const TOKEN_KEY = 'andras-gh-token';
 
-export type NewFile = { path: string } & ({ base64: string } | { text: string });
+export type NewFile = { path: string } & ({ base64: string } | { text: string } | { delete: true });
 
 async function gh<T>(token: string, path: string, init?: { method?: string; body?: unknown }): Promise<T> {
   const res = await fetch(`https://api.github.com/repos/${REPO}${path}`, {
@@ -38,7 +38,9 @@ export async function commitFiles(token: string, files: NewFile[], message: stri
   const head = await gh<{ tree: { sha: string } }>(token, `/git/commits/${parent}`);
   const tree = [];
   for (const f of files) {
-    if ('base64' in f) {
+    if ('delete' in f) {
+      tree.push({ path: f.path, mode: '100644', type: 'blob', sha: null });
+    } else if ('base64' in f) {
       const blob = await gh<{ sha: string }>(token, '/git/blobs', { method: 'POST', body: { content: f.base64, encoding: 'base64' } });
       tree.push({ path: f.path, mode: '100644', type: 'blob', sha: blob.sha });
     } else {

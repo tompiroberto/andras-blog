@@ -97,6 +97,9 @@ const { lang } = Astro.props;
       <span data-ped-send-label>{t(lang, 'post.publish')}</span>
     </button>
   </form>
+  <template data-ped-text-loading>{t(lang, 'post.loading')}</template>
+  <template data-ped-text-editing>{t(lang, 'post.editing')}</template>
+  <template data-ped-text-saved>{t(lang, 'post.saved')}</template>
   <template data-ped-text-publish>{t(lang, 'post.publish')}</template>
   <template data-ped-text-publishing>{t(lang, 'post.publishing')}</template>
   <template data-ped-text-done>{t(lang, 'post.done')}</template>
@@ -329,7 +332,8 @@ const { lang } = Astro.props;
 </style>
 
 <script>
-  import { commitFiles, fileExists, shrinkToJpeg, slugify, wireTokenField, type NewFile } from '../lib/githubCommit';
+  import { commitFiles, fileExists, getToken, readFile, shrinkToJpeg, slugify, wireTokenField, type NewFile } from '../lib/githubCommit';
+  import { fieldValue, parsePost, setFields, writePost, type ParsedPost } from '../lib/frontmatter';
 
   const dialog = document.querySelector<HTMLDialogElement>('[data-post-editor]');
   if (dialog) {
@@ -367,7 +371,39 @@ const { lang } = Astro.props;
       status.className = `ped__status${kind ? ` is-${kind}` : ''}`;
     };
 
+    /** set while an existing post is being edited (its file name stays the same) */
+    let editing: { slug: string; post: ParsedPost } | null = null;
+    const heading = q<HTMLElement>('#ped-title');
+    const headingNew = heading.innerHTML;
+
+    window.addEventListener('andras:edit-post', async (e) => {
+      const slug = (e as CustomEvent<{ slug: string }>).detail.slug;
+      let key = getToken();
+      if (!key) key = (window.prompt(text('needtoken')) ?? '').trim();
+      if (!key) return;
+      form.reset();
+      token.refresh();
+      say(text('loading'));
+      if (!dialog.open) dialog.showModal();
+      try {
+        const post = parsePost(await readFile(key, `src/content/posts/${slug}.md`));
+        editing = { slug, post };
+        heading.textContent = text('editing');
+        field<HTMLInputElement>('title').value = fieldValue(post, 'title');
+        field<HTMLInputElement>('excerpt').value = fieldValue(post, 'excerpt');
+        field<HTMLInputElement>('date').value = fieldValue(post, 'date').slice(0, 10);
+        field<HTMLSelectElement>('category').value = fieldValue(post, 'category') || 'random';
+        field<HTMLSelectElement>('lang').value = fieldValue(post, 'lang') || 'en';
+        body.value = post.body.trim();
+        say('');
+      } catch (err) {
+        say(text('error').replace('{msg}', err instanceof Error ? err.message : String(err)), 'error');
+      }
+    });
+
     window.addEventListener('andras:new-post', (e) => {
+      editing = null;
+      heading.innerHTML = headingNew;
       const category = (e as CustomEvent<{ category?: string }>).detail?.category;
       if (category) field<HTMLSelectElement>('category').value = category;
       const date = field<HTMLInputElement>('date');
@@ -422,8 +458,10 @@ const { lang } = Astro.props;
       try {
         const date = field<HTMLInputElement>('date').value || new Date().toISOString().slice(0, 10);
         const postLang = field<HTMLSelectElement>('lang').value;
-        let slug = slugify(title.value);
-        for (let n = 2; await fileExists(key, `src/content/posts/${slug}.md`); n++) slug = `${slugify(title.value)}-${n}`;
+        let slug = editing?.slug ?? slugify(title.value);
+        if (!editing) for (let n = 2; await fileExists(key, `src/content/posts/${slug}.md`); n++) slug = `${slugify(title.value)}-${n}`;
+        // new pictures never overwrite earlier ones of the same post
+        const stamp = Date.now().toString(36);
 
         const files: NewFile[] = [];
         const shrink = async (file: File) => {
@@ -437,9 +475,34 @@ const { lang } = Astro.props;
         let i = 1;
         for (const [placeholder, file] of inline) {
           if (!markdown.includes(`(${placeholder})`)) continue; // the picture was deleted from the text
-          const name = `${slug}-${i++}.jpg`;
+          const name = editing ? `${slug}-${stamp}-${i++}.jpg` : `${slug}-${i++}.jpg`;
           files.push({ path: `src/assets/posts/${name}`, base64: await shrink(file) });
           markdown = markdown.replaceAll(`(${placeholder})`, `(../../assets/posts/${name})`);
+        }
+        if (editing) {
+          const post = editing.post;
+          setFields(post, {
+            title: JSON.stringify(title.value.trim()),
+            date,
+            category: field<HTMLSelectElement>('category').value,
+            lang: postLang,
+            excerpt: JSON.stringify(excerpt.value.trim()),
+          });
+          if (cover) {
+            const coverName = `${slug}-cover-${stamp}.jpg`;
+            files.push({ path: `src/assets/posts/${coverName}`, base64: await shrink(cover) });
+            setFields(post, { cover: `../../assets/posts/${coverName}`, coverAlt: JSON.stringify(title.value.trim()), coverPosition });
+          }
+          post.body = markdown;
+          files.push({ path: `src/content/posts/${slug}.md`, text: writePost(post) });
+          await commitFiles(key, files, `Post edited on the site: ${title.value.trim()}`);
+          token.saved();
+          say(text('saved'), 'ok');
+          cover = null;
+          crop.hidden = true;
+          inline = new Map();
+          thumbs.replaceChildren();
+          return;
         }
         const front = [
           '---',

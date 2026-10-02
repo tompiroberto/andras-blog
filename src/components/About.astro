@@ -73,13 +73,16 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
       <div class="rings">
         {
           site.personalBests.map((pb, i) => (
-            <StatRing
-              distance={pb.distance}
-              time={pb.time}
-              fill={pb.ringFill}
-              label={t(lang, 'stats.pb')}
-              tone={i % 2 ? 'violet' : 'yellow'}
-            />
+            <button
+              type="button"
+              class="ring-btn"
+              data-info-title={`${pb.distance} · ${pb.time}`}
+              data-info-text={t(lang, `pb.${pb.id}.text` as TKey)}
+              data-info-facts={t(lang, `pb.${pb.id}.facts` as TKey)}
+              data-info-icon=".stat-ring__content svg"
+            >
+              <StatRing distance={pb.distance} time={pb.time} fill={pb.ringFill} label={t(lang, 'stats.pb')} tone={i % 2 ? 'violet' : 'yellow'} />
+            </button>
           ))
         }
       </div>
@@ -237,6 +240,24 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
   .badges {
     position: relative;
   }
+  /* the record rings open their story */
+  .ring-btn {
+    display: block;
+    flex: 0 1 250px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: transform var(--t-med) cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .ring-btn:hover,
+  .ring-btn:focus-visible,
+  .ring-btn[aria-expanded='true'] {
+    transform: scale(1.05) rotate(-2deg);
+  }
   /* horizontal page: text and photo side by side, the three record rings in one row (less tall) */
   :global(:root.horizontal) .about__grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
@@ -255,7 +276,8 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
     flex-wrap: nowrap;
   }
   :global(:root.horizontal) .rings > :global(*) {
-    flex: 0 1 auto;
+    /* the rings size themselves to their box (container query), so the box needs a width */
+    flex: 0 1 210px;
   }
   :global(:root.horizontal) .badges {
     grid-column: 1 / -1;
