@@ -561,5 +561,6 @@
   "pub.busy": "Publishing…",
   "pub.done": "🚀 Published – the site updates in about a minute.",
   "pub.none": "Nothing new is saved in this browser. Publish anyway? (15 credits)",
-  "dev.provider": "Messages are delivered by…"
+  "dev.provider": "Messages are delivered by…",
+  "cf.more": "Fun facts and photos"
 }

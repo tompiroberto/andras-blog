@@ -561,5 +561,6 @@
   "pub.busy": "A publicar…",
   "pub.done": "🚀 Publicado – o site atualiza em cerca de um minuto.",
   "pub.none": "Não há nada novo guardado neste navegador. Publicar mesmo assim? (15 créditos)",
-  "dev.provider": "As mensagens são entregues por…"
+  "dev.provider": "As mensagens são entregues por…",
+  "cf.more": "Curiosidades e fotos"
 }

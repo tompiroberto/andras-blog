@@ -9,6 +9,7 @@
 import Icon from './Icon.astro';
 import { RIBBONS, getRibbons } from '../lib/ribbon';
 import { COUNTRY_FACTS } from '../data/country-facts';
+import { COUNTRY_EXTRAS } from '../data/country-extras';
 import { t, type Lang, type TKey } from '../i18n';
 
 interface Props {
@@ -39,6 +40,18 @@ const WIKI: Record<string, string[]> = Object.fromEntries(
     return [r.id, r.shape.kind === 'country' ? [`Tourism in ${title.replace(' (country)', '')}`, `Geography of ${title.replace(' (country)', '')}`, title] : [title]];
   }),
 );
+/** photo searches that need help (ambiguous names, space) */
+const PHOTO_QUERY: Record<string, string> = {
+  georgia: 'Georgia country Caucasus landscape',
+  png: 'Papua New Guinea landscape',
+  usa: 'United States national park landscape',
+  moon: 'Moon surface Apollo',
+  mars: 'Mars surface rover',
+  solar: 'planet Saturn Jupiter NASA',
+  huanghe: 'Yellow River China',
+  superior: 'Lake Superior shore',
+  caspian: 'Caspian Sea coast',
+};
 const pages = Object.fromEntries(
   RIBBONS.map((r) => {
     const cf = COUNTRY_FACTS[r.id];
@@ -70,6 +83,12 @@ const pages = Object.fromEntries(
         right: facts.slice(Math.ceil(facts.length / 2)),
         fun: cf ? (lang === 'hu' ? cf.fun.hu : cf.fun.en) : '',
         wiki: WIKI[r.id],
+        // the bottom strip: fun facts and remarks, and what to search on Wikimedia Commons for photos
+        // (not the one already shown as "Did you know?")
+        extras: (COUNTRY_EXTRAS[r.id] ?? [])
+          .map(([e, en, hu]) => [e, lang === 'hu' ? hu : en])
+          .filter(([, text]) => text !== (cf ? (lang === 'hu' ? cf.fun.hu : cf.fun.en) : '')),
+        photoQuery: PHOTO_QUERY[r.id] ?? (r.shape.kind === 'country' ? `${t('en', r.nameKey).replace(/^The /, '')} landscape` : t('en', r.nameKey).replace(/^The /, '')),
       },
     ];
   }),
@@ -81,6 +100,8 @@ const words = {
   car: t(lang, 'cf.byCar'),
   hitch: t(lang, 'cf.byThumb'),
   fun: t(lang, 'cf.fun'),
+  more: t(lang, 'cf.more'),
+  photoBy: t(lang, 'bg.photo'),
 };
 ---
 
@@ -149,6 +170,7 @@ const words = {
     </div>
     <aside class="ctry-facts" data-ctry-right></aside>
   </div>
+  <section class="ctry-strip" aria-label={t(lang, 'cf.more')} data-ctry-strip></section>
   <script type="application/json" data-ctry-data set:html={JSON.stringify(pages)} />
   <script type="application/json" data-ctry-words set:html={JSON.stringify(words)} />
 </div>
@@ -369,6 +391,74 @@ const words = {
   }
 
   /* ---- body: facts | map | facts ---- */
+  /* bottom strip: fun facts, funny remarks and photos */
+  .ctry-strip {
+    flex: none;
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+    padding: 4px 20px 18px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .ctry-strip[hidden] {
+    display: none;
+  }
+  .ctry-strip :global(.ctry-card) {
+    flex: 0 0 260px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 4px 4px 0 var(--violet);
+    transform: rotate(var(--tilt, 0deg));
+    animation: ctry-card-in 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both var(--d, 0ms);
+  }
+  .ctry-strip :global(.ctry-card--joke) {
+    background: var(--yellow-tint);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .ctry-strip :global(.ctry-card__emoji) {
+    flex: none;
+    font-size: 24px;
+    line-height: 1;
+  }
+  .ctry-strip :global(.ctry-card p) {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .ctry-strip :global(.ctry-shot) {
+    flex: 0 0 auto;
+    display: block;
+    width: 190px;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 4px 4px 0 var(--yellow);
+    animation: ctry-card-in 500ms ease both var(--d, 0ms);
+  }
+  .ctry-strip :global(.ctry-shot img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 110px;
+    max-height: 130px;
+    object-fit: cover;
+    transition: transform 300ms;
+  }
+  .ctry-strip :global(.ctry-shot:hover img) {
+    transform: scale(1.08);
+  }
+  @keyframes ctry-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(24px) rotate(var(--tilt, 0deg)) scale(0.9);
+    }
+  }
   .ctry-body {
     flex: 1;
     min-height: 0;
@@ -695,6 +785,8 @@ const words = {
     right: Fact[];
     fun: string;
     wiki: string[];
+    extras: [string, string][];
+    photoQuery: string;
   };
   type CountryData = {
     roads: { k: number; c: number[][] }[];
@@ -710,7 +802,7 @@ const words = {
 
   function setup(view: HTMLElement) {
     const pages: Record<string, Page> = JSON.parse(view.querySelector('[data-ctry-data]')!.textContent || '{}');
-    const words: { photo: string; travel: string; space: string; car: string; hitch: string; fun: string } = JSON.parse(view.querySelector('[data-ctry-words]')!.textContent || '{}');
+    const words: { photo: string; travel: string; space: string; car: string; hitch: string; fun: string; more: string; photoBy: string } = JSON.parse(view.querySelector('[data-ctry-words]')!.textContent || '{}');
     const lang = view.dataset.lang ?? 'en';
     const html = document.documentElement;
     const canvas = view.querySelector<HTMLElement>('[data-ctry-canvas]')!;
@@ -811,6 +903,7 @@ const words = {
       canvas.replaceChildren();
       labels.replaceChildren();
       addPhoto(page, id);
+      fillStrip(page, id);
       view.hidden = false;
       view.classList.toggle('is-body', page.kind === 'body');
       html.classList.add('country-open');
@@ -921,6 +1014,70 @@ const words = {
           return b;
         }),
       );
+    }
+
+    /** The bottom strip: fun facts / funny remarks as tilted cards, between photos from Wikimedia Commons. */
+    const strip = view.querySelector<HTMLElement>('[data-ctry-strip]')!;
+    const commons = new Map<string, { url: string; page: string; title: string }[]>();
+    async function stripPhotos(q: string) {
+      if (commons.has(q)) return commons.get(q)!;
+      let list: { url: string; page: string; title: string }[] = [];
+      try {
+        const api =
+          'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=24' +
+          `&gsrsearch=${encodeURIComponent(`filetype:bitmap ${q} -painting -drawing -map -flag`)}&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=520`;
+        const d = (await (await fetch(api, { signal: AbortSignal.timeout(9000) })).json()) as {
+          query?: { pages?: Record<string, { title: string; imageinfo?: { thumburl?: string; width: number; height: number; mime: string; descriptionurl: string }[] }> };
+        };
+        list = Object.values(d.query?.pages ?? {})
+          .map((p) => ({ p, i: p.imageinfo?.[0] }))
+          .filter(({ i }) => i && i.thumburl && i.mime === 'image/jpeg' && i.width >= 800 && i.width >= i.height)
+          .slice(0, 4)
+          .map(({ p, i }) => ({ url: i!.thumburl!, page: i!.descriptionurl, title: p.title.replace(/^File:/, '').replace(/\.[^.]+$/, '') }));
+      } catch {
+        /* offline: cards only */
+      }
+      commons.set(q, list);
+      return list;
+    }
+    async function fillStrip(page: Page, id: string) {
+      const card = ([emoji, text]: [string, string], i: number) => {
+        const el = document.createElement('div');
+        el.className = `ctry-card ctry-card--${emoji === '😂' ? 'joke' : 'fact'}`;
+        el.style.setProperty('--tilt', `${[-2, 1.5, -1, 2][i % 4]}deg`);
+        el.style.setProperty('--d', `${1500 + i * 120}ms`);
+        const e = document.createElement('span');
+        e.className = 'ctry-card__emoji';
+        e.textContent = emoji;
+        const p = document.createElement('p');
+        p.textContent = text;
+        el.append(e, p);
+        return el;
+      };
+      const cards = page.extras.map(card);
+      strip.replaceChildren(...cards);
+      strip.hidden = !cards.length;
+      const photos = await stripPhotos(page.photoQuery);
+      if (current !== id || view.hidden || !photos.length) return;
+      // a photo after every card (and the rest at the end)
+      photos.forEach((ph, i) => {
+        const a = document.createElement('a');
+        a.className = 'ctry-shot';
+        a.href = ph.page;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.title = `${words.photoBy} ${ph.title} (Wikimedia Commons)`;
+        a.style.setProperty('--d', `${200 + i * 120}ms`);
+        const img = document.createElement('img');
+        img.src = ph.url;
+        img.alt = ph.title;
+        img.loading = 'lazy';
+        img.addEventListener('error', () => a.remove());
+        a.append(img);
+        const after = cards[i];
+        if (after) after.after(a);
+        else strip.append(a);
+      });
     }
 
     /** A photo from Wikipedia in the shorter facts column (when there is room for it). */
