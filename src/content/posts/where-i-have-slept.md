@@ -2,15 +2,18 @@
 title: 'Places where I have slept'
 category: random
 lang: en
-excerpt: 'A bus stop, the middle of a forest, a castle ruin and a motorboat.'
+excerpt: 'A beach without a blanket, the middle of a forest, a bus stop, a castle ruin and a motorboat – so far.'
 icon: moon-star
 facts:
-  - { icon: bus-stop, label: 'A bus stop' }
+  - { icon: waves, label: 'A beach (no blanket)' }
   - { icon: forest, label: 'The middle of a forest' }
+  - { icon: bus-stop, label: 'A bus stop' }
   - { icon: castle-ruin, label: 'A castle ruin' }
   - { icon: motorboat, label: 'A motorboat' }
 ---
 
-So far I have slept at a bus stop, in the middle of a forest, on a castle ruin and in a motorboat.
+Sleeping in unusual places is something I have come to love over the last few years.
 
-<!-- TODO(András): add where and when each one was. -->
+So far: a beach (without a blanket), the middle of a forest, a bus stop, a castle ruin and a motorboat.
+
+I hope this list will get a lot longer.
