@@ -388,7 +388,7 @@
   "upload.title": "ფოტოების ატვირთვა",
   "upload.pick": "აირჩიე ფოტოები",
   "upload.caption": "აღწერა *",
-  "upload.place": "ადგილი (არასავალდებულო)",
+  "upload.place": "ადგილი (რუკისთვის)",
   "upload.date": "თარიღი",
   "upload.token": "GitHub-ის გასაღები (token)",
   "upload.tokenHelp": "საჭიროა ერთხელ; მხოლოდ ამ ბრაუზერში რჩება.",
@@ -430,5 +430,9 @@
   "dev.msgEmail": "ელფოსტის აპის გახსნით",
   "dev.msgSaving": "ინახება…",
   "dev.msgSaved": "შენახულია – აქ უკვე ასეა, საიტზე ~1 წუთში.",
-  "dev.msgKey": "ჩასვი GitHub-ის გასაღები (github_pat_…):"
+  "dev.msgKey": "ჩასვი GitHub-ის გასაღები (github_pat_…):",
+  "upload.gps": "ფოტოს GPS-იდან",
+  "upload.geoFound": "{place}",
+  "upload.noGeo": "რუკაზე ვერ ვპოულობ – შეამოწმე მართლწერა.",
+  "gallery.mapHint": "გადაატრიალე ან +/− მასშტაბისთვის, გადაათრიე, დააჭირე ფოტოს."
 }

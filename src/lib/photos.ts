@@ -12,6 +12,8 @@ export interface Photo {
   caption: string;
   place?: string;
   date?: Date;
+  lat?: number;
+  lng?: number;
   /** slug of the post the picture belongs to */
   post?: string;
 }

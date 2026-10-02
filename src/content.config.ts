@@ -50,6 +50,9 @@ const photos = defineCollection({
       caption: z.string(),
       place: z.string().optional(),
       date: z.coerce.date().optional(),
+      /** Where the photo was taken (from the photo's GPS data or the place name) – pins on the gallery map */
+      lat: z.number().min(-90).max(90).optional(),
+      lng: z.number().min(-180).max(180).optional(),
     }),
 });
 

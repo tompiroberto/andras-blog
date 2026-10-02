@@ -388,7 +388,7 @@
   "upload.title": "Încarcă fotografii",
   "upload.pick": "Alege fotografii",
   "upload.caption": "Descriere *",
-  "upload.place": "Loc (opțional)",
+  "upload.place": "Loc (pentru hartă)",
   "upload.date": "Data",
   "upload.token": "Cheie GitHub (token)",
   "upload.tokenHelp": "E nevoie o singură dată; rămâne doar în acest browser.",
@@ -430,5 +430,9 @@
   "dev.msgEmail": "deschizând aplicația de e-mail",
   "dev.msgSaving": "Se salvează…",
   "dev.msgSaved": "Salvat – aici e deja așa, online în ~1 min.",
-  "dev.msgKey": "Lipește cheia GitHub (github_pat_…):"
+  "dev.msgKey": "Lipește cheia GitHub (github_pat_…):",
+  "upload.gps": "din GPS-ul fotografiei",
+  "upload.geoFound": "{place}",
+  "upload.noGeo": "Nu-l găsesc pe hartă – verifică ortografia.",
+  "gallery.mapHint": "Derulează sau +/− pentru zoom, trage pentru a muta, apasă pe o fotografie."
 }

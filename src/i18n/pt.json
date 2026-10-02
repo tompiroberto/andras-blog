@@ -388,7 +388,7 @@
   "upload.title": "Carregar fotos",
   "upload.pick": "Escolher fotos",
   "upload.caption": "Descrição *",
-  "upload.place": "Local (opcional)",
+  "upload.place": "Local (para o mapa)",
   "upload.date": "Data",
   "upload.token": "Chave do GitHub (token)",
   "upload.tokenHelp": "Só é preciso uma vez; fica só neste navegador.",
@@ -430,5 +430,9 @@
   "dev.msgEmail": "abrindo a app de e-mail",
   "dev.msgSaving": "A guardar…",
   "dev.msgSaved": "Guardado – aqui já está assim, online em ~1 min.",
-  "dev.msgKey": "Cola a tua chave do GitHub (github_pat_…):"
+  "dev.msgKey": "Cola a tua chave do GitHub (github_pat_…):",
+  "upload.gps": "do GPS da foto",
+  "upload.geoFound": "{place}",
+  "upload.noGeo": "Não encontro no mapa – verifica a ortografia.",
+  "gallery.mapHint": "Roda ou +/− para ampliar, arrasta para mover, clica numa foto."
 }

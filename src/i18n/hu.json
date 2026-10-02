@@ -388,7 +388,7 @@
   "upload.title": "Fotók feltöltése",
   "upload.pick": "Képek kiválasztása",
   "upload.caption": "Leírás *",
-  "upload.place": "Hely (nem kötelező)",
+  "upload.place": "Hely (ebből lesz a térképen a pont)",
   "upload.date": "Dátum",
   "upload.token": "GitHub-kulcs (token)",
   "upload.tokenHelp": "Csak egyszer kell megadni, és csak ebben a böngészőben marad.",
@@ -430,5 +430,9 @@
   "dev.msgEmail": "e-mail-program megnyitása",
   "dev.msgSaving": "Mentés…",
   "dev.msgSaved": "Mentve – itt már így van, élesben kb. 1 perc múlva.",
-  "dev.msgKey": "Illeszd be a GitHub-kulcsod (github_pat_…):"
+  "dev.msgKey": "Illeszd be a GitHub-kulcsod (github_pat_…):",
+  "upload.gps": "a fotó GPS-adatából",
+  "upload.geoFound": "{place}",
+  "upload.noGeo": "Nem találom a térképen – nézd meg, jól írtad-e.",
+  "gallery.mapHint": "Görgess vagy +/− a nagyításhoz, húzd a mozgatáshoz, kattints egy képre."
 }

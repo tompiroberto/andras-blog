@@ -388,7 +388,7 @@
   "upload.title": "Ανέβασμα φωτογραφιών",
   "upload.pick": "Επίλεξε φωτογραφίες",
   "upload.caption": "Περιγραφή *",
-  "upload.place": "Τοποθεσία (προαιρετικό)",
+  "upload.place": "Τοποθεσία (για τον χάρτη)",
   "upload.date": "Ημερομηνία",
   "upload.token": "Κλειδί GitHub (token)",
   "upload.tokenHelp": "Χρειάζεται μία φορά· μένει μόνο σε αυτόν τον browser.",
@@ -430,5 +430,9 @@
   "dev.msgEmail": "ανοίγοντας την εφαρμογή email",
   "dev.msgSaving": "Αποθήκευση…",
   "dev.msgSaved": "Αποθηκεύτηκε – εδώ ισχύει ήδη, online σε ~1 λεπτό.",
-  "dev.msgKey": "Επικόλλησε το κλειδί GitHub (github_pat_…):"
+  "dev.msgKey": "Επικόλλησε το κλειδί GitHub (github_pat_…):",
+  "upload.gps": "από το GPS της φωτογραφίας",
+  "upload.geoFound": "{place}",
+  "upload.noGeo": "Δεν το βρίσκω στον χάρτη – έλεγξε την ορθογραφία.",
+  "gallery.mapHint": "Κύλισε ή +/− για ζουμ, σύρε για μετακίνηση, πάτα μια φωτογραφία."
 }

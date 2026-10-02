@@ -19,8 +19,10 @@ const photos = await Promise.all(
     ...p,
     large: (await getImage({ src: p.image, width: Math.min(1800, p.image.width) })).src,
     when: p.date ? fmt.format(p.date) : '',
+    thumb: (await getImage({ src: p.image, width: 96, height: 96, fit: 'cover' })).src,
   })),
 );
+const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== undefined && p.lng !== undefined);
 ---
 
 <BaseLayout lang={lang} title={t(lang, 'gallery.title')}>
@@ -33,6 +35,33 @@ const photos = await Promise.all(
       <p class="gallery__lead">{t(lang, 'gallery.lead')}</p>
 
       {photos.length === 0 && <p class="gallery__empty">{t(lang, 'gallery.empty')}</p>}
+
+      {
+        pinned.length > 0 && (
+          <div class="gmap" data-gmap>
+            <div class="gmap__stage" data-gmap-stage>
+              <img class="gmap__land" src="/world-land.svg" alt="" draggable="false" />
+              {pinned.map(({ p, i }) => (
+                <button
+                  type="button"
+                  class="gmap__pin"
+                  style={`left:${((p.lng! + 180) / 360) * 100}%;top:${((90 - p.lat!) / 180) * 100}%`}
+                  data-pin={i}
+                  aria-label={p.place ? `${p.caption} – ${p.place}` : p.caption}
+                >
+                  <img src={p.thumb} alt="" loading="lazy" />
+                  <span class="gmap__tip">{p.caption}{p.place && <small>{p.place}</small>}</span>
+                </button>
+              ))}
+            </div>
+            <div class="gmap__zoom">
+              <button type="button" data-gmap-zoom="1" aria-label="+">+</button>
+              <button type="button" data-gmap-zoom="-1" aria-label="−">−</button>
+            </div>
+            <p class="gmap__hint">{t(lang, 'gallery.mapHint')}</p>
+          </div>
+        )
+      }
 
       <ul class="gallery__grid">
         {
@@ -89,6 +118,115 @@ const photos = await Promise.all(
   }
   .gallery__empty {
     font-weight: 700;
+  }
+  .gmap {
+    position: relative;
+    margin: 0 0 32px;
+    border: var(--border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    background: var(--violet-tint);
+    box-shadow: var(--shadow-yellow);
+    touch-action: none;
+  }
+  .gmap__stage {
+    position: relative;
+    aspect-ratio: 2 / 1;
+    transform-origin: 0 0;
+    cursor: grab;
+  }
+  .gmap__stage.is-dragging {
+    cursor: grabbing;
+  }
+  .gmap__land {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    user-select: none;
+  }
+  .gmap__pin {
+    position: absolute;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 2px solid var(--ink);
+    border-radius: 50% 50% 50% 0;
+    background: var(--yellow);
+    transform: translate(-50%, -100%) rotate(-45deg) scale(calc(1 / var(--gz, 1)));
+    transform-origin: 50% 100%;
+    box-shadow: 2px 2px 0 var(--ink);
+    cursor: pointer;
+    overflow: visible;
+  }
+  .gmap__pin img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    transform: rotate(45deg);
+    pointer-events: none;
+  }
+  .gmap__tip {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    display: none;
+    width: max-content;
+    max-width: 220px;
+    padding: 6px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+    transform: translateX(-50%) rotate(45deg);
+    transform-origin: 0 100%;
+    pointer-events: none;
+  }
+  .gmap__tip small {
+    display: block;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .gmap__pin:hover,
+  .gmap__pin:focus-visible {
+    z-index: 2;
+    background: var(--violet);
+  }
+  .gmap__pin:hover .gmap__tip,
+  .gmap__pin:focus-visible .gmap__tip {
+    display: block;
+  }
+  .gmap__zoom {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: grid;
+    gap: 6px;
+  }
+  .gmap__zoom button {
+    width: 38px;
+    height: 38px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .gmap__hint {
+    position: absolute;
+    left: 12px;
+    bottom: 8px;
+    margin: 0;
+    font-size: var(--fs-tiny);
+    color: var(--muted);
+    pointer-events: none;
   }
   .gallery__grid {
     columns: 3 300px;
@@ -246,6 +384,85 @@ const photos = await Promise.all(
 </style>
 
 <script>
+  // ---- gallery map: zoom (+/−, wheel) and drag; a pin opens its photo ----
+  const gmap = document.querySelector<HTMLElement>('[data-gmap]');
+  if (gmap) {
+    const stage = gmap.querySelector<HTMLElement>('[data-gmap-stage]')!;
+    let z = 1;
+    let x = 0;
+    let y = 0;
+    const clamp = () => {
+      const w = gmap.clientWidth;
+      const h = stage.offsetHeight;
+      x = Math.min(0, Math.max(w - w * z, x));
+      y = Math.min(0, Math.max(h - h * z, y));
+    };
+    const apply = () => {
+      clamp();
+      stage.style.transform = `translate(${x}px, ${y}px) scale(${z})`;
+      stage.style.setProperty('--gz', String(z));
+    };
+    const zoomAt = (factor: number, cx: number, cy: number) => {
+      const nz = Math.min(12, Math.max(1, z * factor));
+      x = cx - ((cx - x) * nz) / z;
+      y = cy - ((cy - y) * nz) / z;
+      z = nz;
+      apply();
+    };
+    gmap.querySelectorAll<HTMLButtonElement>('[data-gmap-zoom]').forEach((b) =>
+      b.addEventListener('click', () => zoomAt(Number(b.dataset.gmapZoom) > 0 ? 1.6 : 1 / 1.6, gmap.clientWidth / 2, stage.offsetHeight / 2)),
+    );
+    gmap.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const r = gmap.getBoundingClientRect();
+        zoomAt(e.deltaY < 0 ? 1.25 : 0.8, e.clientX - r.left, e.clientY - r.top);
+      },
+      { passive: false },
+    );
+    let drag: { px: number; py: number; x: number; y: number; moved: boolean } | null = null;
+    stage.addEventListener('pointerdown', (e) => {
+      drag = { px: e.clientX, py: e.clientY, x, y, moved: false };
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.px;
+      const dy = e.clientY - drag.py;
+      if (Math.abs(dx) + Math.abs(dy) > 4) {
+        drag.moved = true;
+        stage.classList.add('is-dragging');
+      }
+      x = drag.x + dx;
+      y = drag.y + dy;
+      apply();
+    });
+    window.addEventListener('pointerup', () => {
+      setTimeout(() => (drag = null));
+      stage.classList.remove('is-dragging');
+    });
+    // start zoomed to where the photos are (all in Europe → Europe fills the map)
+    const fit = () => {
+      const pts = Array.from(gmap.querySelectorAll<HTMLElement>('[data-pin]')).map((p) => [parseFloat(p.style.left) / 100, parseFloat(p.style.top) / 100]);
+      const xs = pts.map((p) => p[0]);
+      const ys = pts.map((p) => p[1]);
+      const span = Math.max(Math.max(...xs) - Math.min(...xs), (Math.max(...ys) - Math.min(...ys)) / 2, 0.02);
+      z = Math.min(6, Math.max(1, 0.6 / span));
+      const w = gmap.clientWidth;
+      const h = stage.offsetHeight;
+      x = w / 2 - ((Math.max(...xs) + Math.min(...xs)) / 2) * w * z;
+      y = h / 2 - ((Math.max(...ys) + Math.min(...ys)) / 2) * h * z;
+      apply();
+    };
+    fit();
+    gmap.querySelectorAll<HTMLButtonElement>('[data-pin]').forEach((pin) =>
+      pin.addEventListener('click', () => {
+        if (drag?.moved) return;
+        document.querySelectorAll<HTMLButtonElement>('.gallery__open')[Number(pin.dataset.pin)]?.click();
+      }),
+    );
+  }
+
   const box = document.querySelector<HTMLDialogElement>('[data-lightbox]');
   const items = Array.from(document.querySelectorAll<HTMLButtonElement>('.gallery__open'));
   if (box && items.length) {

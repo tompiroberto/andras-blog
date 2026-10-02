@@ -21,6 +21,16 @@ export async function getJson<T>(url: string, timeoutMs = TIMEOUT_MS): Promise<T
   return (await res.json()) as T;
 }
 
+/** Coordinates -> a short place name ("Budapest, Magyarország"), via OpenStreetMap Nominatim. */
+export async function reverseGeocode(lat: number, lng: number, lang: string): Promise<string> {
+  interface Place {
+    address?: { city?: string; town?: string; village?: string; municipality?: string; county?: string; state?: string; country?: string };
+  }
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&zoom=10&accept-language=${encodeURIComponent(lang)}`;
+  const a = (await getJson<Place>(url)).address ?? {};
+  return [a.city ?? a.town ?? a.village ?? a.municipality ?? a.county ?? a.state, a.country].filter(Boolean).join(', ');
+}
+
 export async function geocode(q: string, lang: string): Promise<GeoResult[]> {
   try {
     const url = `${OPEN_METEO}?name=${encodeURIComponent(q)}&count=${MAX_RESULTS}&language=${encodeURIComponent(lang)}&format=json`;

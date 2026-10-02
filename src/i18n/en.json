@@ -388,7 +388,7 @@
   "upload.title": "Upload photos",
   "upload.pick": "Choose photos",
   "upload.caption": "Description *",
-  "upload.place": "Place (optional)",
+  "upload.place": "Place (location for the map)",
   "upload.date": "Date",
   "upload.token": "GitHub key (token)",
   "upload.tokenHelp": "Needed once; it stays only in this browser.",
@@ -430,5 +430,9 @@
   "dev.msgEmail": "opening the e-mail app",
   "dev.msgSaving": "Saving…",
   "dev.msgSaved": "Saved – it is like this here already, live in ~1 min.",
-  "dev.msgKey": "Paste your GitHub key (github_pat_…):"
+  "dev.msgKey": "Paste your GitHub key (github_pat_…):",
+  "upload.gps": "from the photo's GPS",
+  "upload.geoFound": "{place}",
+  "upload.noGeo": "Place not found on the map – check the spelling.",
+  "gallery.mapHint": "Scroll or +/− to zoom, drag to move, click a photo."
 }

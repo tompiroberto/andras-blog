@@ -50,6 +50,7 @@ const { lang } = Astro.props;
       <div class="upl__inputs">
         <input class="upl__caption" type="text" maxlength="200" placeholder={t(lang, 'upload.caption')} aria-label={t(lang, 'upload.caption')} />
         <input class="upl__place" type="text" maxlength="80" placeholder={t(lang, 'upload.place')} aria-label={t(lang, 'upload.place')} />
+        <span class="upl__geo" data-geo></span>
       </div>
       <button type="button" class="upl__remove" aria-label={t(lang, 'upload.remove')} title={t(lang, 'upload.remove')}><Icon name="trash-2" size={16} /></button>
     </li>
@@ -61,6 +62,9 @@ const { lang } = Astro.props;
   <template data-upl-text-needphoto>{t(lang, 'upload.needPhoto')}</template>
   <template data-upl-text-needcaption>{t(lang, 'upload.needCaption')}</template>
   <template data-upl-text-needtoken>{t(lang, 'upload.needToken')}</template>
+  <template data-upl-text-gps>{t(lang, 'upload.gps')}</template>
+  <template data-upl-text-geofound>{t(lang, 'upload.geoFound')}</template>
+  <template data-upl-text-nogeo>{t(lang, 'upload.noGeo')}</template>
   <template data-upl-text-live>{t(lang, 'upload.live')}</template>
   <template data-upl-text-badimage>{t(lang, 'upload.badImage')}</template>
 </dialog>
@@ -169,6 +173,13 @@ const { lang } = Astro.props;
     font: inherit;
     font-size: 15px;
   }
+  .upl__geo {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .upl__geo:empty {
+    display: none;
+  }
   .upl__caption[aria-invalid='true'] {
     border-color: #c0142b;
     box-shadow: 0 0 0 2px #c0142b;
@@ -215,6 +226,7 @@ const { lang } = Astro.props;
 
 <script>
   import { commitFiles, shrinkToJpeg, slugify, wireTokenField, type NewFile } from '../lib/githubCommit';
+  import { geocode, reverseGeocode } from '../lib/geocode';
 
   const dialog = document.querySelector<HTMLDialogElement>('[data-upload]');
   if (dialog) {
@@ -256,6 +268,51 @@ const { lang } = Astro.props;
       status.className = `upl__status${kind ? ` is-${kind}` : ''}`;
     };
 
+    const lang = document.documentElement.lang || 'en';
+    const geoLine = (row: HTMLElement, label: string) => {
+      const lat = Number(row.dataset.lat);
+      const lng = Number(row.dataset.lng);
+      row.querySelector<HTMLElement>('[data-geo]')!.textContent = `📍 ${label} · ${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+    };
+    /** location: the photo's own GPS data first; otherwise the typed place name is looked up */
+    const wireGeo = (row: HTMLElement, file: File) => {
+      const placeInput = row.querySelector<HTMLInputElement>('.upl__place')!;
+      const out = row.querySelector<HTMLElement>('[data-geo]')!;
+      void (async () => {
+        try {
+          const { gps } = await import('exifr');
+          const pos = await gps(file);
+          if (!pos || !Number.isFinite(pos.latitude) || !Number.isFinite(pos.longitude)) return;
+          row.dataset.lat = String(pos.latitude);
+          row.dataset.lng = String(pos.longitude);
+          row.dataset.fromGps = '1';
+          geoLine(row, text('gps'));
+          if (!placeInput.value.trim()) {
+            const name = await reverseGeocode(pos.latitude, pos.longitude, lang).catch(() => '');
+            if (name && !placeInput.value.trim()) placeInput.value = name;
+          }
+        } catch {
+          /* no GPS data in this picture */
+        }
+      })();
+      placeInput.addEventListener('change', async () => {
+        if (row.dataset.fromGps) return;
+        const q = placeInput.value.trim();
+        delete row.dataset.lat;
+        delete row.dataset.lng;
+        out.textContent = '';
+        if (!q) return;
+        const hit = (await geocode(q, lang).catch(() => []))[0];
+        if (!hit) {
+          out.textContent = text('nogeo');
+          return;
+        }
+        row.dataset.lat = String(hit.latitude);
+        row.dataset.lng = String(hit.longitude);
+        geoLine(row, text('geofound').replace('{place}', [hit.name, hit.country].filter(Boolean).join(', ')));
+      });
+    };
+
     const open = () => {
       if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
       token.refresh();
@@ -275,6 +332,7 @@ const { lang } = Astro.props;
           row.remove();
         });
         row.querySelector('.upl__caption')!.addEventListener('input', (e) => (e.target as HTMLInputElement).removeAttribute('aria-invalid'));
+        wireGeo(row, file);
         picked.set(row, file);
         list.append(row);
       }
@@ -314,7 +372,17 @@ const { lang } = Astro.props;
           files.push({ path: `src/assets/photos/${name}.jpg`, base64 });
           previews.push([`data:image/jpeg;base64,${base64}`, caption, place]);
           // JSON strings are valid YAML, so quotes and colons in the description cannot break the file
-          const yml = [`image: ../../assets/photos/${name}.jpg`, `caption: ${JSON.stringify(caption)}`, place && `place: ${JSON.stringify(place)}`, `date: ${date}`].filter(Boolean).join('\n');
+          const lat = row.dataset.lat ? Math.round(Number(row.dataset.lat) * 1e5) / 1e5 : null;
+          const lng = row.dataset.lng ? Math.round(Number(row.dataset.lng) * 1e5) / 1e5 : null;
+          const yml = [
+            `image: ../../assets/photos/${name}.jpg`,
+            `caption: ${JSON.stringify(caption)}`,
+            place && `place: ${JSON.stringify(place)}`,
+            `date: ${date}`,
+            lat !== null && lng !== null && `lat: ${lat}\nlng: ${lng}`,
+          ]
+            .filter(Boolean)
+            .join('\n');
           files.push({ path: `src/content/photos/${name}.yml`, text: `${yml}\n` });
         }
         await commitFiles(key, files, `Photos: ${rows.length} new (uploaded from the site)`);
