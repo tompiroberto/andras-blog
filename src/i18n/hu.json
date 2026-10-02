@@ -448,7 +448,7 @@
   "lay.changed": "Módosítva",
   "lay.save": "Mentés",
   "lay.undo": "Visszavonás",
-  "lay.saved": "✓ Mentve – a 🚀 Közzététel gombbal kerül ki az oldalra.",
+  "lay.saved": "✓ Mentve és közzétéve.",
   "ed.on": "Szerkesztés az oldalon: BE (kattints bármire)",
   "ed.off": "Szerkesztés az oldalon: KI (a linkek működnek)",
   "ed.parent": "A körülötte lévő doboz kijelölése",
@@ -557,11 +557,14 @@
   "pum.title": "PUM! – mai kaland",
   "pum.label": "PUM! – kattints egy kalandért",
   "pub.button": "Közzététel",
-  "pub.note": "A mentés ingyenes; minden közzététel a havi 300 Netlify-kreditből 15-öt használ – ezért egyszerre sok változást tegyél közzé.",
+  "pub.note": "Semmi nem mentődik magától: a 🚀 Közzététel menti a változásokat és kiteszi őket az oldalra (a havi 300 Netlify-kreditből 15) – ezért egyszerre sok változást tegyél közzé.",
   "pub.busy": "Közzététel…",
   "pub.done": "🚀 Közzétéve – kb. egy perc múlva frissül az oldal.",
   "pub.none": "Ebben a böngészőben nincs új mentett változás. Mégis közzéteszed? (15 kredit)",
   "dev.provider": "Az üzeneteket továbbítja…",
   "cf.more": "Érdekességek és fotók",
-  "pum.map": "Megnézem a térképen"
+  "pum.map": "Megnézem a térképen",
+  "lay.unsaved": "Még nincs mentve – a 🚀 Közzététel menti és kiteszi az oldalra.",
+  "egg.circles": "Körök = helyek! 📍",
+  "egg.tris": "Háromszögek = irány – rád mutatnak! ➤"
 }

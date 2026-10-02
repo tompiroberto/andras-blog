@@ -448,7 +448,7 @@
   "lay.changed": "Changed",
   "lay.save": "Save",
   "lay.undo": "Undo",
-  "lay.saved": "✓ Saved – press 🚀 Publish to put it online.",
+  "lay.saved": "✓ Saved and published.",
   "ed.on": "Editing on page: ON (click anything)",
   "ed.off": "Editing on page: OFF (links work)",
   "ed.parent": "Select the surrounding box",
@@ -557,11 +557,14 @@
   "pum.title": "PUM! – today's adventure",
   "pum.label": "PUM! – click for an adventure",
   "pub.button": "Publish",
-  "pub.note": "Saving is free; each Publish uses 15 of the 300 monthly Netlify credits – so publish many changes at once.",
+  "pub.note": "Nothing is saved by itself: 🚀 Publish saves your changes and puts them online (15 of the 300 monthly Netlify credits) – so publish many changes at once.",
   "pub.busy": "Publishing…",
   "pub.done": "🚀 Published – the site updates in about a minute.",
   "pub.none": "Nothing new is saved in this browser. Publish anyway? (15 credits)",
   "dev.provider": "Messages are delivered by…",
   "cf.more": "Fun facts and photos",
-  "pum.map": "Show me on the map"
+  "pum.map": "Show me on the map",
+  "lay.unsaved": "Not saved yet – 🚀 Publish saves it and puts it online.",
+  "egg.circles": "Circles = places! 📍",
+  "egg.tris": "Triangles = direction – they point at you! ➤"
 }

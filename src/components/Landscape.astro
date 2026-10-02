@@ -1,0 +1,153 @@
+---
+/**
+ * A drawn landscape at the very end of every page (inside the footer): mountains with a lake, a small
+ * town, or a coast with a lighthouse – a different one on each visit. Flat shapes with the site's ink
+ * outline; the colours follow the theme (the footer is the theme's main colour).
+ */
+---
+
+<div class="landscape" aria-hidden="true" data-landscape>
+  <!-- 1. mountains and a lake, with a tent -->
+  <svg class="landscape__scene" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMax slice" data-scene="0">
+    <circle cx="960" cy="70" r="34" class="ls-sun" />
+    <path d="M0 220V150L120 80L210 140L330 40L460 150L560 95L690 160L820 60L950 150L1060 90L1200 160V220Z" class="ls-far" />
+    <path d="M300 62L330 40L362 66L344 60L330 70Z M790 80L820 60L846 84L828 78L818 88Z" class="ls-snow" />
+    <path d="M0 220V175L160 120L280 172L420 110L560 180L700 125L850 178L1000 118L1120 170L1200 150V220Z" class="ls-near" />
+    <path d="M380 196Q600 176 820 196Q600 214 380 196Z" class="ls-water" />
+    <path d="M450 196H560M620 201H730M500 205H580" class="ls-line" />
+    <path d="M150 196L176 160L202 196Z" class="ls-tent" />
+    <path d="M176 160V196" class="ls-line" />
+    <path d="M1040 180V152M1030 166L1040 150L1050 166M1028 176L1040 160L1052 176" class="ls-tree" />
+    <path d="M1090 182V156M1080 170L1090 154L1100 170M1078 180L1090 164L1102 180" class="ls-tree" />
+  </svg>
+
+  <!-- 2. a small town: hills, houses, a church tower, utility poles -->
+  <svg class="landscape__scene is-off" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMax slice" data-scene="1">
+    <circle cx="200" cy="64" r="30" class="ls-sun" />
+    <path d="M0 220V160Q200 100 420 150T820 130T1200 150V220Z" class="ls-far" />
+    <path d="M0 220V196H1200V220Z" class="ls-near" />
+    <g class="ls-house">
+      <path d="M380 196V150H430V196Z M374 152L405 124L436 152Z" />
+      <path d="M440 196V160H480V196Z M434 162L460 140L486 162Z" />
+      <path d="M560 196V140H590V196Z M556 142L575 92L594 142Z" />
+      <path d="M600 196V156H660V196Z M594 158L630 132L666 158Z" />
+      <path d="M670 196V164H708V196Z M664 166L689 146L714 166Z" />
+      <path d="M720 196V150H770V196Z M714 152L745 126L776 152Z" />
+    </g>
+    <path d="M396 176h10v20h-10z M612 172h12v24h-12z M732 172h10v24h-10z M566 110h8v10h-8z" class="ls-window" />
+    <path d="M140 196V120M128 128H152M960 196V120M948 128H972M140 128Q550 160 960 128" class="ls-line" />
+    <path d="M0 208H1200" class="ls-road" />
+  </svg>
+
+  <!-- 3. a coast: the sea, a lighthouse and a boat -->
+  <svg class="landscape__scene is-off" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMax slice" data-scene="2">
+    <circle cx="700" cy="120" r="44" class="ls-sun" />
+    <path d="M0 220V170H1200V220Z" class="ls-water" />
+    <path d="M60 182H180M260 192H400M520 180H620M760 190H900M980 182H1120" class="ls-line" />
+    <path d="M900 220V160Q980 120 1060 140T1200 120V220Z" class="ls-near" />
+    <path d="M1010 140V70H1040V140Z" class="ls-light" />
+    <path d="M1010 92H1040M1010 114H1040" class="ls-stripe" />
+    <path d="M1004 72L1025 50L1046 72Z" class="ls-tent" />
+    <path d="M1025 58L960 40M1025 58L960 76" class="ls-beam" />
+    <path d="M250 168L330 168L316 182H264Z" class="ls-tent" />
+    <path d="M290 168V120L326 160Z" class="ls-snow" />
+    <path d="M290 120V168" class="ls-line" />
+    <path d="M520 70q12 -10 24 0q12 -10 24 0" class="ls-bird" />
+    <path d="M590 92q9 -8 18 0q9 -8 18 0" class="ls-bird" />
+  </svg>
+</div>
+
+<style>
+  .landscape {
+    position: relative;
+    height: clamp(120px, 16vw, 200px);
+    margin-top: 28px;
+    overflow: hidden;
+  }
+  .landscape__scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .landscape__scene.is-off {
+    display: none;
+  }
+  .landscape :global(path),
+  .landscape :global(circle) {
+    stroke: var(--ink);
+    stroke-width: 3;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .ls-sun {
+    fill: var(--yellow);
+  }
+  .ls-far {
+    fill: color-mix(in srgb, var(--violet) 55%, #fff);
+  }
+  .ls-near {
+    fill: color-mix(in srgb, var(--violet) 70%, #000);
+  }
+  .ls-snow {
+    fill: #fff;
+  }
+  .ls-water {
+    fill: color-mix(in srgb, #5ec8ff 70%, var(--violet));
+  }
+  .ls-line,
+  .ls-road,
+  .ls-bird,
+  .ls-beam {
+    fill: none;
+  }
+  .ls-road {
+    stroke-dasharray: 26 18;
+    stroke: var(--yellow) !important;
+  }
+  .ls-beam {
+    stroke: var(--yellow) !important;
+    stroke-width: 4 !important;
+    animation: ls-blink 2.4s steps(1) infinite;
+  }
+  .ls-tent {
+    fill: var(--yellow);
+  }
+  .ls-tree {
+    fill: none;
+    stroke: #fff !important;
+  }
+  .ls-house :global(path) {
+    fill: #fff;
+  }
+  .ls-window {
+    fill: var(--yellow);
+  }
+  .ls-light {
+    fill: #fff;
+  }
+  .ls-stripe {
+    fill: none;
+    stroke: #e63946 !important;
+    stroke-width: 8 !important;
+  }
+  @keyframes ls-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ls-beam {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  // a different landscape on each visit
+  document.querySelectorAll<HTMLElement>('[data-landscape]').forEach((box) => {
+    const scenes = Array.from(box.querySelectorAll<SVGElement>('[data-scene]'));
+    const pick = Math.floor(Math.random() * scenes.length);
+    scenes.forEach((s, i) => s.classList.toggle('is-off', i !== pick));
+  });
+</script>

@@ -82,14 +82,13 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 </div>
 <div class="lay-save" hidden data-lay-save>
   <span>{t(lang, 'lay.changed')}</span>
-  <button type="button" class="lay-save__ok" data-lay-commit>{t(lang, 'lay.saveNow')}</button>
   <button type="button" class="lay-save__pub" data-dev-publish>🚀 {t(lang, 'pub.button')} <b data-dev-pending>0</b></button>
   <button type="button" data-ed-undo title="Ctrl+Z">↶</button>
   <button type="button" data-ed-redo title="Ctrl+Y">↷</button>
   <button type="button" data-lay-undo>{t(lang, 'lay.undo')}</button>
   <span class="lay-save__status" data-lay-status></span>
 </div>
-<template data-dev-laytitles>{JSON.stringify({ up: t(lang, 'lay.up'), down: t(lang, 'lay.down'), hide: t(lang, 'lay.hide'), width: t(lang, 'lay.width'), smaller: t(lang, 'lay.smaller'), bigger: t(lang, 'lay.bigger'), saving: t(lang, 'dev.msgSaving'), saved: t(lang, 'lay.saved'), autosave: t(lang, 'lay.autosave'), needKey: t(lang, 'lay.needKey'), widths: { narrow: t(lang, 'lay.w.narrow'), normal: t(lang, 'lay.w.normal'), wide: t(lang, 'lay.w.wide'), full: t(lang, 'lay.w.full') } })}</template>
+<template data-dev-laytitles>{JSON.stringify({ up: t(lang, 'lay.up'), down: t(lang, 'lay.down'), hide: t(lang, 'lay.hide'), width: t(lang, 'lay.width'), smaller: t(lang, 'lay.smaller'), bigger: t(lang, 'lay.bigger'), saving: t(lang, 'dev.msgSaving'), saved: t(lang, 'lay.saved'), unsaved: t(lang, 'lay.unsaved'), needKey: t(lang, 'lay.needKey'), widths: { narrow: t(lang, 'lay.w.narrow'), normal: t(lang, 'lay.w.normal'), wide: t(lang, 'lay.w.wide'), full: t(lang, 'lay.w.full') } })}</template>
 <template data-dev-layhidden>{JSON.stringify(layout.hidden)}</template>
 <template data-dev-pubbusy>{t(lang, 'pub.busy')}</template>
 <template data-dev-pubdone>{t(lang, 'pub.done')}</template>
@@ -678,13 +677,16 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
         toast.hidden = false;
         window.setTimeout(() => (toast.hidden = true), 3200);
       };
-      if (!pendingCount() && !window.confirm(t('pubnone'))) return;
       let key = getToken();
       if (!key) key = (window.prompt(t('msgkey')) ?? '').trim();
       if (!key) return;
       pubButtons.forEach((b) => (b.disabled = true));
       tell(t('pubbusy'));
       try {
+        // first the unsaved page edits, then one deploy for everything
+        const saved = await ((window as unknown as { __devSave?: (key: string) => Promise<boolean> }).__devSave?.(key) ?? Promise.resolve(true));
+        if (!saved) throw new Error('save failed');
+        if (!pendingCount() && !window.confirm(t('pubnone'))) return;
         await publishSite(key);
         tell(t('pubdone'));
       } catch (err) {
@@ -960,18 +962,18 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   const layStatus = saveBar.querySelector<HTMLElement>('[data-lay-status]')!;
   const sections = () => Array.from(document.querySelectorAll<HTMLElement>('main > [data-lay]'));
   let layChanged = false;
-  // every change is saved by itself AUTOSAVE_MS after the last one – to GitHub only (no deploy, no credits);
-  // the 🚀 Publish button puts the saved changes online
-  const AUTOSAVE_MS = 15000;
-  let autoTimer = 0;
+  // nothing is saved by itself: changes stay in this browser tab until 🚀 Publish saves them and puts
+  // them online (one deploy)
+  let unsaved = false;
   let saving = false;
-  let again = false;
   const showSave = () => {
+    unsaved = true;
     saveBar.hidden = false;
-    layStatus.textContent = layTitles.autosave;
-    window.clearTimeout(autoTimer);
-    autoTimer = window.setTimeout(() => void saveNow(), AUTOSAVE_MS);
+    layStatus.textContent = layTitles.unsaved;
   };
+  window.addEventListener('beforeunload', (e) => {
+    if (unsaved) e.preventDefault();
+  });
   const changed = () => {
     layChanged = true;
     showSave();
@@ -1065,18 +1067,9 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   };
   const removeLayBars = () => document.querySelectorAll('.lay-bar').forEach((b) => b.remove());
   saveBar.querySelector('[data-lay-undo]')!.addEventListener('click', () => location.reload());
-  async function saveNow() {
-    window.clearTimeout(autoTimer);
-    if (saving) {
-      again = true;
-      return;
-    }
-    let key = getToken();
-    if (!key) key = (window.prompt(tpl('msgkey')) ?? '').trim();
-    if (!key) {
-      layStatus.textContent = layTitles.needKey;
-      return;
-    }
+  /** Commit the page edits (no deploy); true when everything is saved. Called by 🚀 Publish. */
+  async function saveNow(key: string): Promise<boolean> {
+    if (saving) return false;
     saving = true;
     layStatus.textContent = layTitles.saving;
     try {
@@ -1086,7 +1079,10 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       if (edits) files.push({ path: 'src/data/edits.json', text: edits });
       const pictures = (window as unknown as { __editsFiles?: () => { path: string; base64: string }[] }).__editsFiles?.() ?? [];
       files.push(...pictures);
-      if (!files.length) return void (layStatus.textContent = layTitles.saved);
+      if (!files.length) {
+        unsaved = false;
+        return true;
+      }
       await commitFiles(key, files, 'Page edits: changed in developer mode');
       try {
         localStorage.setItem(TOKEN_KEY, key);
@@ -1094,19 +1090,18 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
         /* storage unavailable */
       }
       layChanged = false;
+      unsaved = false;
       (window as unknown as { __editsSaved?: () => void }).__editsSaved?.();
       layStatus.textContent = layTitles.saved;
+      return true;
     } catch (err) {
       layStatus.textContent = tpl('msgerror').replace('{msg}', err instanceof Error ? err.message : String(err));
+      return false;
     } finally {
       saving = false;
-      if (again) {
-        again = false;
-        void saveNow();
-      }
     }
   }
-  saveBar.querySelector('[data-lay-commit]')!.addEventListener('click', () => void saveNow());
+  (window as unknown as { __devSave?: (key: string) => Promise<boolean> }).__devSave = async (key) => (unsaved ? saveNow(key) : true);
   saveBar.querySelector('[data-ed-undo]')!.addEventListener('click', () => window.dispatchEvent(new Event('andras:undo')));
   saveBar.querySelector('[data-ed-redo]')!.addEventListener('click', () => window.dispatchEvent(new Event('andras:redo')));
 

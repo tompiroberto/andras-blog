@@ -448,7 +448,7 @@
   "lay.changed": "Modificat",
   "lay.save": "Salvează",
   "lay.undo": "Anulează",
-  "lay.saved": "✓ Salvat – apasă 🚀 Publică pentru a-l pune online.",
+  "lay.saved": "✓ Salvat și publicat.",
   "ed.on": "Editare pe pagină: PORNITĂ (apasă oriunde)",
   "ed.off": "Editare pe pagină: OPRITĂ (linkurile merg)",
   "ed.parent": "Selectează caseta din jur",
@@ -557,11 +557,14 @@
   "pum.title": "PUM! – aventura de azi",
   "pum.label": "PUM! – apasă pentru o aventură",
   "pub.button": "Publică",
-  "pub.note": "Salvarea e gratuită; fiecare publicare folosește 15 din cele 300 de credite Netlify lunare – publică multe modificări odată.",
+  "pub.note": "Nimic nu se salvează singur: 🚀 Publică salvează modificările și le pune online (15 din 300 de credite lunare) – publică multe odată.",
   "pub.busy": "Se publică…",
   "pub.done": "🚀 Publicat – site-ul se actualizează în aproximativ un minut.",
   "pub.none": "Nu e nimic nou salvat în acest browser. Publici oricum? (15 credite)",
   "dev.provider": "Mesajele sunt livrate prin…",
   "cf.more": "Curiozități și fotografii",
-  "pum.map": "Arată-mi pe hartă"
+  "pum.map": "Arată-mi pe hartă",
+  "lay.unsaved": "Încă nesalvat – 🚀 Publică salvează și pune online.",
+  "egg.circles": "Cercuri = locuri! 📍",
+  "egg.tris": "Triunghiuri = direcție – arată spre tine! ➤"
 }

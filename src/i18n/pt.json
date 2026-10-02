@@ -448,7 +448,7 @@
   "lay.changed": "Alterado",
   "lay.save": "Guardar",
   "lay.undo": "Desfazer",
-  "lay.saved": "✓ Guardado – carrega em 🚀 Publicar para ficar online.",
+  "lay.saved": "✓ Guardado e publicado.",
   "ed.on": "Edição na página: LIGADA (clica em qualquer coisa)",
   "ed.off": "Edição na página: DESLIGADA (links funcionam)",
   "ed.parent": "Selecionar a caixa à volta",
@@ -557,11 +557,14 @@
   "pum.title": "PUM! – aventura de hoje",
   "pum.label": "PUM! – clica para uma aventura",
   "pub.button": "Publicar",
-  "pub.note": "Guardar é grátis; cada publicação usa 15 dos 300 créditos mensais do Netlify – publica muitas alterações de uma vez.",
+  "pub.note": "Nada é guardado sozinho: 🚀 Publicar guarda as alterações e põe-nas online (15 dos 300 créditos mensais) – publica muitas de uma vez.",
   "pub.busy": "A publicar…",
   "pub.done": "🚀 Publicado – o site atualiza em cerca de um minuto.",
   "pub.none": "Não há nada novo guardado neste navegador. Publicar mesmo assim? (15 créditos)",
   "dev.provider": "As mensagens são entregues por…",
   "cf.more": "Curiosidades e fotos",
-  "pum.map": "Ver no mapa"
+  "pum.map": "Ver no mapa",
+  "lay.unsaved": "Ainda não guardado – 🚀 Publicar guarda e põe online.",
+  "egg.circles": "Círculos = lugares! 📍",
+  "egg.tris": "Triângulos = direção – apontam para ti! ➤"
 }

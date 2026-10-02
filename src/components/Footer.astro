@@ -3,6 +3,7 @@ import Globe from './Globe.astro';
 import Icon from './Icon.astro';
 import PowerLines from './PowerLines.astro';
 import SupporterLogos from './SupporterLogos.astro';
+import Landscape from './Landscape.astro';
 import { localePath, t, type Lang } from '../i18n';
 import site from '../data/site.json';
 
@@ -51,11 +52,11 @@ const contacts = [
 
     <div class="site-footer__bottom">
       <span>© {year} {site.owner} · <span class="pum-credit">{t(lang, 'footer.pum').split('{pum}')[0]}<strong>PUM PUM PRODUCTION</strong>{t(lang, 'footer.pum').split('{pum}')[1]}</span></span>
-      <span class="legend">
+      <button type="button" class="legend" data-legend-egg data-egg-circles={t(lang, 'egg.circles')} data-egg-tris={t(lang, 'egg.tris')} title="?">
         <span class="legend__circle" aria-hidden="true"></span>
         {t(lang, 'footer.legend')}
         <span class="legend__tri" aria-hidden="true"></span>
-      </span>
+      </button>
       <a href={localePath(lang, 'privacy')}>{t(lang, 'footer.privacy')}</a>
     </div>
     <!-- how many slices of bread have wiped the Nutella stains off so far (NutellaRain.astro) -->
@@ -64,6 +65,7 @@ const contacts = [
       <span data-bread-text>{t(lang, 'bread.count').replace('{n}', '0')}</span>
     </p>
   </div>
+  <Landscape />
 </footer>
 
 <style>
@@ -72,7 +74,7 @@ const contacts = [
     isolation: isolate;
     background: var(--violet);
     color: #fff;
-    padding-block: clamp(56px, 8vw, 96px) 32px;
+    padding-block: clamp(56px, 8vw, 96px) 0;
   }
   .site-footer__inner {
     position: relative;
@@ -186,6 +188,24 @@ const contacts = [
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  .legend:hover .legend__circle,
+  .legend:focus-visible .legend__circle {
+    transform: scale(1.6);
+  }
+  .legend:hover .legend__tri,
+  .legend:focus-visible .legend__tri {
+    transform: rotate(-90deg);
+  }
+  .legend__circle,
+  .legend__tri {
+    transition: transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   .legend__circle {
     width: 10px;
@@ -202,3 +222,79 @@ const contacts = [
     flex: none;
   }
 </style>
+
+<script>
+  /*
+   * Easter egg: "circles = places · triangles = direction" taken literally. A click sends circles
+   * flying over the page – each lands and becomes a place – and triangles that all turn to point at
+   * the mouse (or your finger). After a while they fly home.
+   */
+  const PLACES = ['Valparaíso', 'Tbilisi', 'Cusco', 'Ushuaia', 'Reykjavík', 'Lisboa', 'Kyoto', 'La Paz', 'Split', 'Vilnius', 'Naxos', 'Hévíz', 'Atacama', 'Uyuni', 'Tromsø', 'Sopron', 'Patagonia', 'Balaton', 'Kraków', 'Rapa Nui'];
+  document.querySelectorAll<HTMLButtonElement>('[data-legend-egg]').forEach((btn) => {
+    let running = false;
+    btn.addEventListener('click', () => {
+      if (running) return;
+      running = true;
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const layer = document.createElement('div');
+      layer.className = 'egg-layer';
+      layer.setAttribute('aria-hidden', 'true');
+      document.body.append(layer);
+      const from = btn.getBoundingClientRect();
+      const fx = from.left + from.width / 2;
+      const fy = from.top + from.height / 2;
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const places = [...PLACES].sort(() => Math.random() - 0.5);
+      const tris: { el: HTMLElement; x: number; y: number }[] = [];
+      const fly = (el: HTMLElement, x: number, y: number, delay: number) => {
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        layer.append(el);
+        if (!reduced)
+          el.animate([{ transform: `translate(${fx - x}px, ${fy - y}px) scale(0.2)`, opacity: 0 }, { transform: 'translate(0, 0) scale(1)', opacity: 1 }], {
+            duration: 900,
+            delay,
+            easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+            fill: 'backwards',
+          });
+      };
+      for (let i = 0; i < 9; i++) {
+        const c = document.createElement('span');
+        c.className = 'egg-place';
+        c.innerHTML = `<i></i><b>${places[i]}</b>`;
+        fly(c, 40 + Math.random() * (W - 180), 90 + Math.random() * (H - 220), i * 90);
+      }
+      for (let i = 0; i < 9; i++) {
+        const tr = document.createElement('span');
+        tr.className = 'egg-tri';
+        const x = 30 + Math.random() * (W - 60);
+        const y = 90 + Math.random() * (H - 160);
+        fly(tr, x, y, 200 + i * 90);
+        tris.push({ el: tr, x, y });
+      }
+      // triangles = direction: they all point at you
+      const aim = (px: number, py: number) => tris.forEach((t) => (t.el.style.rotate = `${Math.atan2(py - t.y, px - t.x)}rad`));
+      const onMove = (e: PointerEvent) => aim(e.clientX, e.clientY);
+      aim(fx, fy);
+      window.addEventListener('pointermove', onMove);
+      // the two halves of the legend, said out loud
+      const say = (text: string, x: number, y: number, delay: number) => {
+        const b = document.createElement('span');
+        b.className = 'egg-say';
+        b.textContent = text;
+        fly(b, x, y, delay);
+      };
+      say(btn.dataset.eggCircles ?? '', W * 0.22, H * 0.18, 600);
+      say(btn.dataset.eggTris ?? '', W * 0.58, H * 0.3, 900);
+      window.setTimeout(() => {
+        layer.classList.add('is-leaving');
+        window.removeEventListener('pointermove', onMove);
+        window.setTimeout(() => {
+          layer.remove();
+          running = false;
+        }, 700);
+      }, 12000);
+    });
+  });
+</script>
