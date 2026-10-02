@@ -54,6 +54,15 @@ function open(button: HTMLElement) {
   text.className = 'infobox__text';
   text.textContent = button.dataset.infoText ?? '';
   box.append(arrow, x, head, text);
+  if (button.dataset.infoLink) {
+    const a = document.createElement('a');
+    a.className = 'infobox__link';
+    a.href = button.dataset.infoLink;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = `🗺 ${button.dataset.infoLinkText ?? 'Map'} →`;
+    box.append(a);
+  }
 
   const facts: string[] = button.dataset.infoFacts ? JSON.parse(button.dataset.infoFacts) : [];
   if (facts.length) {

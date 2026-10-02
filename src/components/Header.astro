@@ -118,7 +118,7 @@ const citiesToggle = {
     </button>
     </div>
     <!-- the motto, in the free space after the buttons -->
-    <button type="button" class="pum" data-pum data-info-title={t(lang, 'pum.title')} data-ideas={JSON.stringify(pumIdeas[lang])} aria-label={t(lang, 'pum.label')} title={t(lang, 'pum.label')}>PUM!</button>
+    <button type="button" class="pum" data-pum data-info-title={t(lang, 'pum.title')} data-ideas={JSON.stringify(pumIdeas.static[lang])} data-templates={JSON.stringify(pumIdeas.templates[lang])} data-cities={JSON.stringify(pumIdeas.cities)} data-maplabel={t(lang, 'pum.map')} aria-label={t(lang, 'pum.label')} title={t(lang, 'pum.label')}>PUM!</button>
   </div>
 
   <div class="mobile-menu" id="mobile-menu" hidden data-mobile-menu>
@@ -475,6 +475,28 @@ const citiesToggle = {
   // PUM!: every click bursts (comic words, confetti, Nutella jars) and suggests a random adventure
   document.querySelectorAll<HTMLButtonElement>('[data-pum]').forEach((pum) => {
     const ideas: string[] = JSON.parse(pum.dataset.ideas || '[]');
+    const templates: string[] = JSON.parse(pum.dataset.templates || '[]');
+    const cities: { n: string; lat: number; lon: number }[] = JSON.parse(pum.dataset.cities || '[]');
+    const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
+    const ns = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? pos : neg}`;
+    /** a random challenge: a spot near a random city, a city, distances, money – new numbers every time */
+    const challenge = (): { text: string; link?: string } => {
+      const tpl = pick(templates);
+      const c = pick(cities);
+      const lat = Math.max(-80, Math.min(80, c.lat + (Math.random() - 0.5) * 0.8));
+      const lon = c.lon + (Math.random() - 0.5) * 0.8;
+      const hu = document.documentElement.lang === 'hu';
+      const coord = `${ns(lat, hu ? 'É' : 'N', hu ? 'D' : 'S')}, ${ns(lon, hu ? 'K' : 'E', hu ? 'Ny' : 'W')}`;
+      const text = tpl
+        .replace('{coord}', coord)
+        .replace('{city}', c.n)
+        .replace('{km}', String(5 + Math.floor(Math.random() * 60)))
+        .replace('{n}', String(3 + Math.floor(Math.random() * 12)))
+        .replace('{money}', String(20 + Math.floor(Math.random() * 16) * 5));
+      if (tpl.includes('{coord}')) return { text, link: `https://www.google.com/maps?q=${lat.toFixed(4)},${lon.toFixed(4)}` };
+      if (tpl.includes('{city}')) return { text, link: `https://www.google.com/maps/search/${encodeURIComponent(c.n)}` };
+      return { text };
+    };
     const WORDS = ['PUM!', 'BUMM!', 'ZÚM!', 'PUFF!', 'WOW!', 'PUM PUM!'];
     const COLORS = ['#ffd60a', '#7b2ff7', '#ff4d6d', '#39d353', '#00c2ff', '#ff8a00'];
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -564,11 +586,23 @@ const citiesToggle = {
       void pum.offsetWidth;
       pum.classList.add('is-boom');
       burst();
+      // about every third click: a random challenge with a place on the map
+      if (templates.length && cities.length && Math.random() < 0.35) {
+        const ch = challenge();
+        pum.dataset.infoText = ch.text;
+        if (ch.link) {
+          pum.dataset.infoLink = ch.link;
+          pum.dataset.infoLinkText = pum.dataset.maplabel;
+        } else delete pum.dataset.infoLink;
+        showInfoBox(pum);
+        return;
+      }
       if (!ideas.length) return;
       let i = Math.floor(Math.random() * ideas.length);
       if (i === last) i = (i + 1) % ideas.length;
       last = i;
       pum.dataset.infoText = ideas[i];
+      delete pum.dataset.infoLink;
       showInfoBox(pum);
     });
   });

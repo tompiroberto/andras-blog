@@ -1196,6 +1196,12 @@ select {
   line-height: 1.6;
   animation: infobox-line 400ms 140ms var(--ease) both;
 }
+.infobox__link {
+  display: inline-block;
+  margin-top: 10px;
+  font-weight: 700;
+  font-size: var(--fs-small);
+}
 .infobox__facts {
   display: flex;
   flex-wrap: wrap;

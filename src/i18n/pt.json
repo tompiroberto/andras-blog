@@ -20,7 +20,7 @@
   "icon.eating": "Comer muito",
   "about.title": "Sobre mim",
   "about.text": "Sou aluno do último ano do secundário. Nos tempos livres corro e participo em provas a sério. Também consigo comer muito. Sempre que posso, faço-me à estrada: adoro andar à boleia, viagens espontâneas e descobrir novas culturas, e sou um grande defensor das viagens mesmo low-cost. Fascina-me a forma como os países constroem as suas infraestruturas, como funcionam as redes de transportes – e os mapas.",
-  "about.work": "Experiência profissional: organização de eventos escolares e voluntariado em eventos desportivos.",
+  "about.work": "Organização de eventos escolares e voluntariado em eventos desportivos.",
   "about.photoAlt": "O András no acampamento a preparar uma sandes",
   "about.photoCaption": "Combustível para a próxima corrida.",
   "lang.english": "Inglês · B2",
@@ -562,5 +562,6 @@
   "pub.done": "🚀 Publicado – o site atualiza em cerca de um minuto.",
   "pub.none": "Não há nada novo guardado neste navegador. Publicar mesmo assim? (15 créditos)",
   "dev.provider": "As mensagens são entregues por…",
-  "cf.more": "Curiosidades e fotos"
+  "cf.more": "Curiosidades e fotos",
+  "pum.map": "Ver no mapa"
 }

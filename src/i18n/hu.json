@@ -20,7 +20,7 @@
   "icon.eating": "Sokat enni",
   "about.title": "Rólam",
   "about.text": "Végzős gimnáziumi diák vagyok. Szabadidőmben intenzíven futok és versenyzek. Emellett sokat tudok enni is. Amikor tehetem, útra kelek: kedvelem a stoppolást, a spontán utazásokat és az új kultúrák felfedezését, és nagyon támogatom az igazán low-budget utazást. Kifejezetten érdekel az országok infrastruktúrája, a közlekedési hálózatok működése és a térképek.",
-  "about.work": "Munkatapasztalataim: részt vettem iskolai rendezvények lebonyolításában, valamint sportrendezvényeken is önkénteskedtem.",
+  "about.work": "Részt vettem iskolai rendezvények lebonyolításában, és sportrendezvényeken is önkénteskedtem.",
   "about.photoAlt": "András a táborban szendvicset készít",
   "about.photoCaption": "Üzemanyag a következő futáshoz.",
   "lang.english": "Angol · B2",
@@ -460,10 +460,10 @@
   "ed.newSubtitle": "Új alcím",
   "ed.newParagraph": "Új bekezdés – ide írj.",
   "story.running": "A fő sportom a futás, mellette úszom is. Eddig a leghosszabb távom 30 km volt – de szerintem a maratont (42 km) bármikor le tudnám futni.",
-  "story.hitchhiking": "Még nincs benne sok tapasztalatom: a leghosszabb utam a Balatonig tartott, két fuvarral. Nagyon izgalmasnak találom, és mivel imádom a low-budget utazást, sokkal többet szeretnék stoppolni.",
+  "story.hitchhiking": "Még nincs benne sok tapasztalatom: a leghosszabb utam a Balatonig tartott, két fuvarral. Nagyon izgalmasnak találom, és mivel nagyon szeretem a low-budget utazást, sokkal többet szeretnék stoppolni.",
   "story.maps": "Imádom a térképeket, és földrajzzal szeretnék foglalkozni. Utazni bárhogy szeretek: repülővel, vonattal, stoppal, biciklivel vagy gyalog.",
   "story.budget": "Ha utazom, minek költsek sokat, ha anélkül is meg lehet oldani? Sőt, úgy még izgalmasabb – és közelebb kerülök az emberekhez. Ezért is szeretem a stoppolást.",
-  "story.languages": "Mindig jön egy új nyelv, ami lenyűgöz: előbb a spanyol, aztán a grúz – és ezzel nincs vége, most épp a portugálon gondolkozom. Gondolom, azért is, mert imádok megismerni mindenféle országot, részben a GeoGuessr miatt.",
+  "story.languages": "Mindig jön egy új nyelv, ami lenyűgöz: előbb a spanyol, aztán a grúz – és ezzel nincs vége, most épp a portugálon gondolkozom. Gondolom, azért is, mert nagyon szeretek megismerni mindenféle országot, részben a GeoGuessr miatt.",
   "story.eating": "Egy bödön Nutella? Három tányér bolognai spagetti? Meg sem árt. Szeretek enni, főleg édességet – de igazából bármit, csak sok legyen. (Lidl akciós péksütik, nyamm!)",
   "story.lang.english": "13 éves korom óta tanulom, és az Erasmus-projekteken egész gyorsan rám ragadt. Jól tudom használni: szinte minden gondolatomat ki tudom fejezni vele.",
   "story.lang.german": "8 éves korom óta tanulom, de az órákon sajnos nem nagyon figyelek, mert mindig csak alapdolgokat veszünk. A németben nagy a különbség az A2 és a B2 között: alapfokon ki tudom fejezni a gondolataimat, de néha nem jut eszembe egy-egy szó, és a bonyolult szórendek sem mennek még.",
@@ -562,5 +562,6 @@
   "pub.done": "🚀 Közzétéve – kb. egy perc múlva frissül az oldal.",
   "pub.none": "Ebben a böngészőben nincs új mentett változás. Mégis közzéteszed? (15 kredit)",
   "dev.provider": "Az üzeneteket továbbítja…",
-  "cf.more": "Érdekességek és fotók"
+  "cf.more": "Érdekességek és fotók",
+  "pum.map": "Megnézem a térképen"
 }

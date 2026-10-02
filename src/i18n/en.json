@@ -20,7 +20,7 @@
   "icon.eating": "Eating a lot",
   "about.title": "About me",
   "about.text": "I'm a final-year secondary school student. In my free time I run and race seriously. I can also eat a lot. Whenever I can, I hit the road: I love hitchhiking, spontaneous trips and discovering new cultures, and I'm a big supporter of really low-budget travel. I'm fascinated by how countries build their infrastructure, how transport networks work – and by maps.",
-  "about.work": "Work experience: organising school events and volunteering at sports events.",
+  "about.work": "I have helped organise school events and volunteered at sports events.",
   "about.photoAlt": "András at camp, making a sandwich",
   "about.photoCaption": "Fuel for the next run.",
   "lang.english": "English · B2",
@@ -562,5 +562,6 @@
   "pub.done": "🚀 Published – the site updates in about a minute.",
   "pub.none": "Nothing new is saved in this browser. Publish anyway? (15 credits)",
   "dev.provider": "Messages are delivered by…",
-  "cf.more": "Fun facts and photos"
+  "cf.more": "Fun facts and photos",
+  "pum.map": "Show me on the map"
 }

@@ -20,7 +20,7 @@
   "icon.eating": "Mâncat mult",
   "about.title": "Despre mine",
   "about.text": "Sunt elev în ultimul an de liceu. În timpul liber alerg și particip serios la concursuri. De asemenea, pot mânca foarte mult. Ori de câte ori pot, pornesc la drum: îmi plac autostopul, călătoriile spontane și descoperirea de noi culturi și susțin cu tărie călătoriile cu buget foarte redus. Mă fascinează cum își construiesc țările infrastructura, cum funcționează rețelele de transport – și hărțile.",
-  "about.work": "Experiență de lucru: organizarea de evenimente școlare și voluntariat la evenimente sportive.",
+  "about.work": "Organizarea de evenimente școlare și voluntariat la evenimente sportive.",
   "about.photoAlt": "András în tabără, pregătindu-și un sandviș",
   "about.photoCaption": "Combustibil pentru următoarea alergare.",
   "lang.english": "Engleză · B2",
@@ -562,5 +562,6 @@
   "pub.done": "🚀 Publicat – site-ul se actualizează în aproximativ un minut.",
   "pub.none": "Nu e nimic nou salvat în acest browser. Publici oricum? (15 credite)",
   "dev.provider": "Mesajele sunt livrate prin…",
-  "cf.more": "Curiozități și fotografii"
+  "cf.more": "Curiozități și fotografii",
+  "pum.map": "Arată-mi pe hartă"
 }
