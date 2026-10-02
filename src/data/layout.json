@@ -1,0 +1,14 @@
+{
+  "order": [
+    "hero",
+    "icons",
+    "about",
+    "explore",
+    "photos",
+    "plans",
+    "message"
+  ],
+  "hidden": [],
+  "width": {},
+  "scale": {}
+}

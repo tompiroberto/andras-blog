@@ -159,21 +159,25 @@ Ez az oldal nyitóoldala (lásd 0. pont). Letisztult, egyoldalas CV: tanulmányo
 
 ---
 
-## 11. Fejlesztői mód (feltöltés)
+## 11. Fejlesztői mód (feltöltés, elrendezés)
 
-1. Kattints **5-ször gyorsan** a fejlécben az **András** feliratra vagy a földgömbre → „Fejlesztői mód BE”.
-2. Zöld panel jobbra lent – mindegyik gomb a GitHubot nyitja meg (be kell lenned lépve):
-   - **Új bejegyzés:** kitöltendő sablon (cím, dátum, kategória, nyelv, rövid leírás, szöveg).
-   - **Fotók feltöltése (leírással):** ez nem a GitHubot nyitja, hanem egy ablakot az oldalon:
-     képek kiválasztása → mindegyikhez **leírás** (kötelező) és **hely** (nem kötelező) → dátum →
-     **Feltöltés**. Kb. egy perc múlva ott vannak a Galériában.
-     Első alkalommal **GitHub-kulcsot** kér (lásd lent), utána a böngésző megjegyzi.
-   - **Kép bejegyzéshez:** kép feltöltése, amit aztán a bejegyzésbe teszel:
-     `![leírás](../../assets/posts/kepneve.jpg)`.
-   - **Bejegyzések szerkesztése:** a meglévő bejegyzések; nyiss meg egyet, és kattints a ceruzára.
-3. A GitHubos gomboknál végül a zöld **Commit changes** gomb (kétszer). Kb. egy perc múlva fent van az oldalon.
-4. Kikapcsolás: újabb 5 kattintás vagy az ✕ a panelen.
-5. Ha utána a gépeden is dolgozol: előbb `git pull`.
+1. Kattints **5-ször gyorsan** a fejlécben az **András** feliratra vagy a földgömbre.
+2. Jön a „feltörés”: írd be a **hozzáférési kódot** (939). Rossz kódnál „ACCESS DENIED”, háromszori
+   hiba után kidob. A kód csak a kíváncsiakat tartja távol – közzétenni úgyis csak a GitHub-kulccsal lehet.
+3. Az oldal **neonzöld–fekete** lesz, a háttérben hullik a kód, a világtérkép eltűnik.
+4. Minden résznél egy zöld **＋**: **Fotó hozzáadása** vagy **Poszt hozzáadása** (a Felfedezés kártyáin
+   és a kategóriaoldalakon a poszt kategóriája már be van állítva).
+5. **Elrendezés** (kezdőlap): minden rész bal felső sarkában egy sáv:
+   **↑ ↓** sorrend · **👁** elrejtés/megjelenítés (a rejtett rész fejlesztői módban halványan látszik) ·
+   **⇔** szélesség (keskeny / normál / széles / teljes) · **A− A+** méret.
+   Változtatás után alul **Mentés** (kb. 1 perc múlva élesben) vagy **Visszavonás**.
+6. Zöld panel jobbra lent: új poszt, fotók feltöltése, régi posztok szerkesztése (GitHub), és
+   **Az „Üzenj” működése**: *írás az oldalon* vagy *e-mail-program megnyitása*.
+7. Kikapcsolás: újabb 5 kattintás (kód nélkül) vagy az ✕ a panelen.
+
+**Fotók helyadata:** feltöltéskor a telefonos fotók GPS-adatából az oldal magától kitölti a helyet; ha
+nincs GPS, a beírt helynevet keresi meg a térképen. A **Galéria** tetején világtérkép: minden fotó egy
+gombostű a saját kis képével; görgetéssel/+− nagyítasz, húzással mozgatsz, kattintásra nagyban nyílik.
 
 **Posztok képei a galériában:** a poszt borítóképe és a szövegbe beszúrt képek automatikusan a
 Galériába is bekerülnek (felirat: a poszt címe, nagy nézetben link a posztra).

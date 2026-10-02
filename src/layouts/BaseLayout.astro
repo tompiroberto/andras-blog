@@ -137,6 +137,7 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
         if (theme && theme !== 'violet' && themes.indexOf(theme) !== -1) document.documentElement.dataset.theme = theme;
       } catch (e) {}
     </script>
+    <slot name="head" />
   </head>
   <body>
     <ZoomSpace lang={lang} />

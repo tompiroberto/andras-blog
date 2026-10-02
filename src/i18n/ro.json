@@ -434,5 +434,19 @@
   "upload.gps": "din GPS-ul fotografiei",
   "upload.geoFound": "{place}",
   "upload.noGeo": "Nu-l găsesc pe hartă – verifică ortografia.",
-  "gallery.mapHint": "Derulează sau +/− pentru zoom, trage pentru a muta, apasă pe o fotografie."
+  "gallery.mapHint": "Derulează sau +/− pentru zoom, trage pentru a muta, apasă pe o fotografie.",
+  "lay.up": "Mai sus",
+  "lay.down": "Mai jos",
+  "lay.hide": "Ascunde / arată",
+  "lay.width": "Lățime",
+  "lay.smaller": "Mai mic",
+  "lay.bigger": "Mai mare",
+  "lay.w.narrow": "îngust",
+  "lay.w.normal": "normal",
+  "lay.w.wide": "lat",
+  "lay.w.full": "complet",
+  "lay.changed": "Aranjament modificat",
+  "lay.save": "Salvează",
+  "lay.undo": "Anulează",
+  "lay.saved": "Salvat – online în ~1 min."
 }

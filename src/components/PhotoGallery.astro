@@ -19,7 +19,7 @@ const all = await getPhotos();
 const photos = all.slice(0, SHOWN);
 ---
 
-<section class="section photos" id="photos" data-dev-add="photo" aria-labelledby="photos-title">
+<section class="section photos" id="photos" data-lay="photos" data-dev-add="photo" aria-labelledby="photos-title">
   <div class="container">
     <SectionHeading icon="camera" id="photos-title">
       {t(lang, 'gallery.title')}

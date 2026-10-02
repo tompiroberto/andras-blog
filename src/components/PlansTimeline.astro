@@ -22,7 +22,7 @@ const columns = STATIONS.map(() => 'minmax(0, 1fr)').join(' auto ');
 const k = (n: number, field: 'tag' | 'title' | 'text') => `plan${n}.${field}` as TKey;
 ---
 
-<section class="section plans" id="plans" aria-labelledby="plans-title">
+<section class="section plans" id="plans" data-lay="plans" aria-labelledby="plans-title">
   <div class="bg-layer">
     <Globe size="min(700px, 110vw)" right="-18%" top="-10%" speed={65} direction="ccw" dots={false} />
   </div>

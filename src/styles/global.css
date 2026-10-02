@@ -1005,8 +1005,9 @@ select {
   --violet: #00ff66;
   --violet-dark: #00e05a;
   --violet-tint: #062a10;
-  --yellow: #b6ff00;
-  --yellow-tint: #0c2406;
+  /* the theme's second colour: a dark green fill, so the neon text stays readable on it everywhere */
+  --yellow: #145c1f;
+  --yellow-tint: #0a2a0e;
   --globe-line: #0c3d18;
   --globe-line-footer: #00ff66;
   --land: #04140a;
@@ -1048,11 +1049,8 @@ select {
 :root.dev-mode h2 {
   animation: dev-glitch 7s infinite;
 }
-/* black text on the bright green / lime fills */
+/* black text on the bright green fills */
 :root.dev-mode .btn--primary,
-:root.dev-mode .btn--yellow,
-:root.dev-mode .hero__name,
-:root.dev-mode .nick-tip,
 :root.dev-mode [aria-pressed='true'] {
   color: #000;
   text-shadow: none;
@@ -1093,3 +1091,23 @@ select {
     animation: none;
   }
 }
+
+/* ==========================================================================
+   Layout editor (developer mode): per-section size and width (src/lib/layout.ts)
+   ========================================================================== */
+[data-lay] {
+  zoom: var(--lay-zoom, 1);
+}
+[data-lay] > .container,
+.container[data-lay] {
+  max-width: var(--lay-w, var(--container));
+}
+:root:not(.dev-mode) [data-lay-state='hidden'] {
+  display: none !important;
+}
+:root.dev-mode [data-lay-state='hidden'] {
+  opacity: 0.35;
+  outline: 3px dashed #39ff14;
+  outline-offset: -6px;
+}
+

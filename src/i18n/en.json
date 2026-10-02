@@ -434,5 +434,19 @@
   "upload.gps": "from the photo's GPS",
   "upload.geoFound": "{place}",
   "upload.noGeo": "Place not found on the map – check the spelling.",
-  "gallery.mapHint": "Scroll or +/− to zoom, drag to move, click a photo."
+  "gallery.mapHint": "Scroll or +/− to zoom, drag to move, click a photo.",
+  "lay.up": "Move up",
+  "lay.down": "Move down",
+  "lay.hide": "Hide / show",
+  "lay.width": "Width",
+  "lay.smaller": "Smaller",
+  "lay.bigger": "Bigger",
+  "lay.w.narrow": "narrow",
+  "lay.w.normal": "normal",
+  "lay.w.wide": "wide",
+  "lay.w.full": "full",
+  "lay.changed": "Layout changed",
+  "lay.save": "Save",
+  "lay.undo": "Undo",
+  "lay.saved": "Saved – live in ~1 min."
 }

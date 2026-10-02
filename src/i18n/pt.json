@@ -434,5 +434,19 @@
   "upload.gps": "do GPS da foto",
   "upload.geoFound": "{place}",
   "upload.noGeo": "Não encontro no mapa – verifica a ortografia.",
-  "gallery.mapHint": "Roda ou +/− para ampliar, arrasta para mover, clica numa foto."
+  "gallery.mapHint": "Roda ou +/− para ampliar, arrasta para mover, clica numa foto.",
+  "lay.up": "Subir",
+  "lay.down": "Descer",
+  "lay.hide": "Esconder / mostrar",
+  "lay.width": "Largura",
+  "lay.smaller": "Mais pequeno",
+  "lay.bigger": "Maior",
+  "lay.w.narrow": "estreito",
+  "lay.w.normal": "normal",
+  "lay.w.wide": "largo",
+  "lay.w.full": "inteiro",
+  "lay.changed": "Disposição alterada",
+  "lay.save": "Guardar",
+  "lay.undo": "Desfazer",
+  "lay.saved": "Guardado – online em ~1 min."
 }
