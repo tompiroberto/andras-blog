@@ -1,7 +1,9 @@
 ---
 /**
- * Photos uploaded in developer mode (src/content/photos, see public/admin/config.yml).
- * Newest first; the section is left out completely while there are no photos.
+ * Photos: every image uploaded into src/assets/photos (developer mode → "Upload a photo" on GitHub).
+ * The caption comes from the file name ("Bali-rizsteraszok.jpg" → "Bali rizsteraszok"); a yml file in
+ * src/content/photos can still give a photo a caption, place and date. Newest first; the section is left
+ * out completely while there are no photos.
  */
 import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
@@ -13,7 +15,20 @@ interface Props {
 }
 
 const { lang } = Astro.props;
-const photos = (await getCollection('photos')).sort((a, b) => (b.data.date?.getTime() ?? 0) - (a.data.date?.getTime() ?? 0));
+type Photo = { data: { image: ImageMetadata; caption: string; place?: string; date?: Date } };
+const described: Photo[] = (await getCollection('photos')).sort((a, b) => (b.data.date?.getTime() ?? 0) - (a.data.date?.getTime() ?? 0));
+const files = import.meta.glob<ImageMetadata>('../assets/photos/*.{jpg,jpeg,png,webp,avif,JPG,JPEG,PNG,WEBP}', { eager: true, import: 'default' });
+const usedSrc = new Set(described.map((p) => p.data.image.src));
+const fromFolder: Photo[] = Object.entries(files)
+  .filter(([, img]) => !usedSrc.has(img.src))
+  .sort(([a], [b]) => b.localeCompare(a))
+  .map(([path, image]) => ({
+    data: {
+      image,
+      caption: path.split('/').pop()!.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim(),
+    },
+  }));
+const photos = [...described, ...fromFolder];
 ---
 
 {

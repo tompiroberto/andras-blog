@@ -1,8 +1,9 @@
 ---
 /**
  * Developer mode: click the header title (the globe or "András") 5 times quickly. A small panel opens
- * with shortcuts into the editor (Decap CMS at /admin): new post, upload a photo, media library.
- * Publishing needs a login there (Netlify Identity, invite only) – the 5 clicks only reveal the door.
+ * with shortcuts to GitHub's own editor pages: a new post (pre-filled template), photo upload, the posts
+ * folder. Saving there ("Commit changes") needs the repository owner's GitHub login – the 5 clicks only
+ * reveal the door. Netlify rebuilds the site after every commit.
  */
 import Icon from './Icon.astro';
 import { t, type Lang } from '../i18n';
@@ -12,6 +13,20 @@ interface Props {
 }
 
 const { lang } = Astro.props;
+const REPO = 'https://github.com/tompiroberto/andras-blog';
+/** {date} is filled in on click */
+const POST_TEMPLATE = `---
+title: 'Cím ide'
+date: {date}
+category: adventures # adventures | erasmus | random
+lang: ${lang} # en | hu | pt | ro | el | ka
+excerpt: 'Egy-két mondat, ami a kártyán látszik.'
+---
+
+Ide írd a bejegyzést. Új bekezdés: hagyj ki egy üres sort.
+
+<!-- Kép a szövegbe: töltsd fel a "Kép bejegyzéshez" gombbal, aztán ide írd: ![leírás](../../assets/posts/kepneve.jpg) -->
+`;
 ---
 
 <aside class="dev-panel" hidden data-dev-panel aria-labelledby="dev-title">
@@ -22,10 +37,10 @@ const { lang } = Astro.props;
   </div>
   <p class="dev-panel__text">{t(lang, 'dev.text')}</p>
   <div class="dev-panel__actions">
-    <a class="dev-panel__btn" href="/admin/#/collections/posts/new" target="_blank" rel="noopener"><Icon name="file-plus" size={16} />{t(lang, 'dev.newPost')}</a>
-    <a class="dev-panel__btn" href="/admin/#/collections/photos/new" target="_blank" rel="noopener"><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</a>
-    <a class="dev-panel__btn" href="/admin/#/media" target="_blank" rel="noopener"><Icon name="images" size={16} />{t(lang, 'dev.media')}</a>
-    <a class="dev-panel__btn" href="/admin/" target="_blank" rel="noopener"><Icon name="layout-dashboard" size={16} />{t(lang, 'dev.admin')}</a>
+    <a class="dev-panel__btn" href={`${REPO}/new/main/src/content/posts`} target="_blank" rel="noopener" data-dev-new-post data-template={POST_TEMPLATE}><Icon name="file-plus" size={16} />{t(lang, 'dev.newPost')}</a>
+    <a class="dev-panel__btn" href={`${REPO}/upload/main/src/assets/photos`} target="_blank" rel="noopener"><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</a>
+    <a class="dev-panel__btn" href={`${REPO}/upload/main/src/assets/posts`} target="_blank" rel="noopener"><Icon name="images" size={16} />{t(lang, 'dev.media')}</a>
+    <a class="dev-panel__btn" href={`${REPO}/tree/main/src/content/posts`} target="_blank" rel="noopener"><Icon name="layout-dashboard" size={16} />{t(lang, 'dev.admin')}</a>
   </div>
   <p class="dev-panel__note">{t(lang, 'dev.note')}</p>
 </aside>
@@ -168,6 +183,13 @@ const { lang } = Astro.props;
       /* storage unavailable */
     }
   };
+  // "New post": GitHub's new-file page with the template and today's date already filled in
+  document.querySelector<HTMLAnchorElement>('[data-dev-new-post]')?.addEventListener('click', (e) => {
+    const a = e.currentTarget as HTMLAnchorElement;
+    const date = new Date().toISOString().slice(0, 10);
+    const value = a.dataset.template!.replace('{date}', date);
+    a.href = `${a.href.split('?')[0]}?filename=${date}-uj-bejegyzes.md&value=${encodeURIComponent(value)}`;
+  });
   try {
     if (localStorage.getItem(KEY) === '1') setDev(true);
   } catch {
