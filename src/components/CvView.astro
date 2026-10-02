@@ -17,6 +17,8 @@ interface Props {
 
 const { lang } = Astro.props;
 const cv = CV[lang];
+/** the CV's own contact address (the rest of the site uses site.json → email) */
+const CV_EMAIL = 'kormoran905@gmail.com';
 /** full name: Hungarian order in Hungarian, given names first everywhere else */
 const fullName = lang === 'hu' ? 'Vásárhelyi András Péter' : 'András Péter Vásárhelyi';
 /** the CV photo is optional: shown when public/images/cv-photo.jpg exists */
@@ -67,10 +69,7 @@ const main: { title: string; items: CvItem[] }[] = [
         <section>
           <h2>{cv.h.contact}</h2>
           <ul class="cv-contact">
-            <li><Icon name="map-pin" size={15} />{cv.location}</li>
-            <li><Icon name="mail" size={15} /><a href={`mailto:${site.email}`}>{site.email}</a></li>
-            <li><Icon name="instagram" size={15} /><a href={site.instagram.url} target="_blank" rel="noopener">{site.instagram.handle}</a></li>
-            <li><Icon name="strava" size={15} /><a href={site.strava} target="_blank" rel="noopener">Strava</a></li>
+            <li><Icon name="mail" size={15} /><a href={`mailto:${CV_EMAIL}`}>{CV_EMAIL}</a></li>
           </ul>
         </section>
         <section>
