@@ -992,3 +992,104 @@ select {
     0 0 0 2px var(--ink),
     0 0 80px rgb(123 47 247 / 0.45);
 }
+
+/* ==========================================================================
+   Developer mode: "the site has been hacked" – neon green on black, no world map,
+   falling code behind the page (src/components/DevMode.astro)
+   ========================================================================== */
+:root.dev-mode {
+  --bg: #000;
+  --surface: rgba(2, 12, 4, 0.9);
+  --ink: #39ff14;
+  --muted: #2fbf3a;
+  --violet: #00ff66;
+  --violet-dark: #00e05a;
+  --violet-tint: #062a10;
+  --yellow: #b6ff00;
+  --yellow-tint: #0c2406;
+  --globe-line: #0c3d18;
+  --globe-line-footer: #00ff66;
+  --land: #04140a;
+  --success: #39ff14;
+  --font-heading: 'Cascadia Code', ui-monospace, Consolas, 'Noto Sans Georgian', monospace;
+  --font-body: ui-monospace, 'Cascadia Code', Consolas, 'Noto Sans Georgian', monospace;
+  color-scheme: dark;
+}
+:root.dev-mode {
+  background: #000;
+}
+/* transparent body: the falling code (a fixed canvas under the page) shows through */
+:root.dev-mode body {
+  background: transparent;
+  color: var(--ink);
+}
+:root.dev-mode main,
+:root.dev-mode .section {
+  background: transparent;
+}
+/* no world map, globes, background cities or doodles */
+:root.dev-mode .world-layer,
+:root.dev-mode .search-pin-layer,
+:root.dev-mode .bg-layer {
+  display: none !important;
+}
+:root.dev-mode .site-header::before {
+  background: repeating-linear-gradient(135deg, rgba(57, 255, 20, 0.08) 0 14px, transparent 14px 28px), rgba(0, 0, 0, 0.88);
+}
+:root.dev-mode .site-header {
+  border-bottom-color: #39ff14;
+}
+:root.dev-mode h1,
+:root.dev-mode h2,
+:root.dev-mode h3 {
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.65);
+}
+:root.dev-mode h1,
+:root.dev-mode h2 {
+  animation: dev-glitch 7s infinite;
+}
+/* black text on the bright green / lime fills */
+:root.dev-mode .btn--primary,
+:root.dev-mode .btn--yellow,
+:root.dev-mode .hero__name,
+:root.dev-mode .nick-tip,
+:root.dev-mode [aria-pressed='true'] {
+  color: #000;
+  text-shadow: none;
+}
+:root.dev-mode img {
+  filter: saturate(0.85) contrast(1.05);
+}
+:root.dev-mode ::selection {
+  background: #39ff14;
+  color: #000;
+}
+@keyframes dev-glitch {
+  0%,
+  92%,
+  100% {
+    transform: none;
+    text-shadow: 0 0 8px rgba(57, 255, 20, 0.65);
+  }
+  93% {
+    transform: translate(2px, -1px) skewX(-6deg);
+    text-shadow:
+      -3px 0 #ff00c8,
+      3px 0 #00e5ff;
+  }
+  94% {
+    transform: translate(-2px, 1px);
+    text-shadow:
+      3px 0 #ff00c8,
+      -3px 0 #00e5ff;
+  }
+  95% {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.dev-mode h1,
+  :root.dev-mode h2 {
+    animation: none;
+  }
+}

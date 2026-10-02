@@ -1,6 +1,8 @@
 ---
 /**
- * Developer mode: click the header title (the globe or "András") 5 times quickly. Then a green "+" shows
+ * Developer mode: click the header title (the globe or "András") 5 times quickly, then type the access
+ * code in the movie-style "hacking" screen (the code only keeps out the curious – publishing still needs
+ * the GitHub key). The site turns neon green on black with falling code. Then a green "+" shows
  * on every section (photo or post; on Explore cards / category pages the post gets that category), and a
  * small panel opens. Photos (with descriptions, src/components/PhotoUpload.astro) and posts (with pictures,
  * src/components/PostEditor.astro) are published from the site straight to GitHub; Netlify rebuilds the
@@ -40,6 +42,20 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   <button type="button" data-dev-add-pick="post"><Icon name="file-plus" size={18} />{t(lang, 'dev.addPost')}</button>
 </div>
 <template data-dev-addlabel>{t(lang, 'dev.add')}</template>
+<canvas class="dev-rain" aria-hidden="true" data-dev-rain></canvas>
+<div class="dev-scan" aria-hidden="true"></div>
+<div class="dev-gate" hidden role="dialog" aria-modal="true" aria-label="Access code" data-dev-gate>
+  <div class="dev-gate__box" data-dev-gate-box>
+    <pre class="dev-gate__log" data-dev-gate-log></pre>
+    <form class="dev-gate__form" hidden data-dev-gate-form>
+      <label for="dev-code">&gt; ENTER ACCESS CODE:</label>
+      <input id="dev-code" type="password" inputmode="numeric" autocomplete="off" maxlength="6" spellcheck="false" data-dev-code />
+      <span class="dev-gate__cursor" aria-hidden="true">█</span>
+    </form>
+    <p class="dev-gate__verdict" role="status" data-dev-gate-verdict></p>
+    <button type="button" class="dev-gate__abort" data-dev-gate-abort>[ESC] abort</button>
+  </div>
+</div>
 <p class="dev-toast" hidden role="status" data-dev-toast></p>
 <template data-dev-on>{t(lang, 'dev.on')}</template>
 <template data-dev-offmsg>{t(lang, 'dev.offMsg')}</template>
@@ -210,6 +226,165 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     background: #39d353;
     color: #0d1117;
   }
+  /* ---- the "hacking" screen ---- */
+  .dev-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.92);
+    color: #39ff14;
+    font: 15px/1.55 ui-monospace, 'Cascadia Code', Consolas, monospace;
+    zoom: var(--inv-zoom, 1);
+  }
+  .dev-gate[hidden] {
+    display: none;
+  }
+  .dev-gate__box {
+    width: min(620px, 100%);
+    padding: 22px 24px;
+    border: 1px solid #39ff14;
+    border-radius: 6px;
+    background: #000;
+    box-shadow:
+      0 0 24px rgba(57, 255, 20, 0.35),
+      inset 0 0 40px rgba(57, 255, 20, 0.06);
+    text-shadow: 0 0 6px rgba(57, 255, 20, 0.7);
+  }
+  .dev-gate__log {
+    margin: 0 0 10px;
+    min-height: 7.5em;
+    white-space: pre-wrap;
+    font: inherit;
+  }
+  .dev-gate__form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dev-gate__form[hidden] {
+    display: none;
+  }
+  .dev-gate__form label {
+    font-weight: 700;
+  }
+  .dev-gate__form input {
+    width: 7ch;
+    padding: 2px 6px;
+    border: 0;
+    border-bottom: 2px solid #39ff14;
+    background: transparent;
+    color: #39ff14;
+    font: 700 22px ui-monospace, Consolas, monospace;
+    letter-spacing: 0.4em;
+    caret-color: transparent;
+    outline: none;
+  }
+  .dev-gate__cursor {
+    animation: dev-blink 1s steps(1) infinite;
+  }
+  .dev-gate__verdict {
+    min-height: 1.6em;
+    margin: 14px 0 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+  }
+  .dev-gate__verdict.is-denied {
+    color: #ff2a2a;
+    text-shadow: 0 0 10px rgba(255, 42, 42, 0.8);
+  }
+  .dev-gate__verdict.is-granted {
+    color: #39ff14;
+    animation: dev-flash 0.18s steps(2) 4;
+  }
+  .dev-gate__box.is-shake {
+    animation: dev-shake 0.4s;
+    border-color: #ff2a2a;
+  }
+  .dev-gate__abort {
+    margin-top: 14px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #1f8f0f;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .dev-gate__abort:hover {
+    color: #39ff14;
+  }
+  @keyframes dev-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @keyframes dev-flash {
+    50% {
+      color: #000;
+      background: #39ff14;
+    }
+  }
+  @keyframes dev-shake {
+    20%,
+    60% {
+      transform: translateX(-10px);
+    }
+    40%,
+    80% {
+      transform: translateX(10px);
+    }
+  }
+
+  /* ---- falling code and scan lines (only in developer mode) ---- */
+  .dev-rain,
+  .dev-scan {
+    display: none;
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    zoom: var(--inv-zoom, 1);
+  }
+  .dev-rain {
+    z-index: -1;
+    width: 100vw;
+    height: 100vh;
+    opacity: 0.38;
+  }
+  .dev-scan {
+    z-index: 1500;
+    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 3px);
+    animation: dev-scan-flicker 6s infinite;
+  }
+  :global(html.dev-mode) .dev-rain,
+  :global(html.dev-mode) .dev-scan {
+    display: block;
+  }
+  @keyframes dev-scan-flicker {
+    0%,
+    96%,
+    100% {
+      opacity: 1;
+    }
+    97% {
+      opacity: 0.4;
+    }
+    98% {
+      opacity: 1;
+    }
+    99% {
+      opacity: 0.6;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dev-scan {
+      animation: none;
+    }
+  }
+
   @keyframes dev-in {
     from {
       opacity: 0;
@@ -234,6 +409,155 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     window.clearTimeout(toastTimer);
     toastTimer = window.setTimeout(() => (toast.hidden = true), 1600);
   };
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, reduced ? 0 : ms));
+
+  // ---- falling code behind the page ----
+  const rain = document.querySelector<HTMLCanvasElement>('[data-dev-rain]')!;
+  const GLYPHS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF<>/{}[]=;:+*#$%&ÁÉŐŰ';
+  const WORDS = ['git push', 'sudo', '0xDEAD', 'root', 'npm run', 'chmod', 'ssh', 'Nutella', 'Chile'];
+  let rainTimer = 0;
+  let drops: number[] = [];
+  const startRain = () => {
+    if (rainTimer || reduced) return;
+    const ctx = rain.getContext('2d')!;
+    const FONT = 16;
+    const resize = () => {
+      rain.width = window.innerWidth;
+      rain.height = window.innerHeight;
+      drops = Array.from({ length: Math.ceil(rain.width / FONT) }, () => Math.random() * -60);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    rainTimer = window.setInterval(() => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.09)';
+      ctx.fillRect(0, 0, rain.width, rain.height);
+      ctx.font = `${FONT}px ui-monospace, Consolas, monospace`;
+      drops.forEach((y, i) => {
+        const x = i * FONT;
+        const head = Math.random() < 0.004 ? WORDS[(Math.random() * WORDS.length) | 0] : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+        ctx.fillStyle = Math.random() < 0.06 ? '#d8ffd0' : '#39ff14';
+        ctx.fillText(head, x, y * FONT);
+        drops[i] = y * FONT > rain.height && Math.random() > 0.975 ? 0 : y + 1;
+      });
+    }, 55);
+  };
+  const stopRain = () => {
+    window.clearInterval(rainTimer);
+    rainTimer = 0;
+    rain.getContext('2d')?.clearRect(0, 0, rain.width, rain.height);
+  };
+
+  // ---- the "hacking" screen with the access code ----
+  const CODE_HASH = '92c2ffc57ee144f2698e57b5ae2e1149428e2e76660d17da348d459cf708c3cb';
+  const gate = document.querySelector<HTMLElement>('[data-dev-gate]')!;
+  const gateBox = gate.querySelector<HTMLElement>('[data-dev-gate-box]')!;
+  const gateLog = gate.querySelector<HTMLElement>('[data-dev-gate-log]')!;
+  const gateForm = gate.querySelector<HTMLFormElement>('[data-dev-gate-form]')!;
+  const gateInput = gate.querySelector<HTMLInputElement>('[data-dev-code]')!;
+  const verdict = gate.querySelector<HTMLElement>('[data-dev-gate-verdict]')!;
+  let gateRun = 0;
+  let tries = 0;
+  let checking = false;
+
+  const type = async (line: string, run: number, speed = 14) => {
+    for (const ch of line) {
+      if (run !== gateRun) return;
+      gateLog.textContent += ch;
+      await sleep(speed);
+    }
+    gateLog.textContent += '\n';
+  };
+  const closeGate = () => {
+    gateRun++;
+    gate.hidden = true;
+  };
+  async function openGate() {
+    const run = ++gateRun;
+    tries = 0;
+    gate.hidden = false;
+    gateLog.textContent = '';
+    verdict.textContent = '';
+    verdict.className = 'dev-gate__verdict';
+    gateForm.hidden = true;
+    gateInput.value = '';
+    const bar = (n: number) => `[${'#'.repeat(n)}${'.'.repeat(20 - n)}] ${n * 5}%`;
+    await type(`> ssh root@${location.hostname}`, run);
+    await type('> handshake ........... OK', run);
+    if (run !== gateRun) return;
+    gateLog.textContent += '> bypassing firewall  ';
+    for (let n = 0; n <= 20; n += 4) {
+      if (run !== gateRun) return;
+      const lines = gateLog.textContent!.split('\n');
+      lines[lines.length - 1] = `> bypassing firewall  ${bar(n)}`;
+      gateLog.textContent = lines.join('\n');
+      await sleep(90);
+    }
+    gateLog.textContent += '\n';
+    await type('> AUTHENTICATION REQUIRED', run, 30);
+    if (run !== gateRun) return;
+    gateForm.hidden = false;
+    gateInput.focus();
+  }
+
+  const sha256 = async (text: string) =>
+    Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+  async function check() {
+    if (checking) return;
+    checking = true;
+    const run = gateRun;
+    const ok = (await sha256(`andras-dev:${gateInput.value}`)) === CODE_HASH;
+    if (run !== gateRun) return void (checking = false);
+    if (!ok) {
+      tries++;
+      verdict.textContent = tries >= 3 ? 'INTRUSION DETECTED — CONNECTION TERMINATED' : 'ACCESS DENIED';
+      verdict.className = 'dev-gate__verdict is-denied';
+      gateBox.classList.remove('is-shake');
+      void gateBox.offsetWidth;
+      gateBox.classList.add('is-shake');
+      gateInput.value = '';
+      checking = false;
+      if (tries >= 3) {
+        gateForm.hidden = true;
+        await sleep(1600);
+        if (run === gateRun) closeGate();
+      }
+      return;
+    }
+    verdict.textContent = 'ACCESS GRANTED';
+    verdict.className = 'dev-gate__verdict is-granted';
+    gateForm.hidden = true;
+    await type('> decrypting content store ... OK', run, 8);
+    await type('> mounting /posts /photos .... OK', run, 8);
+    await type('> welcome back, András.', run, 25);
+    await sleep(500);
+    checking = false;
+    if (run !== gateRun) return;
+    closeGate();
+    setDev(true);
+    say(tpl('on'));
+  }
+
+  gateInput.addEventListener('input', () => {
+    gateInput.value = gateInput.value.replace(/\D/g, '');
+    if (gateInput.value.length >= 3) void check();
+  });
+  gateForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    void check();
+  });
+  gate.querySelector('[data-dev-gate-abort]')!.addEventListener('click', closeGate);
+  gate.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeGate();
+  });
+  // a click anywhere on the screen puts the cursor back into the code field
+  gate.addEventListener('click', (e) => {
+    if (!(e.target as Element).closest('button') && !gateForm.hidden) gateInput.focus();
+  });
+
   // "+" on every section (and on the places marked data-dev-add="photo" | "post", with data-dev-category)
   const menu = document.querySelector<HTMLElement>('[data-dev-add-menu]')!;
   let menuCategory: string | undefined;
@@ -290,8 +614,13 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   const setDev = (on: boolean) => {
     html.classList.toggle('dev-mode', on);
     if (panel) panel.hidden = !on;
-    if (on) addPluses();
-    else removePluses();
+    if (on) {
+      addPluses();
+      startRain();
+    } else {
+      removePluses();
+      stopRain();
+    }
     try {
       if (on) localStorage.setItem(KEY, '1');
       else localStorage.removeItem(KEY);
@@ -325,9 +654,10 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       }
       if (clicks.length >= CLICKS) {
         clicks = [];
-        const on = !html.classList.contains('dev-mode');
-        setDev(on);
-        say(on ? tpl('on') : tpl('offmsg'));
+        if (html.classList.contains('dev-mode')) {
+          setDev(false);
+          say(tpl('offmsg'));
+        } else openGate();
       } else if (clicks.length >= 2) {
         say(tpl('count').replace('{n}', String(CLICKS - clicks.length)));
       }
