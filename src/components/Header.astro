@@ -1,4 +1,5 @@
 ---
+import pumIdeas from '../data/pum-ideas.json';
 import Icon from './Icon.astro';
 import IconCircle from './IconCircle.astro';
 import LanguageSwitcher from './LanguageSwitcher.astro';
@@ -117,7 +118,7 @@ const citiesToggle = {
     </button>
     </div>
     <!-- the motto, in the free space after the buttons -->
-    <button type="button" class="pum" data-pum data-info-title={t(lang, 'pum.title')} data-ideas={JSON.stringify(t(lang, 'pum.ideas').split('|'))} aria-label={t(lang, 'pum.label')} title={t(lang, 'pum.label')}>PUM!</button>
+    <button type="button" class="pum" data-pum data-info-title={t(lang, 'pum.title')} data-ideas={JSON.stringify(pumIdeas[lang])} aria-label={t(lang, 'pum.label')} title={t(lang, 'pum.label')}>PUM!</button>
   </div>
 
   <div class="mobile-menu" id="mobile-menu" hidden data-mobile-menu>
