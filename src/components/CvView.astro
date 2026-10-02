@@ -445,5 +445,13 @@ const main: { title: string; items: CvItem[] }[] = [
       document.querySelector<HTMLButtonElement>('[data-html-toggle="cv-mode"]')?.click();
     });
     view.querySelector('[data-cv-print]')!.addEventListener('click', () => window.print());
+    // no double-click actions on the CV (the coordinate grid's fact card, word selection)
+    view.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    view.addEventListener('mousedown', (e) => {
+      if (e.detail > 1) e.preventDefault();
+    });
   }
 </script>

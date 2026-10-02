@@ -197,19 +197,19 @@ const citiesToggle = {
   /* the motto: a slightly tilted stamp on the header's right side (it takes no room from the buttons);
      on wide screens it moves in towards the buttons, as far as the free space allows */
   .pum {
-    position: absolute;
-    top: min(50%, 52px);
-    right: clamp(14px, calc((100vw - 1450px) * 0.29 + 14px), 170px);
+    position: relative;
     z-index: 2;
+    flex: none;
+    margin-left: clamp(10px, 1.6vw, 34px);
     font-family: 'Unbounded', var(--font-heading);
-    font-size: 44px;
+    font-size: clamp(30px, 2.6vw, 44px);
     font-weight: 900;
     letter-spacing: 0.02em;
     line-height: 1;
     color: var(--violet);
     -webkit-text-stroke: 2px var(--ink);
     text-shadow: 4px 4px 0 var(--yellow);
-    transform: translateY(-50%) rotate(-8deg);
+    transform: rotate(-8deg);
     padding: 0;
     border: 0;
     background: none;
@@ -226,36 +226,32 @@ const citiesToggle = {
   }
   @keyframes pum-boom {
     15% {
-      transform: translateY(-50%) rotate(-30deg) scale(1.6);
+      transform: rotate(-30deg) scale(1.6);
     }
     35% {
-      transform: translateY(-50%) rotate(350deg) scale(0.8);
+      transform: rotate(350deg) scale(0.8);
     }
     60% {
-      transform: translateY(-50%) rotate(345deg) scale(1.2);
+      transform: rotate(345deg) scale(1.2);
     }
     100% {
-      transform: translateY(-50%) rotate(352deg) scale(1);
-    }
-  }
-  /* mid-size screens: the buttons reach the right edge, so the stamp is smaller and sits in the corner */
-  @media (max-width: 1279px) {
-    .pum {
-      top: 26px;
-      font-size: 28px;
+      transform: rotate(352deg) scale(1);
     }
   }
   @keyframes pum-in {
     from {
-      transform: translateY(-50%) rotate(-30deg) scale(0.2);
+      transform: rotate(-30deg) scale(0.2);
       opacity: 0;
     }
   }
   @media (max-width: 899px) {
     .pum {
+      position: absolute;
       top: 26px;
       right: 116px;
+      margin: 0;
       font-size: 22px;
+      translate: 0 -50%;
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -287,9 +283,10 @@ const citiesToggle = {
   }
   .nav-desktop ul {
     display: flex;
-    flex-wrap: wrap;
+    /* all menu words on one line */
+    flex-wrap: nowrap;
     justify-content: flex-end;
-    gap: 2px clamp(8px, 1.2vw, 20px);
+    gap: clamp(8px, 1vw, 18px);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -330,6 +327,12 @@ const citiesToggle = {
     font-weight: 700;
     font-size: var(--fs-small);
   }
+  /* not enough room on one line: the small switches live in the ☰ menu */
+  @media (max-width: 1439px) {
+    .header-tools > :global(.desktop-tool) {
+      display: none;
+    }
+  }
   /* on phones these live in the menu instead */
   @media (max-width: 899px) {
     .header-tools > :global(.desktop-tool),
@@ -342,7 +345,10 @@ const citiesToggle = {
     margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: clamp(4px, 0.5vw, 10px);
+    flex: none;
+  }
+  .nav-desktop {
     flex: none;
   }
   .menu-toggle {
@@ -354,6 +360,11 @@ const citiesToggle = {
     border-radius: 50%;
     background: var(--surface);
     cursor: pointer;
+  }
+  @media (max-width: 1439px) {
+    .menu-toggle {
+      display: grid;
+    }
   }
   .menu-toggle__close {
     display: none;
@@ -432,7 +443,7 @@ const citiesToggle = {
       margin-left: auto;
     }
   }
-  @media (min-width: 900px) {
+  @media (min-width: 1440px) {
     .mobile-menu {
       display: none !important;
     }

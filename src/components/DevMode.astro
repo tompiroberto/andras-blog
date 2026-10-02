@@ -113,6 +113,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 <button type="button" class="dev-preview-exit" hidden data-dev-ui data-dev-preview-exit>◀ {t(lang, 'dev.previewExit')}</button>
 <template data-dev-postconfirm>{t(lang, 'dev.postConfirm')}</template>
 <template data-dev-postdeleted>{t(lang, 'dev.postDeleted')}</template>
+<span class="dev-tip" hidden data-dev-tip></span>
 <p class="dev-toast" hidden role="status" data-dev-toast></p>
 <template data-dev-on>{t(lang, 'dev.on')}</template>
 <template data-dev-offmsg>{t(lang, 'dev.offMsg')}</template>
@@ -300,6 +301,22 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     font: inherit;
     font-size: 12px;
     cursor: pointer;
+  }
+  .dev-tip {
+    position: fixed;
+    z-index: 2100;
+    max-width: 260px;
+    padding: 5px 10px;
+    border: 1px solid #39ff14;
+    border-radius: 8px;
+    background: #000;
+    color: #39ff14;
+    font: 700 12px ui-monospace, Consolas, monospace;
+    pointer-events: none;
+    box-shadow: 0 0 12px rgba(57, 255, 20, 0.35);
+  }
+  .dev-tip[hidden] {
+    display: none;
   }
   .dev-preview-exit {
     position: fixed;
@@ -661,6 +678,42 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   import { PENDING_EVENT, TOKEN_KEY, commitFiles, getToken, pendingCount, publishSite, readFile } from '../lib/githubCommit';
 
   const KEY = 'andras-dev-mode';
+
+  // ---- labels: in developer mode every tool button says what it does, at once ----
+  const devTip = document.querySelector<HTMLElement>('[data-dev-tip]')!;
+  const TIP_AREAS = '.dev-panel, .lay-bar, .lay-save, .ed-frame, .mm-ed, .dev-plus, .dev-add-menu, .site-header, .dyn-search, .mm-bar';
+  let tipFor: HTMLElement | null = null;
+  document.addEventListener('mouseover', (e) => {
+    if (!document.documentElement.classList.contains('dev-mode')) return;
+    const el = (e.target as Element).closest<HTMLElement>('[title], [data-tip], [aria-label]');
+    if (!el || !el.closest(TIP_AREAS)) {
+      devTip.hidden = true;
+      tipFor = null;
+      return;
+    }
+    // the browser's own (slow) tooltip would show the same text a second later
+    if (el.title) {
+      el.dataset.tip = el.title;
+      el.removeAttribute('title');
+    }
+    const text = el.dataset.tip || el.getAttribute('aria-label') || '';
+    if (!text || text === tipFor?.dataset.tip) return;
+    tipFor = el;
+    devTip.textContent = text;
+    devTip.hidden = false;
+    const z = Number(getComputedStyle(document.documentElement).zoom) || 1;
+    const r = el.getBoundingClientRect();
+    const k = 1 / z;
+    const below = r.bottom * k + 8 + 30 < window.innerHeight * k;
+    devTip.style.left = `${Math.max(6, Math.min(window.innerWidth * k - 270, (r.left + r.width / 2) * k - 60))}px`;
+    devTip.style.top = `${below ? r.bottom * k + 8 : r.top * k - 34}px`;
+  });
+  document.addEventListener('mouseout', (e) => {
+    if (tipFor && !(e.relatedTarget instanceof Node && tipFor.contains(e.relatedTarget))) {
+      devTip.hidden = true;
+      tipFor = null;
+    }
+  });
 
   // ---- 🚀 Publish: one deploy for everything saved (saves alone cost no Netlify credits) ----
   const pubButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-dev-publish]'));

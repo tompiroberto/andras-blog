@@ -254,6 +254,7 @@
     window.addEventListener(HORIZONTAL_EVENT, () => isOn() && requestAnimationFrame(build));
     // Double-click (grid on): "message me about this spot" with its coordinates
     document.addEventListener('dblclick', (e) => {
+      if (document.documentElement.classList.contains('cv-mode')) return;
       if (!isOn() || html.classList.contains('map-mode')) return;
       if ((e.target as Element).closest('a, button, input, textarea, select, label, [data-chile], dialog, .fact-card')) return;
       const z = pageZoom();
