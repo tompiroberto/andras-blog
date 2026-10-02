@@ -12,9 +12,11 @@ interface Props {
   lang: Lang;
   /** Slugs of published posts, so tooltip links never point at a missing page */
   publishedSlugs: string[];
+  /** the page already has the title (the map page) */
+  hideTitle?: boolean;
 }
 
-const { lang, publishedSlugs } = Astro.props;
+const { lang, publishedSlugs, hideTitle = false } = Astro.props;
 
 
 const STATUSES: { status: Status; key: TKey; icon: string }[] = [
@@ -54,7 +56,7 @@ const labels = {
 
 <div class="map-section explore-map" id="map" aria-labelledby="map-title" data-map-wrap>
   <div>
-    <h3 class="explore-map__title" id="map-title"><Icon name="map-pin" size={26} />{t(lang, 'map.title')}</h3>
+    <h3 class:list={['explore-map__title', { 'visually-hidden': hideTitle }]} id="map-title"><Icon name="map-pin" size={26} />{t(lang, 'map.title')}</h3>
     <p class="map-hint">
       <span class="map-hint--hover">{t(lang, 'map.hint')}</span>
       <span class="map-hint--touch">{t(lang, 'map.hintTouch')}</span>

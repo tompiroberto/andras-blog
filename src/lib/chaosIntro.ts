@@ -30,7 +30,7 @@ const PIECES = [
   'main .card',
   'main .map-panel',
   'main .section-heading',
-  'main .timeline',
+  'main .plans-board',
   'main .facts',
   '.powerlines',
   '.site-footer .globe',

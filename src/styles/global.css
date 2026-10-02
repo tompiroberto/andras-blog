@@ -162,8 +162,9 @@ h4 {
   font-family: var(--font-heading);
   line-height: 1.12;
   margin: 0 0 0.5em;
-  overflow-wrap: anywhere;
-  hyphens: auto;
+  /* long words move to the next line instead of breaking in the middle */
+  overflow-wrap: break-word;
+  hyphens: manual;
 }
 h1 {
   font-size: var(--fs-h1);
@@ -625,6 +626,11 @@ select {
   overflow: hidden;
   padding-top: calc(var(--header-h) * var(--tz) + 24px) !important;
   padding-bottom: calc(var(--roadside-h) + 12px) !important;
+}
+/* wider columns on the horizontal page: the content spreads out instead of piling up */
+:root.horizontal main > * > .container,
+:root.horizontal main > .container {
+  max-width: min(calc(1560px * var(--tz)), calc(96vw * var(--inv-zoom, 1)));
 }
 /* the content of every column sits in the middle of the screen, not stuck to the top */
 :root.horizontal main > :not(script),
@@ -1098,9 +1104,10 @@ select {
 [data-lay] {
   zoom: var(--lay-zoom, 1);
 }
+/* a width chosen in the layout editor; otherwise the normal (zoom-aware) column width */
 [data-lay] > .container,
 .container[data-lay] {
-  max-width: var(--lay-w, var(--container));
+  max-width: var(--lay-w, calc(var(--container) * var(--fill) + (var(--chile-space) + 2 * var(--gutter)) * var(--tz)));
 }
 :root:not(.dev-mode) [data-lay-state='hidden'] {
   display: none !important;
@@ -1109,5 +1116,136 @@ select {
   opacity: 0.35;
   outline: 3px dashed #39ff14;
   outline-offset: -6px;
+}
+
+/* ==========================================================================
+   Info boxes (src/lib/infobox.ts): pop out of the clicked icon / chip / badge
+   ========================================================================== */
+.infobox {
+  position: absolute;
+  /* above the background map, its cities and drawings (--z-grid), below the header */
+  z-index: calc(var(--z-grid) + 2);
+  width: min(440px, calc(100vw * var(--inv-zoom, 1) - 32px));
+  padding: 16px 18px 16px;
+  border: var(--border);
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 6px 6px 0 var(--violet);
+  text-align: left;
+  font-weight: 400;
+  transform-origin: var(--arrow-x, 50%) -14px;
+  animation: infobox-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.infobox.is-closing {
+  animation: infobox-out 220ms ease-in both;
+}
+.infobox__arrow {
+  position: absolute;
+  top: -11px;
+  left: calc(var(--arrow-x, 50%) - 10px);
+  width: 20px;
+  height: 20px;
+  border-top: var(--border);
+  border-left: var(--border);
+  background: var(--surface);
+  transform: rotate(45deg);
+}
+.infobox__x {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.infobox__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 34px;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  line-height: 1.2;
+  animation: infobox-line 400ms 80ms var(--ease) both;
+}
+.infobox__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--yellow);
+  animation: infobox-spin 700ms 60ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.infobox__icon svg {
+  width: 20px;
+  height: 20px;
+}
+.infobox__text {
+  margin: 10px 0 0;
+  font-size: var(--fs-small);
+  line-height: 1.6;
+  animation: infobox-line 400ms 140ms var(--ease) both;
+}
+.infobox__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.infobox__facts li {
+  padding: 4px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--yellow-tint);
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+  animation: infobox-fact 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes infobox-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.55) rotate(-4deg);
+  }
+}
+@keyframes infobox-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.85);
+  }
+}
+@keyframes infobox-line {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes infobox-spin {
+  from {
+    transform: scale(0.3) rotate(-120deg);
+  }
+}
+@keyframes infobox-fact {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .infobox,
+  .infobox * {
+    animation: none !important;
+  }
 }
 

@@ -8,7 +8,7 @@ import ZoomControl from './ZoomControl.astro';
 import ThemeSwitch from './ThemeSwitch.astro';
 import RibbonSwitch from './RibbonSwitch.astro';
 import { localePath, t, type Lang, type TKey } from '../i18n';
-import { CITIES_EVENT, CITIES_STORAGE_KEY, GRID_EVENT, GRID_STORAGE_KEY, MAP_MODE_EVENT, MAP_MODE_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, CV_EVENT, CV_STORAGE_KEY, STREET_EVENT, STREET_STORAGE_KEY } from '../lib/constants';
+import { CITIES_EVENT, CITIES_STORAGE_KEY, GRID_EVENT, GRID_STORAGE_KEY, MAP_MODE_EVENT, MAP_MODE_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, CV_EVENT, CV_STORAGE_KEY, } from '../lib/constants';
 import site from '../data/site.json';
 
 interface Props {
@@ -33,14 +33,6 @@ const gridToggle = {
   eventName: GRID_EVENT,
   icon: 'grid-3x3',
   label: t(lang, 'grid.toggle'),
-};
-const streetToggle = {
-  htmlClass: 'street-mode',
-  pressedWhen: 'present' as const,
-  storageKey: STREET_STORAGE_KEY,
-  eventName: STREET_EVENT,
-  icon: 'person-standing',
-  label: t(lang, 'street.toggle'),
 };
 const cvToggle = {
   htmlClass: 'cv-mode',
@@ -101,7 +93,6 @@ const citiesToggle = {
       <HtmlToggle {...gridToggle} class="desktop-tool" />
       <HtmlToggle {...citiesToggle} class="desktop-tool" />
       <HtmlToggle {...mapModeToggle} class="desktop-tool" />
-      <HtmlToggle {...streetToggle} class="desktop-tool" />
       <HtmlToggle {...horizontalToggle} class="desktop-tool" />
       <HtmlToggle {...cvToggle} class="desktop-tool" />
       <button
@@ -146,7 +137,6 @@ const citiesToggle = {
         <li><HtmlToggle {...gridToggle} /><span>{t(lang, 'grid.toggle')}</span></li>
         <li><HtmlToggle {...citiesToggle} /><span>{t(lang, 'cities.toggle')}</span></li>
         <li><HtmlToggle {...mapModeToggle} /><span>{t(lang, 'mapmode.toggle')}</span></li>
-        <li><HtmlToggle {...streetToggle} /><span>{t(lang, 'street.toggle')}</span></li>
         <li><HtmlToggle {...horizontalToggle} /><span>{t(lang, 'horizontal.toggle')}</span></li>
         <li><HtmlToggle {...cvToggle} /><span>{t(lang, 'cv.toggle')}</span></li>
       </ul>

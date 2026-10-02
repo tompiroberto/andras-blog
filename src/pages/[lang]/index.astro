@@ -4,18 +4,15 @@ import Hero from '../../components/Hero.astro';
 import IconStrip from '../../components/IconStrip.astro';
 import About from '../../components/About.astro';
 import ExploreCards from '../../components/ExploreCards.astro';
-import WorldMap from '../../components/WorldMap.astro';
 import PhotoGallery from '../../components/PhotoGallery.astro';
 import PlansTimeline from '../../components/PlansTimeline.astro';
 import MessageForm from '../../components/MessageForm.astro';
 import { langStaticPaths, type Lang } from '../../i18n';
-import { getPublishedSlugs } from '../../lib/posts';
 import { layoutCss, sectionOrder } from '../../lib/layout';
 
 export const getStaticPaths = langStaticPaths;
 
 const lang = Astro.params.lang as Lang;
-const publishedSlugs = await getPublishedSlugs();
 const BLOCKS = { hero: Hero, icons: IconStrip, about: About, explore: ExploreCards, photos: PhotoGallery, plans: PlansTimeline, message: MessageForm };
 const css = layoutCss();
 ---
@@ -25,13 +22,7 @@ const css = layoutCss();
   {
     sectionOrder().map((id) => {
       const Block = BLOCKS[id];
-      return id === 'explore' ? (
-        <Block lang={lang}>
-          <WorldMap lang={lang} publishedSlugs={publishedSlugs} />
-        </Block>
-      ) : (
-        <Block lang={lang} />
-      );
+      return <Block lang={lang} />;
     })
   }
 </BaseLayout>

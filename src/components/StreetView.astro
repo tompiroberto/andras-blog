@@ -1,6 +1,6 @@
 ---
 /**
- * Street View theme (header switch, html.street-mode): the site as a walk along a road, drawn in the
+ * Street View theme (opened from map mode's toolbar, html.street-mode): the site as a walk along a road, drawn in the
  * site's style – look around 360° by dragging, walk forward / back with the arrows (or ↑ ↓, ← → turns).
  * Seventeen regions with their GeoGuessr-famous looks – own utility poles (with wires), road markings,
  * roadside things and animals that move (the drawing is in src/lib/streetScene.ts). Drag up and down
@@ -83,7 +83,7 @@ const INFO = [
   <svg class="sv-hood" data-sv-hood viewBox="0 0 1000 160" preserveAspectRatio="none" aria-hidden="true"></svg>
 
   <div class="sv-bar">
-    <button type="button" class="sv-btn sv-btn--exit" data-sv-exit><Icon name="arrow-left" size={18} /><span>{t(lang, 'mapmode.exit')}</span></button>
+    <button type="button" class="sv-btn sv-btn--exit" data-sv-exit><Icon name="arrow-left" size={18} /><span>{t(lang, 'street.toMap')}</span></button>
     <label class="sv-regions">
       <span class="visually-hidden">{t(lang, 'street.region')}</span>
       <img src="/flags/jp.svg" alt="" width="24" height="18" data-sv-flag />
@@ -552,7 +552,15 @@ const INFO = [
       document.querySelectorAll<HTMLButtonElement>('[data-html-toggle="street-mode"]').forEach((b) => b.setAttribute('aria-pressed', String(on)));
       if (on) startLoop();
     }
-    view.querySelector('[data-sv-exit]')!.addEventListener('click', () => setOn(false));
+    window.addEventListener('andras:street', (e) => setOn((e as CustomEvent<boolean>).detail));
+    // leaving goes back to the world map when the walk started there
+    view.querySelector('[data-sv-exit]')!.addEventListener('click', () => {
+      setOn(false);
+      if (html.dataset.streetFrom === 'map' || !html.dataset.streetFrom) {
+        delete html.dataset.streetFrom;
+        if (!html.classList.contains('map-mode')) document.querySelector<HTMLButtonElement>('[data-html-toggle="map-mode"]')?.click();
+      }
+    });
     const sync = () => {
       const on = html.classList.contains('street-mode');
       view.hidden = !on;

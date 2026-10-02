@@ -58,11 +58,11 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 </div>
 <div class="lay-save" hidden data-lay-save>
   <span>{t(lang, 'lay.changed')}</span>
-  <button type="button" class="lay-save__ok" data-lay-commit>{t(lang, 'lay.save')}</button>
+  <button type="button" class="lay-save__ok" data-lay-commit>{t(lang, 'lay.saveNow')}</button>
   <button type="button" data-lay-undo>{t(lang, 'lay.undo')}</button>
   <span class="lay-save__status" data-lay-status></span>
 </div>
-<template data-dev-laytitles>{JSON.stringify({ up: t(lang, 'lay.up'), down: t(lang, 'lay.down'), hide: t(lang, 'lay.hide'), width: t(lang, 'lay.width'), smaller: t(lang, 'lay.smaller'), bigger: t(lang, 'lay.bigger'), saving: t(lang, 'dev.msgSaving'), saved: t(lang, 'lay.saved'), widths: { narrow: t(lang, 'lay.w.narrow'), normal: t(lang, 'lay.w.normal'), wide: t(lang, 'lay.w.wide'), full: t(lang, 'lay.w.full') } })}</template>
+<template data-dev-laytitles>{JSON.stringify({ up: t(lang, 'lay.up'), down: t(lang, 'lay.down'), hide: t(lang, 'lay.hide'), width: t(lang, 'lay.width'), smaller: t(lang, 'lay.smaller'), bigger: t(lang, 'lay.bigger'), saving: t(lang, 'dev.msgSaving'), saved: t(lang, 'lay.saved'), autosave: t(lang, 'lay.autosave'), needKey: t(lang, 'lay.needKey'), widths: { narrow: t(lang, 'lay.w.narrow'), normal: t(lang, 'lay.w.normal'), wide: t(lang, 'lay.w.wide'), full: t(lang, 'lay.w.full') } })}</template>
 <template data-dev-layhidden>{JSON.stringify(layout.hidden)}</template>
 <template data-dev-edon>{t(lang, 'ed.on')}</template>
 <template data-dev-edoff>{t(lang, 'ed.off')}</template>
@@ -796,9 +796,16 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   const layStatus = saveBar.querySelector<HTMLElement>('[data-lay-status]')!;
   const sections = () => Array.from(document.querySelectorAll<HTMLElement>('main > [data-lay]'));
   let layChanged = false;
+  // every change is saved by itself AUTOSAVE_MS after the last one (one commit = one site rebuild)
+  const AUTOSAVE_MS = 15000;
+  let autoTimer = 0;
+  let saving = false;
+  let again = false;
   const showSave = () => {
     saveBar.hidden = false;
-    layStatus.textContent = '';
+    layStatus.textContent = layTitles.autosave;
+    window.clearTimeout(autoTimer);
+    autoTimer = window.setTimeout(() => void saveNow(), AUTOSAVE_MS);
   };
   const changed = () => {
     layChanged = true;
@@ -893,10 +900,19 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   };
   const removeLayBars = () => document.querySelectorAll('.lay-bar').forEach((b) => b.remove());
   saveBar.querySelector('[data-lay-undo]')!.addEventListener('click', () => location.reload());
-  saveBar.querySelector('[data-lay-commit]')!.addEventListener('click', async () => {
+  async function saveNow() {
+    window.clearTimeout(autoTimer);
+    if (saving) {
+      again = true;
+      return;
+    }
     let key = getToken();
     if (!key) key = (window.prompt(tpl('msgkey')) ?? '').trim();
-    if (!key) return;
+    if (!key) {
+      layStatus.textContent = layTitles.needKey;
+      return;
+    }
+    saving = true;
     layStatus.textContent = layTitles.saving;
     try {
       const files = [];
@@ -910,11 +926,19 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       } catch {
         /* storage unavailable */
       }
+      layChanged = false;
       layStatus.textContent = layTitles.saved;
     } catch (err) {
       layStatus.textContent = tpl('msgerror').replace('{msg}', err instanceof Error ? err.message : String(err));
+    } finally {
+      saving = false;
+      if (again) {
+        again = false;
+        void saveNow();
+      }
     }
-  });
+  }
+  saveBar.querySelector('[data-lay-commit]')!.addEventListener('click', () => void saveNow());
 
   // ---- edit mode (select / move / resize / rewrite on the page, src/components/EditMode.astro) ----
   const editBtn = document.querySelector<HTMLButtonElement>('[data-dev-edit]');

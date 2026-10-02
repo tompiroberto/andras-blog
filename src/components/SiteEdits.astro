@@ -7,14 +7,18 @@
  * An element is addressed by a path from the nearest stable anchor: ["lay:about", "div:0", "p:1"]
  * (data-lay section, element id, an added element "ed:<id>", or the body), then tag:index steps that
  * ignore the developer-mode helpers (data-dev-ui) and added elements (data-ed-id).
- *   style: { "<page without language>": { "<path>": { x, y, w, h, hidden } } }  – same in every language
+ *   style: { "<page without language>": { "<path>": { x, y, w, h, hidden, color, bg, font, fs, fw, r } } }
+ *          – position, size, colours, font, font size / weight, corner radius; same in every language
  *   text:  { "<full path>": { "<path>": "new text" } }                            – per language
  *   add:   { "<full path>": [{ id, after: <path>, tag: "h3" | "p", text }] }      – per language
  */
 import edits from '../data/edits.json';
+
+/** fonts offered in developer mode (EditMode's font menu) */
+const fonts = {"heading": "'Unbounded', system-ui, sans-serif", "body": "'DM Sans', system-ui, sans-serif", "serif": "Georgia, 'Times New Roman', serif", "mono": "ui-monospace, 'Cascadia Code', Consolas, monospace", "hand": "'Segoe Print', 'Comic Sans MS', 'Bradley Hand', cursive", "impact": "Impact, 'Arial Black', sans-serif"};
 ---
 
-<script is:inline define:vars={{ edits }}>
+<script is:inline define:vars={{ edits, fonts }}>
   var SKIP = function (e) {
     return e.hasAttribute('data-dev-ui') || e.hasAttribute('data-ed-id');
   };
@@ -70,6 +74,12 @@ import edits from '../data/edits.json';
     el.style.minHeight = s.h ? '0' : '';
     el.style.alignSelf = s.h ? 'start' : '';
     el.style.objectFit = s.h && el.tagName === 'IMG' ? 'cover' : '';
+    el.style.color = s.color || '';
+    el.style.background = s.bg || '';
+    el.style.fontFamily = (s.font && fonts[s.font]) || '';
+    el.style.fontSize = s.fs ? s.fs + 'px' : '';
+    el.style.fontWeight = s.fw || '';
+    el.style.borderRadius = s.r !== undefined && s.r !== null ? s.r + 'px' : '';
     if (s.hidden) el.setAttribute('data-ed-hidden', '');
     else el.removeAttribute('data-ed-hidden');
   }

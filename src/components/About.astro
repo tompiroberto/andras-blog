@@ -30,7 +30,7 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
       <p>{t(lang, 'about.text')}</p>
       <p>{workLead && <strong>{workLead}</strong>}{workRest}</p>
 
-      <div class="lang-stories" data-stories>
+      <div class="lang-stories">
         <ul class="chips" aria-label={t(lang, 'icon.languages')}>
           {
             site.languages.map((l) => (
@@ -38,9 +38,8 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
                 <button
                   type="button"
                   class:list={['chip', 'chip--btn', l.level === 'solid' ? 'chip--solid' : 'chip--learning']}
-                  aria-expanded="false"
-                  aria-controls="lang-story"
-                  data-story={t(lang, `story.${l.key}` as TKey)}
+                  data-info-title={t(lang, l.key as TKey)}
+                  data-info-text={t(lang, `story.${l.key}` as TKey)}
                 >
                   <Icon name={l.level === 'solid' ? 'check' : 'pencil'} size={16} />
                   {t(lang, l.key as TKey)}
@@ -49,7 +48,6 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
             ))
           }
         </ul>
-        <p class="lang-story" id="lang-story" role="region" aria-live="polite" hidden data-story-box></p>
       </div>
     </div>
 
@@ -89,9 +87,17 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
       <ul class="badges">
         {
           site.raceBadges.map((b) => (
-            <li class="pill badge">
-              <IconCircle icon={b.icon} variant={b.icon === 'trophy' ? 'yellow' : 'violet'} size="nav" />
-              {b.label}
+            <li>
+              <button
+                type="button"
+                class="pill badge badge--btn"
+                data-info-title={t(lang, `race.${b.id}` as TKey)}
+                data-info-text={t(lang, `race.${b.id}.text` as TKey)}
+                data-info-facts={t(lang, `race.${b.id}.facts` as TKey)}
+              >
+                <IconCircle icon={b.icon} variant={b.icon === 'trophy' ? 'yellow' : 'violet'} size="nav" />
+                {t(lang, `race.${b.id}` as TKey)}
+              </button>
             </li>
           ))
         }
@@ -141,18 +147,8 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
     transform: translate(-2px, -2px);
     box-shadow: 3px 3px 0 var(--ink);
   }
-  .lang-story {
-    margin: 14px 0 0;
-    max-width: 60ch;
-    padding: 14px 18px;
-    border: var(--border);
-    border-radius: 18px;
-    background: var(--surface);
-    box-shadow: 4px 4px 0 var(--violet);
-    line-height: 1.55;
-  }
-  .lang-story[hidden] {
-    display: none;
+  .lang-stories {
+    position: relative;
   }
   .chip--solid {
     background: var(--yellow);
@@ -238,9 +234,49 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
     justify-content: center;
     margin-top: 28px;
   }
+  .badges {
+    position: relative;
+  }
+  /* horizontal page: text and photo side by side, the three record rings in one row (less tall) */
+  :global(:root.horizontal) .about__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    align-items: center;
+  }
+  :global(:root.horizontal) .about__side {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px 28px;
+    align-items: center;
+  }
+  :global(:root.horizontal) .portrait {
+    margin: 0;
+  }
+  :global(:root.horizontal) .rings {
+    flex-wrap: nowrap;
+  }
+  :global(:root.horizontal) .rings > :global(*) {
+    flex: 0 1 auto;
+  }
+  :global(:root.horizontal) .badges {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+  }
   .badge {
     padding: 4px 16px 4px 4px;
     gap: 10px;
+  }
+  .badge--btn {
+    font: inherit;
+    font-weight: 700;
+    color: inherit;
+    cursor: pointer;
+    transition: transform var(--t-fast), box-shadow var(--t-fast);
+  }
+  .badge--btn:hover,
+  .badge--btn:focus-visible,
+  .badge--btn[aria-expanded='true'] {
+    transform: translate(-2px, -2px);
+    box-shadow: 3px 3px 0 var(--ink);
   }
   @media (max-width: 899px) {
     .about__grid {
@@ -250,7 +286,7 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
 </style>
 
 <script>
-  import { wireStories } from '../lib/stories';
+  import { wireInfoBoxes } from '../lib/infobox';
 
-  document.querySelectorAll<HTMLElement>('.lang-stories[data-stories]').forEach((root) => wireStories(root, '.chip--btn'));
+  wireInfoBoxes(document.querySelector('.about') ?? document);
 </script>

@@ -14,6 +14,17 @@ interface Props {
 
 const { lang } = Astro.props;
 const L = {
+  style: t(lang, 'ed.style'),
+  color: t(lang, 'ed.color'),
+  bg: t(lang, 'ed.bg'),
+  none: t(lang, 'ed.none'),
+  font: t(lang, 'ed.font'),
+  fontDefault: t(lang, 'ed.fontDefault'),
+  fontHand: t(lang, 'ed.fontHand'),
+  size: t(lang, 'ed.size'),
+  weight: t(lang, 'ed.weight'),
+  radius: t(lang, 'ed.radius'),
+  styleReset: t(lang, 'ed.styleReset'),
   parent: t(lang, 'ed.parent'),
   text: t(lang, 'ed.text'),
   subtitle: t(lang, 'ed.subtitle'),
@@ -34,11 +45,32 @@ const L = {
     <button type="button" data-ed-act="text" title={L.text}>✎</button>
     <button type="button" data-ed-act="h3" title={L.subtitle}>＋H</button>
     <button type="button" data-ed-act="p" title={L.paragraph}>＋¶</button>
+    <button type="button" data-ed-act="style" title={L.style}>🎨</button>
     <button type="button" data-ed-act="hide" title={L.hide}>👁</button>
     <button type="button" data-ed-act="reset" title={L.reset}>↺</button>
     <button type="button" data-ed-act="close" title={L.close}>✕</button>
   </div>
   <span class="ed-size" data-ed-size></span>
+  <div class="ed-style" hidden data-ed-style>
+    <label>{L.color} <input type="color" data-st="color" /></label>
+    <label>{L.bg} <input type="color" data-st="bg" /><button type="button" data-st-clear="bg" title={L.none}>∅</button></label>
+    <label
+      >{L.font}
+      <select data-st="font">
+        <option value="">{L.fontDefault}</option>
+        <option value="heading" style="font-family:Unbounded">Unbounded</option>
+        <option value="body" style="font-family:'DM Sans'">DM Sans</option>
+        <option value="serif" style="font-family:Georgia">Serif</option>
+        <option value="mono" style="font-family:monospace">Mono</option>
+        <option value="hand" style="font-family:'Segoe Print','Comic Sans MS',cursive">{L.fontHand}</option>
+        <option value="impact" style="font-family:Impact">Impact</option>
+      </select>
+    </label>
+    <label>{L.size} <input type="range" min="10" max="120" step="1" data-st="fs" /><output data-st-out="fs"></output></label>
+    <label>{L.weight} <select data-st="fw"><option value="">–</option><option value="400">400</option><option value="700">700</option><option value="900">900</option></select></label>
+    <label>{L.radius} <input type="range" min="0" max="80" step="1" data-st="r" /><output data-st-out="r"></output></label>
+    <button type="button" class="ed-style__reset" data-st-reset>{L.styleReset}</button>
+  </div>
 </div>
 <template data-ed-texts>{JSON.stringify(L)}</template>
 
@@ -143,6 +175,59 @@ const L = {
     background: #39ff14;
     color: #000;
   }
+  .ed-style {
+    position: absolute;
+    left: -2px;
+    top: calc(100% + 30px);
+    display: grid;
+    gap: 6px;
+    width: 250px;
+    padding: 10px;
+    border: 1px solid #39ff14;
+    border-radius: 10px;
+    background: #000;
+    color: #39ff14;
+    font: 700 12px ui-monospace, Consolas, monospace;
+    cursor: default;
+    z-index: 2;
+  }
+  .ed-frame.is-low .ed-style {
+    top: auto;
+    bottom: calc(100% + 46px);
+  }
+  .ed-style[hidden] {
+    display: none;
+  }
+  .ed-style label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .ed-style input[type='color'] {
+    width: 44px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid #39ff14;
+    background: none;
+  }
+  .ed-style input[type='range'] {
+    flex: 1;
+    accent-color: #39ff14;
+  }
+  .ed-style select,
+  .ed-style button {
+    padding: 3px 6px;
+    border: 1px solid #1f6f2a;
+    border-radius: 6px;
+    background: #031a08;
+    color: #39ff14;
+    font: inherit;
+  }
+  .ed-style output {
+    min-width: 28px;
+    text-align: right;
+  }
   .ed-size {
     position: absolute;
     right: 0;
@@ -160,7 +245,7 @@ const L = {
 </style>
 
 <script>
-  type Style = { x?: number; y?: number; w?: number; h?: number; hidden?: boolean };
+  type Style = { x?: number; y?: number; w?: number; h?: number; hidden?: boolean; color?: string; bg?: string; font?: string; fs?: number; fw?: string; r?: number };
   type Added = { id: string; after: string[]; tag: 'h3' | 'p'; text: string };
   interface Edits {
     style: Record<string, Record<string, Style>>;
@@ -186,6 +271,7 @@ const L = {
     const L = JSON.parse(document.querySelector<HTMLTemplateElement>('[data-ed-texts]')!.content.textContent ?? '{}');
     const nameEl = frame.querySelector<HTMLElement>('[data-ed-name]')!;
     const sizeEl = frame.querySelector<HTMLElement>('[data-ed-size]')!;
+    const stylePanel = frame.querySelector<HTMLElement>('[data-ed-style]')!;
     const draft: Edits = JSON.parse(JSON.stringify(api.data));
     draft.style[api.page] ??= {};
     draft.text[api.full] ??= {};
@@ -204,7 +290,7 @@ const L = {
     (window as unknown as { __editsDraft?: () => string | null }).__editsDraft = () => {
       if (!dirty) return null;
       // drop empty entries
-      for (const [k, s] of Object.entries(draft.style[api.page])) if (!s.x && !s.y && !s.w && !s.h && !s.hidden) delete draft.style[api.page][k];
+      for (const [k, s] of Object.entries(draft.style[api.page])) if (Object.values(s).every((v) => v === undefined || v === '' || v === 0 || v === false)) delete draft.style[api.page][k];
       return `${JSON.stringify(draft, null, 2)}\n`;
     };
 
@@ -231,12 +317,14 @@ const L = {
     };
     const select = (el: HTMLElement) => {
       stopText();
+      if (el !== sel) stylePanel.hidden = true;
       sel = el;
       frame.hidden = false;
       nameEl.textContent = el.dataset.lay ?? (el.id ? `#${el.id}` : el.tagName.toLowerCase());
       place();
     };
     function deselect() {
+      stylePanel.hidden = true;
       stopText();
       sel = null;
       frame.hidden = true;
@@ -373,6 +461,11 @@ const L = {
         return;
       }
       if (a === 'text') return startText();
+      if (a === 'style') {
+        stylePanel.hidden = !stylePanel.hidden;
+        if (!stylePanel.hidden) fillStylePanel();
+        return;
+      }
       if (a === 'hide') {
         const s = styleOf(sel);
         s.hidden = !s.hidden;
@@ -418,6 +511,61 @@ const L = {
         act(b.dataset.edAct!);
       }),
     );
+
+    // ---- colours, font, size, weight, corners ----
+    const toHex = (c: string) => {
+      const m = c.match(/\d+(\.\d+)?/g);
+      if (!m || m.length < 3 || (m.length > 3 && Number(m[3]) === 0)) return '#ffffff';
+      return `#${m.slice(0, 3).map((n) => Math.round(Number(n)).toString(16).padStart(2, '0')).join('')}`;
+    };
+    function fillStylePanel() {
+      if (!sel) return;
+      const s = styleOf(sel);
+      const cs = getComputedStyle(sel);
+      const set = (k: string, v: string) => {
+        const input = stylePanel.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-st="${k}"]`)!;
+        input.value = v;
+        const out = stylePanel.querySelector(`[data-st-out="${k}"]`);
+        if (out) out.textContent = v;
+      };
+      set('color', s.color ?? toHex(cs.color));
+      set('bg', s.bg ?? toHex(cs.backgroundColor));
+      set('font', s.font ?? '');
+      set('fs', String(s.fs ?? Math.round(parseFloat(cs.fontSize))));
+      set('fw', s.fw ?? '');
+      set('r', String(s.r ?? Math.round(parseFloat(cs.borderTopLeftRadius) || 0)));
+    }
+    stylePanel.addEventListener('pointerdown', (e) => e.stopPropagation());
+    stylePanel.addEventListener('click', (e) => e.stopPropagation());
+    stylePanel.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-st]').forEach((input) =>
+      input.addEventListener('input', () => {
+        if (!sel) return;
+        const s = styleOf(sel) as Record<string, unknown>;
+        const k = input.dataset.st!;
+        s[k] = input.type === 'range' ? Number(input.value) : input.value || undefined;
+        const out = stylePanel.querySelector(`[data-st-out="${k}"]`);
+        if (out) out.textContent = input.value;
+        api.styleEl(sel, s as Style);
+        changed();
+        place();
+      }),
+    );
+    stylePanel.querySelector('[data-st-clear="bg"]')!.addEventListener('click', () => {
+      if (!sel) return;
+      delete styleOf(sel).bg;
+      api.styleEl(sel, styleOf(sel));
+      changed();
+      fillStylePanel();
+    });
+    stylePanel.querySelector('[data-st-reset]')!.addEventListener('click', () => {
+      if (!sel) return;
+      const s = styleOf(sel);
+      for (const k of ['color', 'bg', 'font', 'fs', 'fw', 'r'] as const) delete s[k];
+      api.styleEl(sel, s);
+      changed();
+      fillStylePanel();
+      place();
+    });
 
     // ---- move (drag the frame) and resize (drag a handle) ----
     let drag: { mode: string; px: number; py: number; s0: Style; w0: number; h0: number; k: number; ratio: number; moved?: boolean } | null = null;

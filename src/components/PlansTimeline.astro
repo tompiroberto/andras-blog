@@ -17,8 +17,8 @@ const STATIONS: { n: 1 | 2 | 3 | 4 | 5; icon: string; tone: 'yellow' | 'violet' 
   { n: 4, icon: 'mountain-snow', tone: 'violet' },
   { n: 5, icon: 'timer', tone: 'yellow' },
 ];
-// station, arrows, station, arrows … station
-const columns = STATIONS.map(() => 'minmax(0, 1fr)').join(' auto ');
+/** a slight tilt per note, so the board looks hand-pinned (not a sequence) */
+const TILT = [-2.2, 1.6, -1, 2.4, -1.8];
 const k = (n: number, field: 'tag' | 'title' | 'text') => `plan${n}.${field}` as TKey;
 ---
 
@@ -29,55 +29,83 @@ const k = (n: number, field: 'tag' | 'title' | 'text') => `plan${n}.${field}` as
   <div class="container">
     <SectionHeading icon="route" id="plans-title">{t(lang, 'plans.title')}</SectionHeading>
 
-    <ol class="timeline reveal" data-timeline style={`--timeline-cols:${columns}`}>
+    <p class="plans__note">{t(lang, 'plans.note')}</p>
+    <ul class="plans-board reveal">
       {
         STATIONS.map((s, i) => (
-          <>
-            <li class="station">
-              <IconCircle icon={s.icon} variant={s.tone} size="xl" />
-              <span class:list={['pill', 'station__tag', `station__tag--${s.tone}`]}>{t(lang, k(s.n, 'tag'))}</span>
-              <h3>{t(lang, k(s.n, 'title'))}</h3>
-              <p>{t(lang, k(s.n, 'text'))}</p>
-            </li>
-            {i < STATIONS.length - 1 && (
-              <li class="arrows" aria-hidden="true">
-                {[0, 1, 2].map((j) => (
-                  <span class:list={['arrow', `arrow--${j}`]} style={`--i:${i * 3 + j}`} />
-                ))}
-              </li>
-            )}
-          </>
+          <li class:list={['plan-note', `plan-note--${s.tone}`]} style={`--tilt:${TILT[i % TILT.length]}deg`}>
+            <span class="plan-note__pin" aria-hidden="true" />
+            <IconCircle icon={s.icon} variant={s.tone} size="lg" />
+            <span class:list={['pill', 'station__tag', `station__tag--${s.tone}`]}>{t(lang, k(s.n, 'tag'))}</span>
+            <h3>{t(lang, k(s.n, 'title'))}</h3>
+            <p>{t(lang, k(s.n, 'text'))}</p>
+          </li>
         ))
       }
-    </ol>
+    </ul>
   </div>
 </section>
 
 <style>
-  .timeline {
-    display: grid;
-    grid-template-columns: var(--timeline-cols);
-    align-items: start;
-    gap: 12px;
+  .plans__note {
+    margin: -8px 0 28px;
+    color: var(--muted);
+    font-size: var(--fs-small);
+  }
+  /* a pin board: notes wrap and stay centred (3 + 2), no order implied */
+  .plans-board {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(22px, 3vw, 36px);
     margin: 0;
-    padding: 0;
+    padding: 12px 0 0;
     list-style: none;
   }
-  .station {
+  .plan-note {
+    flex: 0 1 clamp(calc(220px * var(--tz)), 30%, calc(320px * var(--tz)));
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 12px;
-    min-width: 0;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 26px 20px 22px;
+    border: var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: 6px 6px 0 var(--yellow);
+    transform: rotate(var(--tilt, 0deg));
+    transition:
+      transform var(--t-med) var(--ease),
+      box-shadow var(--t-med) var(--ease);
   }
-  .station h3 {
+  .plan-note--violet {
+    box-shadow: 6px 6px 0 var(--violet);
+  }
+  .plan-note:hover {
+    transform: rotate(0deg) translateY(-6px) scale(1.03);
+  }
+  .plan-note__pin {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--violet);
+    transform: translateX(-50%);
+  }
+  .plan-note--violet .plan-note__pin {
+    background: var(--yellow);
+  }
+  .plan-note h3 {
     margin: 4px 0 0;
+    font-size: var(--fs-h3);
   }
-  .station p {
+  .plan-note p {
     margin: 0;
     color: var(--muted);
-    max-width: 32ch;
   }
   .station__tag {
     font-size: var(--fs-tiny);
@@ -90,52 +118,9 @@ const k = (n: number, field: 'tag' | 'title' | 'text') => `plan${n}.${field}` as
     background: var(--violet-tint);
     color: var(--violet-dark);
   }
-  .arrows {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    height: var(--icon-xl);
-  }
-  .arrow {
-    width: 12px;
-    height: 16px;
-    clip-path: polygon(0 0, 100% 50%, 0 100%);
-    transition:
-      opacity 400ms var(--ease),
-      transform 400ms var(--ease);
-    transition-delay: calc(var(--i) * 140ms + 200ms);
-  }
-  .arrow--0 {
-    background: var(--globe-line);
-  }
-  .arrow--1 {
-    background: var(--violet);
-  }
-  .arrow--2 {
-    background: var(--yellow);
-    /* yellow never sits on the page without a dark edge */
-    filter: drop-shadow(0 0 0 var(--ink)) drop-shadow(1px 0 0 var(--ink));
-  }
-  :global(.js) .timeline:not(.is-visible) .arrow {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-
-  @media (max-width: 899px) {
-    .timeline {
-      grid-template-columns: minmax(0, 1fr);
-      justify-items: center;
-    }
-    .arrows {
-      flex-direction: column;
-      height: auto;
-      padding-block: 8px;
-    }
-    .arrow {
-      transform: rotate(90deg);
-    }
-    :global(.js) .timeline:not(.is-visible) .arrow {
-      transform: rotate(90deg) translateX(-12px);
+  @media (prefers-reduced-motion: reduce) {
+    .plan-note {
+      transform: none;
     }
   }
 </style>

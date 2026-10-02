@@ -1,0 +1,61 @@
+---
+/**
+ * "Where I've been" – its own page, opened from the fourth Explore card (src/components/ExploreCards.astro).
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Globe from '../../components/Globe.astro';
+import IconCircle from '../../components/IconCircle.astro';
+import WorldMap from '../../components/WorldMap.astro';
+import { langStaticPaths, localePath, t, type Lang } from '../../i18n';
+import { getPublishedSlugs } from '../../lib/posts';
+import { beenCount } from '../../lib/countries';
+
+export const getStaticPaths = langStaticPaths;
+
+const lang = Astro.params.lang as Lang;
+const publishedSlugs = await getPublishedSlugs();
+const title = t(lang, 'map.title');
+const intro = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
+---
+
+<BaseLayout lang={lang} title={title} description={intro}>
+  <header class="section page-header">
+    <div class="bg-layer">
+      <Globe size="min(620px, 110vw)" right="-14%" top="-30%" speed={80} />
+    </div>
+    <div class="container">
+      <a class="link-arrow back-link" href={`${localePath(lang)}#explore`}>{t(lang, 'posts.back')}</a>
+      <div class="page-header__title">
+        <IconCircle icon="map-pin" variant="violet" size="lg" />
+        <h1>{title}</h1>
+      </div>
+      <p class="page-header__intro">{intro}</p>
+    </div>
+  </header>
+
+  <section class="section map-page" aria-label={title}>
+    <div class="container">
+      <WorldMap lang={lang} publishedSlugs={publishedSlugs} hideTitle />
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .map-page {
+    padding-top: 0;
+  }
+  .page-header__title {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 16px;
+  }
+  .page-header__title h1 {
+    margin: 0;
+  }
+  .page-header__intro {
+    max-width: 62ch;
+    margin-top: 16px;
+    font-size: var(--fs-tagline);
+  }
+</style>

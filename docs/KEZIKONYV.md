@@ -21,11 +21,11 @@ a **földgömb + nyelvkód** gombbal lehet váltani.
 | Rész | Mi van benne |
 | --- | --- |
 | **Nyitó rész** | Bemutatkozás, „Jelenleg itt vagyok” jelvény, gombok a bejegyzésekhez és a Stravához. |
-| **Ikonsor** | Futás, stoppolás, térképek, olcsó utazás, nyelvek, sokat evés – **kattints egy ikonra**, és alatta megjelenik a hozzá tartozó történet. |
-| **Rólam** | Bemutatkozó szöveg, nyelvek (**a nyelvre kattintva** a története), fotó, egyéni csúcsok (3 km 9:29, 5 km 16:20, 10 km 34:40), versenyek. |
-| **Felfedezés** | Három kategória: Kalandok, Erasmus+, Random dolgok. Alatta a **Merre jártam** térkép: a térkép ikonra kattintva töltődik be; vidd az egeret egy ország fölé (telefonon koppints rá). |
+| **Ikonsor** | Futás, stoppolás, térképek, olcsó utazás, nyelvek, sokat evés – **kattints egy ikonra**: animált infoboxban megjelenik a hozzá tartozó történet. |
+| **Rólam** | Bemutatkozó szöveg, nyelvek és versenyek (**rájuk kattintva** infobox a történetükkel), fotó, egyéni csúcsok (3 km 9:29, 5 km 16:20, 10 km 34:40), versenyek. |
+| **Felfedezés** | Négy kártya: Kalandok, Erasmus+, Random dolgok és **Merre jártam** – ez utóbbi a saját oldalán nyitja meg a térképet (hány országban jártam, hová készülök). |
 | **Galéria** | A legújabb 6 fotó, alatta **Az összes fotó** gomb: a galériaoldalon minden kép leírással, helyszínnel, dátummal; kattintásra nagyban, nyilakkal lapozható. |
-| **Jövőbeli tervek** | Öt állomás: stoppolás Chilében, Grúzia, még több stoppolás, Patagónia olcsón, 10 km 33 perc alatt. |
+| **Jövőbeli tervek** | Öt cetli egy táblán, nem időrendben: stoppolás Chilében, Grúzia, még több low-budget utazás, Patagónia olcsón, 10 km 33 perc alatt. |
 | **Üzenj** | Üzenetküldő az oldalon: téma (ötlet / csatlakoznék / munka), név, elérhetőség, üzenet. Ha a küldés nem sikerül, megnyílik az e-mail-program a megírt üzenettel. |
 | **Kapcsolat (lábléc)** | E-mail, Strava, Instagram, Facebook, támogatói logók, adatvédelem, **kenyérszámláló**. |
 
@@ -48,7 +48,6 @@ bejegyzésben lehetnek Strava-aktivitások is.
 | **# Rács** | Koordináta-rendszer az oldal fölött; az egér alatt kiírja a szélességet/hosszúságot. **Dupla kattintás** bárhol: kártya arról a pontról (üzenet, útvonalterv). |
 | **📍 Városok** | A háttérben felugró városnevek ki/be. |
 | **🗺 Térképes mód** | Az egész oldal egy forgatható földgömbön (lásd 6. pont). |
-| **🚶 Utcakép** | Az oldal egy út mentén, mint egy utcakép (lásd 8. pont). |
 | **🧭 Iránytű** | Függőleges ↔ vízszintes oldal (lásd 5. pont). |
 | **📄 Önéletrajz** | Letisztult, nyomtatható CV (lásd 10. pont). |
 
@@ -125,7 +124,7 @@ Bármelyik városnévre, helynévre, keresési találatra vagy koordinátára ka
 
 ---
 
-## 8. Utcakép téma (🚶)
+## 8. Utcakép (a térképes mód eszköztárában, 🚶)
 
 - Az oldal egy **út mentén**: húzással körbenézel – **fel és le is** –, a nyilakkal (vagy ↑ ↓) előre-hátra
   mész, ← → fordul (PageUp / PageDown: fel-le nézés).
@@ -176,11 +175,13 @@ Ez az oldal nyitóoldala (lásd 0. pont). Letisztult, egyoldalas CV: tanulmányo
      fogantyút** = átméretezés (képek sarkánál megmarad az arány, Shift-tel szabadon);
    - **dupla kattintás** egy szövegre → átírod, Enter = kész;
    - a keret feletti sáv: **⬑** a körülötte lévő doboz kijelölése · **✎** szöveg · **＋H** alcím ·
-     **＋¶** bekezdés · **👁** elrejtés · **↺** vissza az eredetire · **✕**;
+     **＋¶** bekezdés · **🎨** színek és betű (szövegszín, háttér, betűtípus, méret, vastagság, sarkok) ·
+     **👁** elrejtés · **↺** vissza az eredetire · **✕**;
    - nyilakkal 1 px-enként (Shift: 10 px) mozgatsz, Delete = elrejtés, Esc = kijelölés vége;
    - a méret és a hely minden nyelven ugyanaz, a szöveg csak azon a nyelven változik, ahol átírtad;
    - közben a linkek nem működnek – ha navigálni akarsz, kapcsold KI a szerkesztést.
-   Alul **Mentés** (kb. 1 perc múlva élesben).
+   **Minden módosítás magától mentődik** 15 mp-cel az utolsó után (vagy azonnal: *Mentés most*);
+   kb. 1 perc múlva élesben.
 7. Zöld panel jobbra lent: új poszt, fotók feltöltése, régi posztok szerkesztése (GitHub), és
    **Az „Üzenj” működése**: *írás az oldalon* vagy *e-mail-program megnyitása*.
 8. Kikapcsolás: újabb 5 kattintás (kód nélkül) vagy az ✕ a panelen.

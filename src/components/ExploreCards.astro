@@ -4,12 +4,14 @@ import IconCircle from './IconCircle.astro';
 import SectionHeading from './SectionHeading.astro';
 import { localePath, t, type Lang } from '../i18n';
 import { CATEGORY_META } from '../lib/categories';
+import { beenCount } from '../lib/countries';
 
 interface Props {
   lang: Lang;
 }
 
 const { lang } = Astro.props;
+const mapText = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
 ---
 
 <section class="section explore" id="explore" data-lay="explore" aria-labelledby="explore-title">
@@ -36,16 +38,29 @@ const { lang } = Astro.props;
           </li>
         ))
       }
+      <!-- "Where I've been": a card like the others, the map is on its own page -->
+      <li class="card card--hover explore-card card--violet reveal" data-dev-add="post">
+        <IconCircle icon="map-pin" variant="violet" size="lg" />
+        <h3>{t(lang, 'map.title')}</h3>
+        <div class="explore-card__small" aria-hidden="true">
+          <IconCircle icon="plane" size="xs" variant="yellow" />
+          <IconCircle icon="globe" size="xs" variant="violet" />
+          <IconCircle icon="flag" size="xs" variant="yellow" />
+        </div>
+        <p>{mapText}</p>
+        <a class="link-arrow explore-card__link" href={localePath(lang, 'map')}>
+          {t(lang, 'map.cardLink')}
+        </a>
+      </li>
     </ul>
-    <!-- "Where I've been" lives here, as part of Explore -->
-    <slot />
   </div>
 </section>
 
 <style>
   .explore__grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    /* four cards: one row on wide screens, 2 × 2 otherwise (never 3 + 1, never tall skinny cards) */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(24px, 3vw, 36px);
     margin: 0;
     padding: 0;
@@ -72,10 +87,14 @@ const { lang } = Astro.props;
   .explore-card__link {
     margin-top: auto;
   }
-  @media (max-width: 1023px) {
+  @media (min-width: 1560px) {
+    .explore__grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 639px) {
     .explore__grid {
       grid-template-columns: minmax(0, 1fr);
-      max-width: calc(640px * var(--tz));
     }
   }
 </style>

@@ -35,11 +35,11 @@
   ],
   "raceBadges": [
     {
-      "label": "Split 21k",
+      "id": "split",
       "icon": "trophy"
     },
     {
-      "label": "Youth Skyrunning Worlds 2026",
+      "id": "skyrunning",
       "icon": "mountain"
     }
   ],

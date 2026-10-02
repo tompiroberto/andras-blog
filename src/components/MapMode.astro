@@ -99,7 +99,7 @@ const items: Item[] = [
     lat: 43.51,
     lon: 16.44,
     title: t(lang, 'mapmode.pbs'),
-    text: [...site.personalBests.map((p) => `${p.distance} · ${p.time}`), ...site.raceBadges.map((b) => b.label)].join('\n'),
+    text: [...site.personalBests.map((p) => `${p.distance} · ${p.time}`), ...site.raceBadges.map((b) => t(lang, `race.${b.id}` as TKey))].join('\n'),
     icon: 'timer',
     tone: 'yellow',
     priority: 7,
@@ -319,6 +319,7 @@ const LEGEND: { status: string; key: TKey }[] = [
     <button type="button" class="mm-btn mm-btn--icon" data-mm-zoom="europe" aria-label={t(lang, 'mapmode.europe')} title={t(lang, 'mapmode.europe')}><Icon name="locate" size={18} /></button>
     <button type="button" class="mm-btn mm-btn--icon" data-mm-zoom="world" aria-label={t(lang, 'mapmode.world')} title={t(lang, 'mapmode.world')}><Icon name="globe" size={18} /></button>
     <button type="button" class="mm-btn mm-btn--icon mm-btn--terrain" aria-pressed="false" aria-label={t(lang, 'mapmode.terrain')} title={t(lang, 'mapmode.terrain')} data-mm-terrain><Icon name="mountain" size={18} /></button>
+    <button type="button" class="mm-btn mm-btn--icon" aria-label={t(lang, 'street.toggle')} title={t(lang, 'street.toggle')} data-mm-street><Icon name="person-standing" size={19} /></button>
     <button type="button" class="mm-btn mm-btn--icon mm-btn--nutella" aria-pressed="false" aria-label={t(lang, 'mapmode.nutella')} title={t(lang, 'mapmode.nutella')} data-mm-nutella><Icon name="jar" size={20} /></button>
   </div>
 
@@ -1974,6 +1975,12 @@ const LEGEND: { status: string; key: TKey }[] = [
     });
 
     const terrainBtn = view.querySelector<HTMLButtonElement>('[data-mm-terrain]')!;
+    // Street View lives in the world-map theme: leave the map and walk; its exit button brings the map back
+    view.querySelector('[data-mm-street]')?.addEventListener('click', () => {
+      document.documentElement.dataset.streetFrom = 'map';
+      document.querySelector<HTMLButtonElement>('[data-html-toggle="map-mode"]')?.click();
+      window.dispatchEvent(new CustomEvent('andras:street', { detail: true }));
+    });
     terrainBtn.addEventListener('click', async () => {
       terrainOn = !terrainOn;
       terrainBtn.setAttribute('aria-pressed', String(terrainOn));

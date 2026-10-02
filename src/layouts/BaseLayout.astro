@@ -201,14 +201,14 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
         },
         { passive: false },
       );
-      // Horizontal page: nothing scrolls up or down. Every column's content is zoomed out by one shared
-      // factor (--col-fit), just enough that the tallest section fits the screen.
+      // Horizontal page: nothing scrolls up or down. Every column gets its own factor (--col-fit on the
+      // column): shrunk until its content fits the screen, or grown (up to 1.35×) to fill it.
       const columns = () => Array.from(document.querySelectorAll<HTMLElement>('main > :not(script), body > .site-footer'));
       function flow() {
         root.style.removeProperty('--col-fit');
+        columns().forEach((c) => c.style.removeProperty('--col-fit'));
         if (!root.classList.contains('horizontal')) return;
         // measured at full size (the scale is a transform, so it does not change the layout)
-        let fit = 1;
         for (const col of columns()) {
           const box = col.getBoundingClientRect();
           if (!box.height || !col.offsetHeight) continue;
@@ -217,19 +217,32 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
           const scale = box.height / col.offsetHeight;
           const cs = getComputedStyle(col);
           const avail = box.height - ((parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0)) * scale;
+          // every child is scaled around its own centre: it may grow only while all of its content stays
+          // on the screen (left/right as well as top/bottom)
           let top = Infinity;
           let bottom = -Infinity;
+          let fitW = 1.35;
           for (const child of Array.from(col.children)) {
-            if (child.classList.contains('bg-layer')) continue;
+            if (child.classList.contains('bg-layer') || child.hasAttribute('data-dev-ui')) continue;
             const r = child.getBoundingClientRect();
             if (!r.height) continue;
             top = Math.min(top, r.top);
             bottom = Math.max(bottom, r.bottom);
+            const cx = r.left + r.width / 2;
+            const boxes = Array.from(child.children).map((c) => c.getBoundingClientRect()).filter((q) => q.width && q.height);
+            for (const q of boxes.length ? boxes : [r]) {
+              const reachLeft = cx - q.left;
+              const reachRight = q.right - cx;
+              const roomLeft = cx - box.left - box.width * 0.03;
+              const roomRight = box.right - box.width * 0.03 - cx;
+              if (reachLeft > 1) fitW = Math.min(fitW, roomLeft / reachLeft);
+              if (reachRight > 1) fitW = Math.min(fitW, roomRight / reachRight);
+            }
           }
-          const used = bottom - top;
-          if (used > avail + 2) fit = Math.min(fit, avail / used);
+          if (!Number.isFinite(top)) continue;
+          const fit = Math.min(1.35, fitW, avail / Math.max(1, bottom - top));
+          col.style.setProperty('--col-fit', Math.max(0.45, fit).toFixed(3));
         }
-        root.style.setProperty('--col-fit', Math.max(0.45, fit).toFixed(3));
       }
       let flowTimer = 0;
       const scheduleFlow = () => {
