@@ -65,9 +65,9 @@
   "msg.send": "Enviar",
   "msg.sending": "A enviar…",
   "msg.success": "Obrigado! A tua mensagem está a caminho – respondo em breve.",
-  "msg.error": "Algo correu mal. Tenta outra vez ou escreve-me por e-mail.",
+  "msg.error": "O envio falhou – a tua app de e-mail abre com a mensagem já escrita.",
   "msg.required": "Preenche o teu nome e a mensagem.",
-  "msg.privacy": "A mensagem sai do teu próprio e-mail – este site não guarda nada.",
+  "msg.privacy": "O teu nome e a tua mensagem só chegam a mim e não aparecem no site.",
   "contact.title": "Fala comigo",
   "footer.legend": "círculos = lugares · triângulos = direção",
   "scroll.label": "Posição na página – arrasta ao longo do Chile",
@@ -378,5 +378,6 @@
   "msg.subject": "Mensagem do teu site",
   "msg.fallback": "Se nada abriu, escreve para:",
   "msg.copy": "Copiar",
-  "msg.copied": "Copiado!"
+  "msg.copied": "Copiado!",
+  "msg.direct": "Ou escreve-me diretamente:"
 }

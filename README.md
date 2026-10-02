@@ -23,11 +23,12 @@ src/
   components/      Header, LanguageSwitcher, Globe, ChileScroll, PowerLines, Footer, WorldMap, …
   layouts/         BaseLayout.astro
   pages/           index.astro (language redirect) and [lang]/… (all translated pages)
-  lib/             helpers (posts, categories, Chile geometry, mailto links)
+  lib/             helpers (posts, categories, Chile geometry, form handler, e-mail fallback)
   styles/          global.css (all colours and sizes as CSS variables)
 public/
   images/          photo and supporter logos
   data/            countries-50m.json (world map, loaded lazily)
+  __forms.html     static copy of the contact form so Netlify can detect it
 starter-assets/    the original assets this site was built from (not used by the build)
 ```
 
@@ -88,11 +89,16 @@ A new visit to the home page (`/hu/`, `/en/`, …) opens the CV (`src/components
 the CV back. The choice lives in `sessionStorage` (`andras-view`), read by the head script in
 `src/layouts/BaseLayout.astro`.
 
-## Messages (no form backend)
+## Messages
 
-"Message me" and every "message me about this place" window offer topics; each opens the visitor's own
-e-mail app (`mailto:`) with a started letter to the address in `src/data/site.json` (`email`). Nothing is
-stored on the site, so no Netlify Forms or database is needed. Helpers: `src/lib/mail.ts`.
+"Message me" and every "message me about this place" window are forms on the site (topic, name, contact,
+message). They are sent with **Netlify Forms** (part of the hosting, form name `message`; the static copy
+for detection is `public/__forms.html`, the sending code `src/lib/formHandler.ts`). If sending fails, the
+visitor's e-mail app opens with the message already written (`src/lib/mail.ts`).
+
+To get every message by e-mail: Netlify → Project configuration → Notifications → Emails and webhooks →
+Form submission notifications → Add notification → Email notification → form `message`, the address in
+`src/data/site.json`. Messages can also be read under **Forms → message**.
 
 ## Notes
 

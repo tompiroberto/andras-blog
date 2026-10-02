@@ -4,8 +4,7 @@
  * window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail: { place, topic? } })) – the fact
  * card (city labels, scrollbar cities, search results, the chaos map), map mode, the country pages,
  * the solar system and a double-click on the coordinate grid. It is a <dialog>, so it opens above every
- * view. Picking a topic opens the visitor's e-mail app with a started letter (mailto:) – nothing is
- * stored on the site.
+ * view, and it sends through the same contact form as the "Message me" section (src/lib/formHandler.ts).
  */
 import Icon from './Icon.astro';
 import site from '../data/site.json';
@@ -16,6 +15,7 @@ interface Props {
 }
 
 const { lang } = Astro.props;
+const LIMITS = { name: 80, contact: 120, message: 1000 };
 const TOPICS = [
   { id: 'say', icon: 'message-circle' },
   { id: 'host', icon: 'bed-double' },
@@ -24,7 +24,7 @@ const TOPICS = [
 ---
 
 <dialog class="place-msg" data-place-msg data-email={site.email} aria-labelledby="place-msg-title">
-  <div class="place-msg__body">
+  <form class="place-msg__form" novalidate data-place-msg-form>
     <div class="place-msg__head">
       <span class="place-msg__icon" aria-hidden="true"><Icon name="map-pin" size={22} /></span>
       <div>
@@ -36,27 +36,61 @@ const TOPICS = [
       </button>
     </div>
 
-    <p class="place-msg__hint">{t(lang, 'msg.pick')}</p>
-    <div class="place-msg__topics">
+    <input type="hidden" name="form-name" value="message" />
+    <input type="hidden" name="lang" value={lang} />
+    <input type="hidden" name="place" data-place-msg-place />
+    <p class="hp" aria-hidden="true">
+      <label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off" /></label>
+    </p>
+
+    <fieldset class="place-msg__topics">
+      <legend class="visually-hidden">{t(lang, 'pm.topic')}</legend>
       {
-        TOPICS.map((tp) => (
-          <button type="button" class="place-msg__topic" data-topic={tp.id} data-label={t(lang, `pm.topic.${tp.id}`)} data-start={t(lang, `pm.start.${tp.id}`)}>
-            <Icon name={tp.icon} size={18} />
-            <span>{t(lang, `pm.topic.${tp.id}`)}</span>
-            <Icon name="mail" size={16} class="place-msg__mail" />
-          </button>
+        TOPICS.map((tp, i) => (
+          <label class="place-msg__topic">
+            <input type="radio" name="topic" value={tp.id} checked={i === 0} />
+            <span>
+              <Icon name={tp.icon} size={18} />
+              {t(lang, `pm.topic.${tp.id}`)}
+            </span>
+          </label>
         ))
       }
+    </fieldset>
+
+    <div class="place-msg__fields">
+      <label class="place-msg__field">
+        <span>{t(lang, 'msg.name')} *</span>
+        <input name="name" type="text" required maxlength={LIMITS.name} autocomplete="name" />
+      </label>
+      <label class="place-msg__field">
+        <span>{t(lang, 'msg.contact')}</span>
+        <input name="contact" type="text" maxlength={LIMITS.contact} autocomplete="email" />
+      </label>
+      <label class="place-msg__field place-msg__field--wide">
+        <span>{t(lang, 'msg.message')} *</span>
+        <textarea name="message" required rows="4" maxlength={LIMITS.message} data-place-msg-text></textarea>
+      </label>
     </div>
 
-    <p class="place-msg__fallback">
-      {t(lang, 'msg.fallback')}
-      <a href={`mailto:${site.email}`}>{site.email}</a>
-      <button type="button" class="place-msg__copy" data-copy={site.email} data-copied={t(lang, 'msg.copied')}>{t(lang, 'msg.copy')}</button>
-    </p>
-    <p class="place-msg__privacy">{t(lang, 'msg.privacy')}</p>
-  </div>
+    <p class="place-msg__status" role="status" aria-live="polite" data-place-msg-status></p>
+    <div class="place-msg__actions">
+      <button type="submit" class="btn btn--primary" data-place-msg-submit>
+        <Icon name="send" size={18} />
+        <span data-place-msg-send>{t(lang, 'msg.send')}</span>
+      </button>
+      <p class="place-msg__privacy">{t(lang, 'msg.privacy')}</p>
+    </div>
+  </form>
+  <template data-pm-sending>{t(lang, 'msg.sending')}</template>
+  <template data-pm-send>{t(lang, 'msg.send')}</template>
+  <template data-pm-success>{t(lang, 'msg.success')}</template>
+  <template data-pm-error>{t(lang, 'msg.error')}</template>
+  <template data-pm-required>{t(lang, 'msg.required')}</template>
   <template data-pm-title>{t(lang, 'pm.title')}</template>
+  <template data-pm-start-say>{t(lang, 'pm.start.say')}</template>
+  <template data-pm-start-host>{t(lang, 'pm.start.host')}</template>
+  <template data-pm-start-buddy>{t(lang, 'pm.start.buddy')}</template>
 </dialog>
 
 <style>
@@ -78,7 +112,7 @@ const TOPICS = [
     background: color-mix(in srgb, var(--ink) 45%, transparent);
     backdrop-filter: blur(2px);
   }
-  .place-msg__body {
+  .place-msg__form {
     display: grid;
     gap: 14px;
     padding: 18px 20px 20px;
@@ -126,66 +160,98 @@ const TOPICS = [
     border-radius: 50%;
     background: var(--surface);
   }
-  .place-msg__hint {
-    margin: 0;
-    font-size: 15px;
-  }
   .place-msg__topics {
     display: grid;
     gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
   }
-  .place-msg__topic {
+  .place-msg__topic input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .place-msg__topic span {
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 100%;
-    padding: 10px 14px;
+    padding: 9px 14px;
     border: 2px solid var(--ink);
     border-radius: var(--radius-pill);
-    background: var(--surface);
-    color: var(--ink);
-    font: inherit;
     font-weight: 700;
     font-size: 15px;
-    text-align: left;
     cursor: pointer;
-    transition: background-color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
+    transition: background-color var(--t-fast), box-shadow var(--t-fast);
   }
-  .place-msg__topic span {
-    flex: 1;
-  }
-  .place-msg__topic:hover,
-  .place-msg__topic:focus-visible {
+  .place-msg__topic input:checked + span {
     background: var(--yellow);
     box-shadow: 3px 3px 0 var(--ink);
-    transform: translate(-1px, -1px);
   }
-  .place-msg__fallback {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 10px;
-    margin: 0;
-    font-size: 14px;
+  .place-msg__topic input:focus-visible + span {
+    outline: 3px solid var(--violet);
+    outline-offset: 2px;
   }
-  .place-msg__fallback a {
-    font-weight: 700;
-    overflow-wrap: anywhere;
+  .place-msg__fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
-  .place-msg__copy {
-    padding: 4px 12px;
-    border: 2px solid var(--ink);
-    border-radius: var(--radius-pill);
-    background: var(--violet-tint);
-    color: var(--ink);
-    font: inherit;
+  .place-msg__field {
+    display: grid;
+    gap: 4px;
     font-size: 13px;
     font-weight: 700;
   }
+  .place-msg__field--wide {
+    grid-column: 1 / -1;
+  }
+  .place-msg__field input,
+  .place-msg__field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    font: inherit;
+    font-weight: 400;
+    font-size: 15px;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .place-msg__field textarea {
+    resize: vertical;
+  }
+  .place-msg__status {
+    margin: 0;
+    font-weight: 700;
+    min-height: 1.2em;
+  }
+  .place-msg__status.is-error {
+    color: #c62828;
+  }
+  .place-msg__status.is-ok {
+    color: var(--violet-dark);
+  }
+  .place-msg__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+  }
   .place-msg__privacy {
+    flex: 1 1 200px;
     margin: 0;
     font-size: var(--fs-tiny);
     color: var(--muted);
+  }
+  .place-msg .hp {
+    position: absolute;
+    left: -9999px;
+  }
+  @media (max-width: 520px) {
+    .place-msg__fields {
+      grid-template-columns: 1fr;
+    }
   }
   @keyframes pm-in {
     from {
@@ -197,34 +263,83 @@ const TOPICS = [
 
 <script>
   import { PLACE_MESSAGE_EVENT, type PlaceMessageDetail } from '../lib/constants';
-  import { openMail, wireCopyButtons } from '../lib/mail';
+  import { submitForm } from '../lib/formHandler';
+  import { openMail, letterBody } from '../lib/mail';
 
   const dialog = document.querySelector<HTMLDialogElement>('[data-place-msg]');
   if (dialog) {
+    const form = dialog.querySelector<HTMLFormElement>('[data-place-msg-form]')!;
     const title = dialog.querySelector<HTMLElement>('[data-place-msg-title]')!;
-    const titleTpl = dialog.querySelector<HTMLTemplateElement>('[data-pm-title]')!.content.textContent ?? '{place}';
-    const email = dialog.dataset.email!;
-    let place = '';
+    const place = dialog.querySelector<HTMLInputElement>('[data-place-msg-place]')!;
+    const text = dialog.querySelector<HTMLTextAreaElement>('[data-place-msg-text]')!;
+    const status = dialog.querySelector<HTMLElement>('[data-place-msg-status]')!;
+    const submit = dialog.querySelector<HTMLButtonElement>('[data-place-msg-submit]')!;
+    const sendLabel = dialog.querySelector<HTMLElement>('[data-place-msg-send]')!;
+    const tpl = (n: string) => dialog.querySelector<HTMLTemplateElement>(`[data-pm-${n}]`)!.content.textContent ?? '';
+    /** the start of the message follows the chosen topic until the visitor writes something */
+    let starter = '';
+
+    const setStarter = (topic: string) => {
+      const next = tpl(`start-${topic}`).replace('{place}', place.value);
+      if (!text.value.trim() || text.value === starter) text.value = next;
+      starter = next;
+    };
 
     function open(detail: PlaceMessageDetail) {
-      place = detail.place;
-      title.textContent = titleTpl.replace('{place}', place);
+      place.value = detail.place;
+      title.textContent = tpl('title').replace('{place}', detail.place);
+      status.textContent = '';
+      status.className = 'place-msg__status';
+      const topic = detail.topic ?? 'say';
+      const radio = form.querySelector<HTMLInputElement>(`input[name="topic"][value="${topic}"]`);
+      if (radio) radio.checked = true;
+      text.value = '';
+      starter = '';
+      setStarter(topic);
       if (!dialog!.open) dialog!.showModal();
-      const first = dialog!.querySelector<HTMLButtonElement>(`[data-topic="${detail.topic ?? 'say'}"]`);
-      first?.focus();
+      text.focus();
+      text.setSelectionRange(text.value.length, text.value.length);
     }
 
     window.addEventListener(PLACE_MESSAGE_EVENT, (e) => open((e as CustomEvent<PlaceMessageDetail>).detail));
-    dialog.querySelectorAll<HTMLButtonElement>('[data-topic]').forEach((b) =>
-      b.addEventListener('click', () => {
-        openMail(email, `${place} – ${b.dataset.label}`, b.dataset.start!.replace('{place}', place));
-      }),
-    );
-    wireCopyButtons(dialog);
+    form.addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t.name === 'topic') setStarter(t.value);
+    });
     dialog.querySelector('[data-place-msg-close]')!.addEventListener('click', () => dialog.close());
     // click on the dimmed backdrop closes it
     dialog.addEventListener('click', (e) => {
       if (e.target === dialog) dialog.close();
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      if (!String(data.get('name') ?? '').trim() || !String(data.get('message') ?? '').trim()) {
+        status.textContent = tpl('required');
+        status.className = 'place-msg__status is-error';
+        return;
+      }
+      submit.disabled = true;
+      sendLabel.textContent = tpl('sending');
+      try {
+        await submitForm(form);
+        status.textContent = tpl('success');
+        status.className = 'place-msg__status is-ok';
+        text.value = '';
+        starter = '';
+      } catch (err) {
+        console.error('[place message]', err);
+        // sending did not work: the visitor's e-mail app opens with the message already written
+        status.textContent = tpl('error');
+        const topic = form.querySelector<HTMLInputElement>('input[name="topic"]:checked');
+        const label = topic?.closest('label')?.textContent?.trim() ?? '';
+        openMail(dialog.dataset.email!, `${place.value} – ${label}`, letterBody(new FormData(form)));
+        status.className = 'place-msg__status is-error';
+      } finally {
+        submit.disabled = false;
+        sendLabel.textContent = tpl('send');
+      }
     });
   }
 </script>

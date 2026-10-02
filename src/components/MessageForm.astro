@@ -3,7 +3,6 @@ import Globe from './Globe.astro';
 import Icon from './Icon.astro';
 import SectionHeading from './SectionHeading.astro';
 import site from '../data/site.json';
-import { mailtoHref } from '../lib/mail';
 import { localePath, t, type Lang } from '../i18n';
 
 interface Props {
@@ -12,13 +11,12 @@ interface Props {
 
 const { lang } = Astro.props;
 
-/** "Message me": topics that open the visitor's e-mail app with a started letter (no form backend). */
+const LIMITS = { name: 80, contact: 120, message: 1000 };
 const TOPICS = [
   { id: 'idea', icon: 'lightbulb' },
   { id: 'join', icon: 'users' },
   { id: 'work', icon: 'briefcase' },
 ] as const;
-const subject = t(lang, 'msg.subject');
 ---
 
 <section class="section message" id="message" aria-labelledby="message-title">
@@ -39,28 +37,85 @@ const subject = t(lang, 'msg.subject');
       <SectionHeading icon="send" id="message-title">{t(lang, 'msg.title')}</SectionHeading>
       <p class="message__lead">{t(lang, 'msg.lead')}</p>
 
-      <p class="message__pick">{t(lang, 'msg.pick')}</p>
-      <div class="message__topics">
-        {
-          TOPICS.map((tp) => (
-            <a class="message__topic" href={mailtoHref(site.email, `${subject} – ${t(lang, `msg.topic.${tp.id}`)}`, t(lang, `msg.start.${tp.id}`))}>
-              <Icon name={tp.icon} size={20} />
-              <span>{t(lang, `msg.topic.${tp.id}`)}</span>
-              <Icon name="mail" size={18} />
-            </a>
-          ))
-        }
+      <form
+        name="message"
+        method="POST"
+        action={localePath(lang)}
+        data-netlify="true"
+        netlify-honeypot="bot-field"
+        novalidate
+        data-message-form
+        data-email={site.email}
+        data-subject={t(lang, 'msg.subject')}
+      >
+        <input type="hidden" name="form-name" value="message" />
+        <input type="hidden" name="lang" value={lang} />
+        <p class="hp" aria-hidden="true">
+          <label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off" /></label>
+        </p>
+
+        <fieldset class="topics">
+          <legend class="visually-hidden">{t(lang, 'pm.topic')}</legend>
+          {
+            TOPICS.map((tp, i) => (
+              <label class="topic">
+                <input type="radio" name="topic" value={tp.id} checked={i === 0} data-label={t(lang, `msg.topic.${tp.id}`)} />
+                <span>
+                  <Icon name={tp.icon} size={18} />
+                  {t(lang, `msg.topic.${tp.id}`)}
+                </span>
+              </label>
+            ))
+          }
+        </fieldset>
+
+        <div class="field">
+          <label for="msg-name">{t(lang, 'msg.name')} <span aria-hidden="true">*</span></label>
+          <input id="msg-name" name="name" type="text" required maxlength={LIMITS.name} autocomplete="name" />
+        </div>
+
+        <div class="field">
+          <label for="msg-contact">{t(lang, 'msg.contact')}</label>
+          <input id="msg-contact" name="contact" type="text" maxlength={LIMITS.contact} autocomplete="email" />
+        </div>
+
+        <div class="field">
+          <label for="msg-message">{t(lang, 'msg.message')} <span aria-hidden="true">*</span></label>
+          <textarea
+            id="msg-message"
+            name="message"
+            required
+            rows="6"
+            maxlength={LIMITS.message}
+            placeholder={t(lang, 'msg.placeholder')}
+            aria-describedby="msg-counter"
+          ></textarea>
+          <span class="counter" id="msg-counter" data-counter data-max={LIMITS.message}>0 / {LIMITS.message}</span>
+        </div>
+
+        <div class="status" role="status" aria-live="polite" data-status></div>
+
+        <button type="submit" class="btn btn--primary submit" data-submit>
+          <span class="submit__idle"><Icon name="send" size={20} />{t(lang, 'msg.send')}</span>
+          <span class="submit__busy"><Icon name="loader-circle" size={20} class="spin" />{t(lang, 'msg.sending')}</span>
+        </button>
+
+        <p class="direct">
+          {t(lang, 'msg.direct')} <a href={`mailto:${site.email}`}>{site.email}</a>
+        </p>
+        <p class="privacy-note">
+          {t(lang, 'msg.privacy')}
+          <a href={localePath(lang, 'privacy')}>{t(lang, 'footer.privacy')}</a>
+        </p>
+      </form>
+
+      <div class="success" hidden data-success tabindex="-1">
+        <span class="success__icon"><Icon name="circle-check" size={40} /></span>
+        <p>{t(lang, 'msg.success')}</p>
       </div>
 
-      <p class="message__fallback">
-        {t(lang, 'msg.fallback')}
-        <a href={`mailto:${site.email}`}>{site.email}</a>
-        <button type="button" class="message__copy" data-copy={site.email} data-copied={t(lang, 'msg.copied')}>{t(lang, 'msg.copy')}</button>
-      </p>
-      <p class="privacy-note">
-        {t(lang, 'msg.privacy')}
-        <a href={localePath(lang, 'privacy')}>{t(lang, 'footer.privacy')}</a>
-      </p>
+      <template data-msg-required>{t(lang, 'msg.required')}</template>
+      <template data-msg-error>{t(lang, 'msg.error')}</template>
     </div>
   </div>
 </section>
@@ -128,58 +183,129 @@ const subject = t(lang, 'msg.subject');
     font-size: clamp(18px, 1.5vw, 21px);
     margin-bottom: 24px;
   }
-  .message__pick {
-    margin: 0 0 12px;
-    font-weight: 700;
-  }
-  .message__topics {
-    display: grid;
-    gap: 10px;
-    margin-bottom: 18px;
-  }
-  .message__topic {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: var(--touch);
-    padding: 12px 18px;
-    border: var(--border);
-    border-radius: var(--radius-pill);
-    background: var(--bg);
-    color: var(--ink);
-    font-weight: 700;
-    font-size: 17px;
-    text-decoration: none;
-    transition: background-color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
-  }
-  .message__topic span {
-    flex: 1;
-  }
-  .message__topic:hover,
-  .message__topic:focus-visible {
-    background: var(--yellow);
-    box-shadow: 3px 3px 0 var(--ink);
-    transform: translate(-1px, -1px);
-  }
-  .message__fallback {
+  .topics {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 10px;
-    margin: 0;
+    gap: 8px;
+    margin: 0 0 18px;
+    padding: 0;
+    border: 0;
   }
-  .message__fallback a {
+  .topic input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .topic span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color var(--t-fast), box-shadow var(--t-fast);
+  }
+  .topic input:checked + span {
+    background: var(--yellow);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .topic input:focus-visible + span {
+    outline: 3px solid var(--violet);
+    outline-offset: 2px;
+  }
+  .direct {
+    margin: 14px 0 0;
+    font-size: var(--fs-small);
+  }
+  .direct a {
     font-weight: 700;
     overflow-wrap: anywhere;
   }
-  .message__copy {
-    padding: 4px 12px;
-    border: 2px solid var(--ink);
-    border-radius: var(--radius-pill);
-    background: var(--violet-tint);
-    color: var(--ink);
-    font-size: 14px;
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .field label {
     font-weight: 700;
+    font-size: var(--fs-small);
+  }
+  .field input,
+  .field textarea {
+    width: 100%;
+    min-height: var(--touch);
+    padding: 12px 16px;
+    border: var(--border);
+    border-radius: 16px;
+    background: var(--bg);
+    font-size: 17px;
+  }
+  .field textarea {
+    resize: vertical;
+    min-height: 140px;
+  }
+  .field input:focus-visible,
+  .field textarea:focus-visible {
+    background: #fff;
+    outline-offset: 2px;
+  }
+  .field [aria-invalid='true'] {
+    border-color: #C0142B;
+    box-shadow: 0 0 0 2px #C0142B;
+  }
+  .field textarea::placeholder {
+    color: var(--muted);
+  }
+  .counter {
+    align-self: flex-end;
+    font-size: var(--fs-tiny);
+    color: var(--muted);
+  }
+  .counter.is-near {
+    color: var(--violet-dark);
+    font-weight: 700;
+  }
+  .hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .status:not(:empty) {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: var(--yellow-tint);
+    border: 2px solid var(--ink);
+    font-weight: 500;
+  }
+  .submit__busy {
+    display: none;
+  }
+  .submit__idle,
+  .submit__busy {
+    align-items: center;
+    gap: 10px;
+  }
+  .submit__idle {
+    display: inline-flex;
+  }
+  .submit[aria-busy='true'] .submit__idle {
+    display: none;
+  }
+  .submit[aria-busy='true'] .submit__busy {
+    display: inline-flex;
+  }
+  .submit[aria-busy='true'] {
+    cursor: progress;
+  }
+  .submit :global(.spin) {
+    animation: spin 0.9s linear infinite;
   }
   .privacy-note {
     margin: 16px 0 0;
@@ -189,6 +315,26 @@ const subject = t(lang, 'msg.subject');
   .privacy-note a {
     margin-left: 4px;
     font-weight: 700;
+  }
+  .success {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border-radius: 20px;
+    background: #E6F6EC;
+    border: 2px solid var(--ink);
+  }
+  .success[hidden] {
+    display: none;
+  }
+  .success p {
+    margin: 0;
+    font-weight: 700;
+  }
+  .success__icon {
+    color: var(--success);
+    flex: none;
   }
   @media (max-width: 899px) {
     .message__grid {
@@ -201,8 +347,65 @@ const subject = t(lang, 'msg.subject');
 </style>
 
 <script>
-  import { wireCopyButtons } from '../lib/mail';
+  import { submitForm } from '../lib/formHandler';
+  import { openMail, letterBody } from '../lib/mail';
 
-  const card = document.querySelector('.message__card');
-  if (card) wireCopyButtons(card);
+  const form = document.querySelector<HTMLFormElement>('[data-message-form]');
+  if (form) {
+    const card = form.parentElement!;
+    const status = form.querySelector<HTMLElement>('[data-status]')!;
+    const counter = form.querySelector<HTMLElement>('[data-counter]')!;
+    const submit = form.querySelector<HTMLButtonElement>('[data-submit]')!;
+    const success = card.querySelector<HTMLElement>('[data-success]')!;
+    const msgRequired = card.querySelector<HTMLTemplateElement>('[data-msg-required]')!.content.textContent ?? '';
+    const msgError = card.querySelector<HTMLTemplateElement>('[data-msg-error]')!.content.textContent ?? '';
+    const nameInput = form.elements.namedItem('name') as HTMLInputElement;
+    const messageInput = form.elements.namedItem('message') as HTMLTextAreaElement;
+    const max = Number(counter.dataset.max);
+
+    const updateCounter = () => {
+      const n = messageInput.value.length;
+      counter.textContent = `${n} / ${max}`;
+      counter.classList.toggle('is-near', n > max * 0.9);
+    };
+    messageInput.addEventListener('input', updateCounter);
+    updateCounter();
+
+    [nameInput, messageInput].forEach((el) =>
+      el.addEventListener('input', () => {
+        if (el.value.trim()) el.removeAttribute('aria-invalid');
+      }),
+    );
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = '';
+      const missing = [nameInput, messageInput].filter((el) => !el.value.trim());
+      missing.forEach((el) => el.setAttribute('aria-invalid', 'true'));
+      if (missing.length) {
+        status.textContent = msgRequired;
+        missing[0].focus();
+        return;
+      }
+
+      submit.setAttribute('aria-busy', 'true');
+      submit.disabled = true;
+      try {
+        await submitForm(form);
+        form.hidden = true;
+        success.hidden = false;
+        success.focus();
+      } catch (err) {
+        console.error(err);
+        // sending did not work: the visitor's e-mail app opens with the message already written
+        status.textContent = msgError;
+        const topic = form.querySelector<HTMLInputElement>('input[name="topic"]:checked');
+        const data = new FormData(form);
+        openMail(form.dataset.email!, `${form.dataset.subject} – ${topic?.dataset.label ?? ''}`, letterBody(data));
+      } finally {
+        submit.removeAttribute('aria-busy');
+        submit.disabled = false;
+      }
+    });
+  }
 </script>

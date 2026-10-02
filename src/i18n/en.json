@@ -65,9 +65,9 @@
   "msg.send": "Send",
   "msg.sending": "Sending…",
   "msg.success": "Thanks! Your message is on its way – I'll get back to you soon.",
-  "msg.error": "Something went wrong. Please try again or write to me by e-mail.",
+  "msg.error": "Sending didn't work – your e-mail app opens with your message already in it.",
   "msg.required": "Please fill in your name and message.",
-  "msg.privacy": "The letter goes from your own e-mail – this site stores nothing.",
+  "msg.privacy": "Your name and message are only sent to me and are not published on the site.",
   "contact.title": "Get in touch",
   "footer.legend": "circles = places · triangles = direction",
   "scroll.label": "Page position – drag along Chile",
@@ -378,5 +378,6 @@
   "msg.subject": "Message from your website",
   "msg.fallback": "If nothing opened, write to:",
   "msg.copy": "Copy",
-  "msg.copied": "Copied!"
+  "msg.copied": "Copied!",
+  "msg.direct": "Or write to me directly:"
 }

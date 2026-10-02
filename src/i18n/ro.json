@@ -65,9 +65,9 @@
   "msg.send": "Trimite",
   "msg.sending": "Se trimite…",
   "msg.success": "Mulțumesc! Mesajul tău e pe drum – îți răspund în curând.",
-  "msg.error": "Ceva n-a mers. Încearcă din nou sau scrie-mi pe e-mail.",
+  "msg.error": "Trimiterea nu a reușit – se deschide aplicația ta de e-mail cu mesajul deja scris.",
   "msg.required": "Te rog completează numele și mesajul.",
-  "msg.privacy": "Mesajul pleacă din propriul tău e-mail – site-ul nu stochează nimic.",
+  "msg.privacy": "Numele și mesajul tău ajung doar la mine și nu apar pe site.",
   "contact.title": "Contactează-mă",
   "footer.legend": "cercuri = locuri · triunghiuri = direcție",
   "scroll.label": "Poziția în pagină – trage de-a lungul Chile",
@@ -378,5 +378,6 @@
   "msg.subject": "Mesaj de pe site-ul tău",
   "msg.fallback": "Dacă nu s-a deschis nimic, scrie la:",
   "msg.copy": "Copiază",
-  "msg.copied": "Copiat!"
+  "msg.copied": "Copiat!",
+  "msg.direct": "Sau scrie-mi direct:"
 }

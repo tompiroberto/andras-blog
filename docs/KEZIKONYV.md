@@ -26,7 +26,7 @@ a **földgömb + nyelvkód** gombbal lehet váltani.
 | **Felfedezés** | Három kategória: Kalandok, Erasmus+, Random dolgok. Alatta a **Merre jártam** térkép: a térkép ikonra kattintva töltődik be; vidd az egeret egy ország fölé (telefonon koppints rá). |
 | **Fotók** | A fejlesztői módban feltöltött képek (addig nem látszik, amíg nincs fotó). |
 | **Jövőbeli tervek** | Öt állomás: stoppolás Chilében, Grúzia, még több stoppolás, Patagónia olcsón, 10 km 33 perc alatt. |
-| **Üzenj** | Három gomb (ötlet / csatlakoznék / munka): megnyitja a látogató e-mail-programját egy elkezdett levéllel a pum.pum.production@gmail.com címre. |
+| **Üzenj** | Üzenetküldő az oldalon: téma (ötlet / csatlakoznék / munka), név, elérhetőség, üzenet. Ha a küldés nem sikerül, megnyílik az e-mail-program a megírt üzenettel. |
 | **Kapcsolat (lábléc)** | E-mail, Strava, Instagram, Facebook, támogatói logók, adatvédelem, **kenyérszámláló**. |
 
 A bejegyzések kategóriánként is böngészhetők (Kalandok / Erasmus+ / Random dolgok), egy-egy
@@ -183,14 +183,14 @@ Ez az oldal nyitóoldala (lásd 0. pont). Letisztult, egyoldalas CV: tanulmányo
   felhasznált kenyereket.
 - **Háttérrajzok** (hajók, bálnák, tevék, jéghegyek…): kattints rájuk.
 - **Megnézett helyek** zöld ✓ jelet kapnak (a böngésződ megjegyzi).
-- **Üzenj egy helyről:** minden helykártyán (mondanék valamit / szállás-fuvar / útitárs) – a gombra
-  kattintva megnyílik az e-mail-program, a tárgyban a hellyel.
+- **Üzenj egy helyről:** minden helykártyán (mondanék valamit / szállás-fuvar / útitárs), az üzenetet
+  ott helyben meg lehet írni.
 
 ---
 
 ## 13. Adatvédelem röviden
 
-- Üzenetek: a látogató saját e-mail-programjából mennek, az oldal semmit nem tárol.
+- Az üzeneteket a Netlify (az oldal tárhelye) továbbítja és tárolja.
 - Városkereső: Open-Meteo / OpenStreetMap; tények és képek: Wikipédia.
 - IP-alapú hely (GeoJS): csak gombnyomásra, illetve az országoldal animációjához látogatásonként egyszer.
 - A beállításokat (téma, nagyítás, mód…) csak a saját böngésződ jegyzi meg.

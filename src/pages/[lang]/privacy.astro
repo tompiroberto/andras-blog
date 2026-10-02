@@ -26,13 +26,18 @@ const mail = site.email;
         {
           textLang === 'hu' ? (
             <>
-              <h2>Üzenetek</h2>
+              <h2>Kapcsolatfelvételi űrlap</h2>
               <p>
-                Az „Üzenj!” gombok a saját e-mail-programodat nyitják meg egy elkezdett levéllel. Az üzenet a te
-                e-mail-fiókodból jut el hozzám, az oldal semmit nem tárol belőle, és nem használ hozzá külső adatbázist.
+                Ha az „Üzenj!” űrlapon keresztül írsz nekem, a következő adatokat kapom meg: a <strong>neved</strong>, az
+                általad megadott <strong>elérhetőséged</strong> (e-mail-cím vagy Instagram-név – ez nem kötelező) és az{' '}
+                <strong>üzeneted</strong>.
               </p>
               <p>
-                A leveledet kizárólag arra használom, hogy válaszolni tudjak neked, és nem adom tovább senkinek.
+                Ezeket az adatokat kizárólag arra használom, hogy válaszolni tudjak neked. Az üzenetek soha nem jelennek meg
+                nyilvánosan az oldalon, és nem adom tovább őket senkinek.
+              </p>
+              <p>
+                Az űrlapot a Netlify (az oldal tárhelyszolgáltatója) kezeli, így a beküldött üzeneteket a Netlify tárolja.
               </p>
               <h2>Városkereső</h2>
               <p>
@@ -59,18 +64,23 @@ const mail = site.email;
               </p>
               <h2>Törlés</h2>
               <p>
-                Ha szeretnéd, hogy töröljem a leveledet és az adataidat, írj egy e-mailt a{' '}
+                Ha szeretnéd, hogy töröljem az üzenetedet és az adataidat, írj egy e-mailt a{' '}
                 <a href={`mailto:${mail}`}>{mail}</a> címre, és törlöm őket.
               </p>
             </>
           ) : (
             <>
-              <h2>Messages</h2>
+              <h2>Contact form</h2>
               <p>
-                The “Message me” buttons open your own e-mail app with a started letter. The message reaches me from your
-                e-mail account; this site stores nothing of it and uses no external database for it.
+                When you write to me through the “Message me” form, I receive your <strong>name</strong>, the optional{' '}
+                <strong>contact details</strong> you enter (an e-mail address or Instagram handle) and your{' '}
+                <strong>message</strong>.
               </p>
-              <p>I only use your e-mail to reply to you and do not share it with anyone.</p>
+              <p>
+                I only use this information to reply to you. Messages are never shown publicly on this site and are not
+                shared with anyone else.
+              </p>
+              <p>The form is handled by Netlify, the host of this site, so submitted messages are stored by Netlify.</p>
               <h2>City search</h2>
               <p>
                 The city search sends the text you type to Open-Meteo (open-meteo.com) – or, if that does not answer,

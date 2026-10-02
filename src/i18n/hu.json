@@ -65,9 +65,9 @@
   "msg.send": "Küldés",
   "msg.sending": "Küldés…",
   "msg.success": "Köszi! Az üzeneted úton van – hamarosan válaszolok.",
-  "msg.error": "Valami hiba történt. Próbáld újra, vagy írj e-mailt.",
+  "msg.error": "Nem sikerült elküldeni – megnyílik az e-mail-programod, benne a megírt üzeneteddel.",
   "msg.required": "Kérlek, add meg a neved és az üzeneted.",
-  "msg.privacy": "A levél a saját e-mail-fiókodból megy – az oldal semmit nem tárol.",
+  "msg.privacy": "A neved és az üzeneted csak hozzám jut el, az oldalon nem jelenik meg.",
   "contact.title": "Kapcsolat",
   "footer.legend": "körök = helyek · háromszögek = irány",
   "scroll.label": "Oldalpozíció – húzd végig Chilén",
@@ -378,5 +378,6 @@
   "msg.subject": "Üzenet a weboldaladról",
   "msg.fallback": "Ha nem nyílt meg semmi, írj ide:",
   "msg.copy": "Másolás",
-  "msg.copied": "Kimásolva!"
+  "msg.copied": "Kimásolva!",
+  "msg.direct": "Vagy írj közvetlenül:"
 }
