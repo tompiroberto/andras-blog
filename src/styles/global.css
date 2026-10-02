@@ -717,7 +717,7 @@ select {
 :root.map-mode {
   overflow: hidden;
 }
-:root.map-mode body > :not(.map-mode-view):not(.chaos-view):not(.fact-card):not(script):not(style) {
+:root.map-mode body > :not(.map-mode-view):not(.chaos-view):not(.fact-card):not(.place-msg):not(.route-view):not(script):not(style) {
   visibility: hidden;
 }
 
@@ -725,7 +725,7 @@ select {
 :root[data-theme='chaos'] {
   overflow: hidden;
 }
-:root[data-theme='chaos'] body > :not(.chaos-view):not(.fact-card):not(.place-msg):not(script):not(style) {
+:root[data-theme='chaos'] body > :not(.chaos-view):not(.fact-card):not(.place-msg):not(.route-view):not(script):not(style) {
   visibility: hidden;
 }
 
@@ -1247,5 +1247,20 @@ select {
   .infobox * {
     animation: none !important;
   }
+}
+
+/* ==========================================================================
+   Dynamic background (src/components/DynamicBg.astro): photos instead of the world map
+   ========================================================================== */
+:root.bg-dynamic:not(.dev-mode) {
+  background: var(--bg);
+}
+:root.bg-dynamic:not(.dev-mode) body {
+  background: transparent;
+}
+:root.bg-dynamic .world-layer,
+:root.bg-dynamic .search-pin-layer,
+:root.bg-dynamic .bg-layer {
+  display: none !important;
 }
 

@@ -29,6 +29,9 @@ export const THEME_EVENT = 'andras:theme-change';
 
 /** Background city labels on/off (localStorage '1' / '0'; on by default). */
 export const CITIES_STORAGE_KEY = 'andras-cities';
+/** background: world map (default) or the dynamic photo background (html.bg-dynamic) */
+export const BG_STORAGE_KEY = 'andras-bg';
+export const BG_EVENT = 'andras:bg-change';
 export const CITIES_EVENT = 'andras:cities-change';
 
 /** Fired when the map centre moves (city search); detail = SearchTarget or null for home. */

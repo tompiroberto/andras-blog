@@ -955,7 +955,8 @@ const planetStart = (i: number) => (i * 137) % 360; // spread the planets around
       window.clearTimeout(declutterTimer);
       declutterTimer = window.setTimeout(declutter, 140);
     };
-    /** No city name covers another: the bigger names win, the rest wait until you zoom in closer. */
+    /** No city name covers another, and the names are spread evenly: the screen is a grid with at most
+     *  one city per cell (the bigger names win); the rest wait until you zoom in closer. */
     let declutterTimer = 0;
     function declutter() {
       const groups = Array.from(citiesG.querySelectorAll<SVGGElement>('[data-chaos-city]'));
@@ -965,11 +966,21 @@ const planetStart = (i: number) => (i * 137) % 360; // spread the planets around
         .filter((it) => it.r.width > 0 && it.r.height > 0)
         .sort((a, b) => b.fs - a.fs);
       const kept: DOMRect[] = [];
-      const GAP = 3;
+      const GAP = 10;
+      const area = map.getBoundingClientRect();
+      const cols = Math.max(3, Math.round(area.width / 170));
+      const rows = Math.max(2, Math.round(area.height / 110));
+      const taken = new Set<string>();
       for (const it of items) {
-        const hit = kept.some((k) => it.r.left < k.right + GAP && it.r.right > k.left - GAP && it.r.top < k.bottom + GAP && it.r.bottom > k.top - GAP);
+        const cx = (it.r.left + it.r.width / 2 - area.left) / area.width;
+        const cy = (it.r.top + it.r.height / 2 - area.top) / area.height;
+        const cell = `${Math.floor(cx * cols)}:${Math.floor(cy * rows)}`;
+        const hit = taken.has(cell) || kept.some((k) => it.r.left < k.right + GAP && it.r.right > k.left - GAP && it.r.top < k.bottom + GAP && it.r.bottom > k.top - GAP);
         if (hit) it.g.classList.add('is-crowded');
-        else kept.push(it.r);
+        else {
+          kept.push(it.r);
+          taken.add(cell);
+        }
       }
     }
     function animateTo(target: Box, duration = 900): Promise<void> {
@@ -1014,7 +1025,7 @@ const planetStart = (i: number) => (i * 137) % 360; // spread the planets around
       const g = document.createElementNS(SVG_NS, 'g');
       g.setAttribute('data-chaos-city', '');
       if (continent) g.setAttribute('data-continent', continent);
-      g.setAttribute('transform', `translate(${x} ${y}) rotate(${rand(-22, 22).toFixed(1)})`);
+      g.setAttribute('transform', `translate(${x} ${y}) rotate(${rand(-7, 7).toFixed(1)})`);
       g.style.setProperty('--pop', `${Math.round(pop)}ms`);
       const color = COLORS[Math.floor(Math.random() * COLORS.length)];
       const dot = document.createElementNS(SVG_NS, 'circle');

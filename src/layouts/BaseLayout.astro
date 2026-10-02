@@ -31,9 +31,10 @@ import RouteView from '../components/RouteView.astro';
 import ZoomSpace from '../components/ZoomSpace.astro';
 import HorizonScene from '../components/HorizonScene.astro';
 import SiteEdits from '../components/SiteEdits.astro';
+import DynamicBg from '../components/DynamicBg.astro';
 import DevMode from '../components/DevMode.astro';
 import StreetView from '../components/StreetView.astro';
-import { VIEW_SESSION_KEY, STREET_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, MAP_MODE_STORAGE_KEY, CITIES_STORAGE_KEY, GRID_STORAGE_KEY, RIBBON_STORAGE_KEY, RIBBON_TRUE_STORAGE_KEY, THEME_STORAGE_KEY, ZOOM_STORAGE_KEY } from '../lib/constants';
+import { BG_STORAGE_KEY, VIEW_SESSION_KEY, STREET_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, MAP_MODE_STORAGE_KEY, CITIES_STORAGE_KEY, GRID_STORAGE_KEY, RIBBON_STORAGE_KEY, RIBBON_TRUE_STORAGE_KEY, THEME_STORAGE_KEY, ZOOM_STORAGE_KEY } from '../lib/constants';
 import { DEFAULT_ZOOM, ZOOM_MAX, ZOOM_MIN } from '../lib/zoom';
 import { THEMES } from '../lib/themes';
 import { RIBBON_WIDTHS } from '../lib/ribbon';
@@ -98,7 +99,7 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
         [unboundedPreload, dmSans400Preload, dmSans700Preload].map((href) => <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />)
     }
 
-    <script is:inline define:vars={{ streetKey: STREET_STORAGE_KEY, viewKey: VIEW_SESSION_KEY, horizontalKey: HORIZONTAL_STORAGE_KEY, mapModeKey: MAP_MODE_STORAGE_KEY, ribbonTrueKey: RIBBON_TRUE_STORAGE_KEY, zoomKey: ZOOM_STORAGE_KEY, zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX, defaultZoom: DEFAULT_ZOOM, citiesKey: CITIES_STORAGE_KEY, gridKey: GRID_STORAGE_KEY, ribbonKey: RIBBON_STORAGE_KEY, themeKey: THEME_STORAGE_KEY, themes: THEMES.map((x) => x.id), ribbonWidths: RIBBON_WIDTHS }}>
+    <script is:inline define:vars={{ streetKey: STREET_STORAGE_KEY, viewKey: VIEW_SESSION_KEY, horizontalKey: HORIZONTAL_STORAGE_KEY, mapModeKey: MAP_MODE_STORAGE_KEY, ribbonTrueKey: RIBBON_TRUE_STORAGE_KEY, zoomKey: ZOOM_STORAGE_KEY, zoomMin: ZOOM_MIN, zoomMax: ZOOM_MAX, defaultZoom: DEFAULT_ZOOM, citiesKey: CITIES_STORAGE_KEY, bgKey: BG_STORAGE_KEY, gridKey: GRID_STORAGE_KEY, ribbonKey: RIBBON_STORAGE_KEY, themeKey: THEME_STORAGE_KEY, themes: THEMES.map((x) => x.id), ribbonWidths: RIBBON_WIDTHS }}>
       document.documentElement.classList.add('js');
       // The CV is the front page: a new visit to the home page opens it; "Go to the blog" (or any other
       // page) switches this tab to the blog until the CV is opened again (header CV switch).
@@ -125,6 +126,7 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
       try {
         if (localStorage.getItem(gridKey) === '1') document.documentElement.classList.add('grid-on');
         if (localStorage.getItem(citiesKey) === '0') document.documentElement.classList.add('cities-off');
+        if (localStorage.getItem(bgKey) === '1') document.documentElement.classList.add('bg-dynamic');
         if (localStorage.getItem(mapModeKey) === '1') document.documentElement.classList.add('map-mode');
         if (localStorage.getItem(horizontalKey) === '1') document.documentElement.classList.add('horizontal');
         if (localStorage.getItem(streetKey) === '1') document.documentElement.classList.add('street-mode');
@@ -159,6 +161,7 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
     <ChaosView lang={lang} />
     <FactCard lang={lang} />
     <NutellaRain lang={lang} />
+    <DynamicBg lang={lang} />
     <CountryView lang={lang} />
     <RouteView lang={lang} />
     <CvView lang={lang} />

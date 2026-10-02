@@ -1,0 +1,391 @@
+---
+/**
+ * Dynamic background (header switch, html.bg-dynamic) instead of the world-map background: slowly
+ * drifting, cross-fading photos for a keyword, searched on Wikimedia Commons (free licences, no key).
+ * The keyword box sits at the bottom of the screen; the last keyword is remembered in this browser.
+ * Every photo is credited with a link to its Commons page.
+ */
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+/** quick picks: label in the page language, search words in English (Commons is mostly English) */
+const CHIPS: [string, string][] = [
+  [t(lang, 'bg.chip.chile'), 'Atacama desert Chile'],
+  [t(lang, 'bg.chip.patagonia'), 'Torres del Paine'],
+  [t(lang, 'bg.chip.georgia'), 'Georgia Caucasus mountains'],
+  [t(lang, 'bg.chip.mountains'), 'mountain landscape'],
+  [t(lang, 'bg.chip.ocean'), 'ocean waves'],
+  [t(lang, 'bg.chip.desert'), 'desert dunes'],
+  [t(lang, 'bg.chip.city'), 'city skyline night'],
+  [t(lang, 'bg.chip.running'), 'trail running'],
+];
+---
+
+<div class="dyn-bg" aria-hidden="true" data-dyn-bg>
+  <div class="dyn-bg__slide" data-dyn-slide></div>
+  <div class="dyn-bg__slide" data-dyn-slide></div>
+  <div class="dyn-bg__veil"></div>
+</div>
+
+<form class="dyn-search" role="search" data-dyn-search>
+  <button type="button" class="dyn-search__pill" data-dyn-open>🔍 {t(lang, 'bg.open')}</button>
+  <div class="dyn-search__row">
+    <label class="visually-hidden" for="dyn-q">{t(lang, 'bg.placeholder')}</label>
+    <input id="dyn-q" type="search" maxlength="60" autocomplete="off" placeholder={t(lang, 'bg.placeholder')} data-dyn-q />
+    <button type="submit" class="dyn-search__go" aria-label={t(lang, 'bg.search')} title={t(lang, 'bg.search')}>🔍</button>
+    <button type="button" class="dyn-search__min" aria-label={t(lang, 'bg.hide')} title={t(lang, 'bg.hide')} data-dyn-min>▾</button>
+  </div>
+  <div class="dyn-search__chips">
+    {CHIPS.map(([label, q]) => <button type="button" data-dyn-chip={q}>{label}</button>)}
+  </div>
+  <p class="dyn-search__credit" data-dyn-credit></p>
+  <template data-dyn-none>{t(lang, 'bg.none')}</template>
+  <template data-dyn-loading>{t(lang, 'bg.loading')}</template>
+  <template data-dyn-photo>{t(lang, 'bg.photo')}</template>
+</form>
+
+<style>
+  .dyn-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    zoom: var(--inv-zoom, 1);
+    /* while the photos load (or when nothing is found): slowly moving colours */
+    background:
+      radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--violet) 35%, transparent), transparent 45%),
+      radial-gradient(circle at 80% 70%, color-mix(in srgb, var(--yellow) 45%, transparent), transparent 50%),
+      var(--bg);
+    background-size: 160% 160%;
+    animation: dyn-drift 24s ease-in-out infinite alternate;
+  }
+  :global(html.bg-dynamic) .dyn-bg {
+    display: block;
+  }
+  .dyn-bg__slide {
+    position: absolute;
+    inset: -6%;
+    background-position: center;
+    background-size: cover;
+    opacity: 0;
+    transition: opacity 1.8s ease;
+  }
+  .dyn-bg__slide.is-on {
+    opacity: 1;
+    animation: dyn-kenburns 16s ease-in-out both;
+  }
+  .dyn-bg__slide.is-on.is-odd {
+    animation-name: dyn-kenburns-2;
+  }
+  /* keeps the text readable on top of the photos */
+  .dyn-bg__veil {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+  }
+  @keyframes dyn-kenburns {
+    from {
+      transform: scale(1) translate(0, 0);
+    }
+    to {
+      transform: scale(1.12) translate(-2%, -1.5%);
+    }
+  }
+  @keyframes dyn-kenburns-2 {
+    from {
+      transform: scale(1.12) translate(2%, 1%);
+    }
+    to {
+      transform: scale(1) translate(0, 0);
+    }
+  }
+  @keyframes dyn-drift {
+    to {
+      background-position: 100% 100%;
+    }
+  }
+
+  .dyn-search {
+    display: none;
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    z-index: 60;
+    width: min(560px, calc(100vw - 32px));
+    padding: 8px;
+    border: var(--border);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    box-shadow: 4px 4px 0 var(--ink);
+    backdrop-filter: blur(6px);
+    transform: translateX(-50%);
+    zoom: var(--inv-zoom, 1);
+  }
+  :global(html.bg-dynamic) .dyn-search {
+    display: grid;
+    gap: 6px;
+  }
+  /* folded: only a small pill, so the box never covers the page */
+  .dyn-search__pill {
+    display: none;
+    padding: 6px 14px;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  :global(html.bg-dynamic) .dyn-search.is-min {
+    width: auto;
+    padding: 2px;
+    display: block;
+  }
+  .dyn-search.is-min > :not(.dyn-search__pill) {
+    display: none;
+  }
+  .dyn-search.is-min .dyn-search__pill {
+    display: block;
+  }
+  .dyn-search__min {
+    width: 40px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .dyn-search__row {
+    display: flex;
+    gap: 6px;
+  }
+  .dyn-search input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--ink);
+    font: inherit;
+    font-size: 15px;
+  }
+  .dyn-search__go {
+    width: 40px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--yellow);
+    cursor: pointer;
+  }
+  .dyn-search__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .dyn-search__chips button {
+    padding: 3px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .dyn-search__chips button:hover,
+  .dyn-search__chips button[aria-pressed='true'] {
+    background: var(--violet);
+    color: #fff;
+  }
+  .dyn-search__credit {
+    margin: 0 4px;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dyn-search__credit:empty {
+    display: none;
+  }
+  .dyn-search__credit a {
+    color: inherit;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dyn-bg,
+    .dyn-bg__slide.is-on {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  import { BG_STORAGE_KEY } from '../lib/constants';
+
+  interface Photo {
+    url: string;
+    page: string;
+    title: string;
+  }
+  const html = document.documentElement;
+  const rootEl = document.querySelector<HTMLElement>('[data-dyn-bg]');
+  const formEl = document.querySelector<HTMLFormElement>('[data-dyn-search]');
+  if (rootEl && formEl) {
+    const root = rootEl;
+    const form = formEl;
+    const slides = Array.from(root.querySelectorAll<HTMLElement>('[data-dyn-slide]'));
+    const input = form.querySelector<HTMLInputElement>('[data-dyn-q]')!;
+    const credit = form.querySelector<HTMLElement>('[data-dyn-credit]')!;
+    const tpl = (n: string) => form.querySelector<HTMLTemplateElement>(`[data-dyn-${n}]`)!.content.textContent ?? '';
+    const cache = new Map<string, Photo[]>();
+    let photos: Photo[] = [];
+    let at = 0;
+    let front = 0;
+    let timer = 0;
+    let run = 0;
+
+    async function search(q: string): Promise<Photo[]> {
+      if (cache.has(q)) return cache.get(q)!;
+      const url =
+        'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=30' +
+        `&gsrsearch=${encodeURIComponent(`filetype:bitmap ${q}`)}&prop=imageinfo&iiprop=url|size|mime|extmetadata&iiurlwidth=1920&iiextmetadatafilter=Artist|LicenseShortName`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      const data = (await res.json()) as {
+        query?: { pages?: Record<string, { title: string; imageinfo?: { thumburl?: string; width: number; height: number; mime: string; descriptionurl: string }[] }> };
+      };
+      const list = Object.values(data.query?.pages ?? {})
+        .map((p) => ({ p, i: p.imageinfo?.[0] }))
+        // landscape photos, big enough to fill a screen
+        .filter(({ i }) => i && i.thumburl && i.mime === 'image/jpeg' && i.width >= 1200 && i.width > i.height * 1.15)
+        .map(({ p, i }) => ({ url: i!.thumburl!, page: i!.descriptionurl, title: p.title.replace(/^File:/, '').replace(/\.[^.]+$/, '') }));
+      cache.set(q, list);
+      return list;
+    }
+
+    const showCredit = (p: Photo) => {
+      credit.textContent = `${tpl('photo')} `;
+      const a = document.createElement('a');
+      a.href = p.page;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = `${p.title} (Wikimedia Commons)`;
+      credit.append(a);
+    };
+
+    function next() {
+      if (!photos.length) return;
+      const p = photos[at % photos.length];
+      at++;
+      const img = new Image();
+      img.onload = () => {
+        const incoming = slides[front];
+        const outgoing = slides[1 - front];
+        incoming.style.backgroundImage = `url("${p.url}")`;
+        incoming.classList.toggle('is-odd', at % 2 === 0);
+        incoming.classList.remove('is-on');
+        void incoming.offsetWidth;
+        incoming.classList.add('is-on');
+        outgoing.classList.remove('is-on');
+        front = 1 - front;
+        showCredit(p);
+      };
+      img.src = p.url;
+    }
+
+    async function load(q: string) {
+      const my = ++run;
+      window.clearInterval(timer);
+      credit.textContent = tpl('loading');
+      form.querySelectorAll<HTMLButtonElement>('[data-dyn-chip]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.dynChip === q)));
+      try {
+        localStorage.setItem(`${BG_STORAGE_KEY}-q`, q);
+      } catch {
+        /* storage unavailable */
+      }
+      let list: Photo[] = [];
+      try {
+        list = await search(q);
+      } catch {
+        list = [];
+      }
+      if (my !== run) return;
+      if (!list.length) {
+        credit.textContent = tpl('none');
+        return;
+      }
+      // a different order every time
+      photos = [...list].sort(() => Math.random() - 0.5);
+      foldSoon();
+      at = 0;
+      next();
+      timer = window.setInterval(next, 9000);
+    }
+
+    // fold / unfold the keyword box (remembered); it folds by itself a few seconds after a search
+    const setMin = (min: boolean) => {
+      form.classList.toggle('is-min', min);
+      try {
+        localStorage.setItem(`${BG_STORAGE_KEY}-min`, min ? '1' : '0');
+      } catch {
+        /* storage unavailable */
+      }
+    };
+    try {
+      if (localStorage.getItem(`${BG_STORAGE_KEY}-min`) === '1') form.classList.add('is-min');
+    } catch {
+      /* storage unavailable */
+    }
+    form.querySelector('[data-dyn-open]')!.addEventListener('click', () => {
+      setMin(false);
+      input.focus();
+    });
+    form.querySelector('[data-dyn-min]')!.addEventListener('click', () => setMin(true));
+    let foldTimer = 0;
+    const foldSoon = () => {
+      window.clearTimeout(foldTimer);
+      foldTimer = window.setTimeout(() => {
+        if (!form.contains(document.activeElement)) setMin(true);
+      }, 6000);
+    };
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = input.value.trim();
+      if (q) void load(q);
+    });
+    form.querySelectorAll<HTMLButtonElement>('[data-dyn-chip]').forEach((b) =>
+      b.addEventListener('click', () => {
+        input.value = b.textContent ?? '';
+        void load(b.dataset.dynChip!);
+      }),
+    );
+
+    let started = false;
+    const sync = () => {
+      const on = html.classList.contains('bg-dynamic');
+      if (on && !started) {
+        started = true;
+        let q = 'Torres del Paine';
+        try {
+          q = localStorage.getItem(`${BG_STORAGE_KEY}-q`) || q;
+        } catch {
+          /* storage unavailable */
+        }
+        void load(q);
+      } else if (!on && started) {
+        started = false;
+        run++;
+        window.clearInterval(timer);
+      }
+    };
+    new MutationObserver(sync).observe(html, { attributes: true, attributeFilter: ['class'] });
+    sync();
+  }
+</script>

@@ -8,7 +8,7 @@ import ZoomControl from './ZoomControl.astro';
 import ThemeSwitch from './ThemeSwitch.astro';
 import RibbonSwitch from './RibbonSwitch.astro';
 import { localePath, t, type Lang, type TKey } from '../i18n';
-import { CITIES_EVENT, CITIES_STORAGE_KEY, GRID_EVENT, GRID_STORAGE_KEY, MAP_MODE_EVENT, MAP_MODE_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, CV_EVENT, CV_STORAGE_KEY, } from '../lib/constants';
+import { BG_EVENT, BG_STORAGE_KEY, CITIES_EVENT, CITIES_STORAGE_KEY, GRID_EVENT, GRID_STORAGE_KEY, MAP_MODE_EVENT, MAP_MODE_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, CV_EVENT, CV_STORAGE_KEY, } from '../lib/constants';
 import site from '../data/site.json';
 
 interface Props {
@@ -26,6 +26,14 @@ const links: { key: TKey; hash: string }[] = [
   { key: 'nav.message', hash: 'message' },
 ];
 const contactHref = `${home}#contact`;
+const bgToggle = {
+  htmlClass: 'bg-dynamic',
+  pressedWhen: 'present' as const,
+  storageKey: BG_STORAGE_KEY,
+  eventName: BG_EVENT,
+  icon: 'images',
+  label: t(lang, 'bg.toggle'),
+};
 const gridToggle = {
   htmlClass: 'grid-on',
   pressedWhen: 'present' as const,
@@ -75,6 +83,7 @@ const citiesToggle = {
       <span class="brand__name">{site.owner}</span>
     </a>
 
+    <span class="pum" aria-label="PUM! – motto">PUM!</span>
     <nav class="nav-desktop" aria-label="Main">
       <ul>
         {links.map((l) => <li><a href={`${home}#${l.hash}`}>{t(lang, l.key)}</a></li>)}
@@ -92,6 +101,7 @@ const citiesToggle = {
       <ThemeSwitch lang={lang} uid="header" />
       <HtmlToggle {...gridToggle} class="desktop-tool" />
       <HtmlToggle {...citiesToggle} class="desktop-tool" />
+      <HtmlToggle {...bgToggle} class="desktop-tool" />
       <HtmlToggle {...mapModeToggle} class="desktop-tool" />
       <HtmlToggle {...horizontalToggle} class="desktop-tool" />
       <HtmlToggle {...cvToggle} class="desktop-tool" />
@@ -136,6 +146,7 @@ const citiesToggle = {
         <li><ThemeSwitch lang={lang} uid="mobile" inline /><span>{t(lang, 'theme.label')}</span></li>
         <li><HtmlToggle {...gridToggle} /><span>{t(lang, 'grid.toggle')}</span></li>
         <li><HtmlToggle {...citiesToggle} /><span>{t(lang, 'cities.toggle')}</span></li>
+        <li><HtmlToggle {...bgToggle} /><span>{t(lang, 'bg.toggle')}</span></li>
         <li><HtmlToggle {...mapModeToggle} /><span>{t(lang, 'mapmode.toggle')}</span></li>
         <li><HtmlToggle {...horizontalToggle} /><span>{t(lang, 'horizontal.toggle')}</span></li>
         <li><HtmlToggle {...cvToggle} /><span>{t(lang, 'cv.toggle')}</span></li>
@@ -180,6 +191,43 @@ const citiesToggle = {
     align-items: center;
     gap: 16px;
     min-height: var(--header-h);
+  }
+  /* the motto: a slightly tilted stamp in the top right corner of the header */
+  .pum {
+    position: absolute;
+    top: 6px;
+    right: calc(var(--chile-space) * var(--tz) + 18px);
+    z-index: 2;
+    font-family: 'Unbounded', var(--font-heading);
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    color: var(--violet);
+    -webkit-text-stroke: 1.5px var(--ink);
+    text-shadow: 3px 3px 0 var(--yellow);
+    transform: rotate(-8deg);
+    pointer-events: none;
+    user-select: none;
+    animation: pum-in 900ms cubic-bezier(0.34, 1.56, 0.64, 1) both 300ms;
+  }
+  @keyframes pum-in {
+    from {
+      transform: rotate(-30deg) scale(0.2);
+      opacity: 0;
+    }
+  }
+  @media (max-width: 899px) {
+    .pum {
+      font-size: 18px;
+      right: 70px;
+      top: 4px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pum {
+      animation: none;
+    }
   }
   .brand {
     display: inline-flex;

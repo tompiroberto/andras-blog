@@ -50,7 +50,7 @@ const contacts = [
     <SupporterLogos lang={lang} />
 
     <div class="site-footer__bottom">
-      <span>© {year} {site.owner}</span>
+      <span>© {year} {site.owner} · <span class="pum-credit">{t(lang, 'footer.pum').split('{pum}')[0]}<strong>PUM PUM PRODUCTION</strong>{t(lang, 'footer.pum').split('{pum}')[1]}</span></span>
       <span class="legend">
         <span class="legend__circle" aria-hidden="true"></span>
         {t(lang, 'footer.legend')}
@@ -129,6 +129,11 @@ const contacts = [
     gap: 12px 24px;
     margin-top: 32px;
     font-size: var(--fs-small);
+  }
+  .pum-credit strong {
+    font-family: 'Unbounded', var(--font-heading);
+    font-weight: 900;
+    letter-spacing: 0.04em;
   }
   .site-footer__bottom a {
     color: #fff;

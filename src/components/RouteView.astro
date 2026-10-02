@@ -47,6 +47,7 @@ const words = {
   looking: t(lang, 'mapmode.distLooking'),
   none: t(lang, 'search.none'),
   error: t(lang, 'mapmode.distError'),
+  failed: t(lang, 'route.failed'),
 };
 ---
 
@@ -93,7 +94,8 @@ const words = {
   .route-view {
     position: fixed;
     inset: 0;
-    z-index: 560;
+    /* above every full-screen view (map mode, country pages, street view, chaos) – below the fact card */
+    z-index: 650;
     background: #cfe6f7;
     font-family: 'DM Sans', system-ui, sans-serif;
     color: var(--ink);
@@ -402,6 +404,7 @@ const words = {
       looking: string;
       none: string;
       error: string;
+      failed: string;
     } = JSON.parse(view.querySelector('[data-route-words]')!.textContent || '{}');
     const lang = view.dataset.lang ?? 'en';
     const html = document.documentElement;
@@ -484,14 +487,25 @@ const words = {
     async function go() {
       if (!from || !to) return;
       const id = ++run;
-      const [geo, countries] = await Promise.all([import('d3-geo'), loadWorld()]);
+      // never a blank screen: whatever goes wrong, the panel says so (and the mode buttons still work)
+      try {
+      // a place without coordinates is looked up by its name first
+      if (!Number.isFinite(to.lat) || !Number.isFinite(to.lon)) {
+        const hit = (await geocode(to.name, lang).catch(() => []))[0];
+        if (!hit) throw new Error(`no coordinates for ${to.name}`);
+        to = { name: to.name, lat: hit.latitude, lon: hit.longitude };
+      }
+      // without the country outlines the trip is still planned (just without borders)
+      const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+      const [geo, countries] = await Promise.all([import('d3-geo'), loadWorld().catch(() => empty)]);
       if (id !== run) return;
       const countryAt = (p: Place) => countries.features.find((f) => geo.geoContains(f, [p.lon, p.lat]))?.id?.toString() ?? null;
       const a = { ...from, country: countryAt(from) };
       const b = { ...to, country: countryAt(to) };
       if ((mode as string) === 'auto') {
         const d = geo.geoDistance([from.lon, from.lat], [to.lon, to.lat]) * 6371;
-        mode = d > 900 ? 'plane' : d > 150 ? 'car' : 'walk';
+        // walking only for short hops; a day trip goes by car, far away by plane
+        mode = d > 900 ? 'plane' : d > 25 ? 'car' : 'walk';
         // a trip that cannot go by road falls back to the plane
         if (mode !== 'plane' && plan(mode, a, b).joke && d > 20) mode = 'plane';
       }
@@ -499,10 +513,14 @@ const words = {
       const p = plan(mode, a, b);
       legsEl.replaceChildren();
       totalEl.textContent = '';
-      if (!p.joke) await playTrip(view, vehicleOf(p.mode), words.anim[vehicleOf(p.mode)].replace('{name}', to.name));
+      if (!p.joke) await playTrip(view, vehicleOf(p.mode), words.anim[vehicleOf(p.mode)].replace('{name}', to.name)).catch(() => undefined);
       if (id !== run) return;
       last = { p, geo, countries };
       show(p, geo, countries);
+      } catch (err) {
+        console.error('[route]', err);
+        if (id === run) totalEl.textContent = words.failed;
+      }
     }
 
     function show(p: Plan, geo: typeof import('d3-geo'), countries: GeoJSON.FeatureCollection) {

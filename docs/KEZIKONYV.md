@@ -47,6 +47,7 @@ bejegyzésben lehetnek Strava-aktivitások is.
 | **🎨 Paletta** | Témák: lila (alap), óceán, erdő, naplemente és **Chaos** (lásd 9. pont). |
 | **# Rács** | Koordináta-rendszer az oldal fölött; az egér alatt kiírja a szélességet/hosszúságot. **Dupla kattintás** bárhol: kártya arról a pontról (üzenet, útvonalterv). |
 | **📍 Városok** | A háttérben felugró városnevek ki/be. |
+| **🖼 Háttér** | Világtérkép háttér ↔ **dinamikus háttér**: úszó, áttűnő fotók egy kulcsszóra (Wikimedia Commons). Alul kereső és gyors választás (Chile, Patagónia, Grúzia, hegyek…); a ▾ összecsukja. |
 | **🗺 Térképes mód** | Az egész oldal egy forgatható földgömbön (lásd 6. pont). |
 | **🧭 Iránytű** | Függőleges ↔ vízszintes oldal (lásd 5. pont). |
 | **📄 Önéletrajz** | Letisztult, nyomtatható CV (lásd 10. pont). |
@@ -147,6 +148,7 @@ Bármelyik városnévre, helynévre, keresési találatra vagy koordinátára ka
 - A téma-választóban a **Chaos**: az oldal szétesik, csak egy színes világtérkép marad.
 - Kontinensgombok (ráközelít, több város), keresés, **Naprendszer** gomb: bolygók, egy keringő
   Nutella-üveg és ufók. **Kattints egy ufóra: felrobban a Nutellája!** A bolygókra kattintva üzenhetsz.
+- A városnevek ritkítva, egyenletesen elosztva látszanak; közelítéskor jön több.
 - „Vissza a weboldalra” gomb.
 
 ---
