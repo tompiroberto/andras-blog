@@ -1,0 +1,43 @@
+# Settings for Apache / LiteSpeed hosting (cPanel, e.g. Papaki). Netlify ignores this file.
+# The site must be at the root of a domain or subdomain (e.g. https://andras.example.gr/), not in a subfolder.
+
+DirectoryIndex index.html
+ErrorDocument 404 /404.html
+AddDefaultCharset UTF-8
+Options -Indexes
+
+<IfModule mod_mime.c>
+  AddType text/html .html
+  AddType application/json .json
+  AddType image/svg+xml .svg
+  AddType image/webp .webp
+  AddType image/avif .avif
+  AddType font/woff2 .woff2
+  AddType font/woff .woff
+  AddType text/javascript .js .mjs
+  AddType text/css .css
+  AddType text/plain .txt
+  AddType application/xml .xml
+  AddType audio/mpeg .mp3
+  AddType audio/mp4 .m4a
+  AddType video/mp4 .mp4
+  AddType video/webm .webm
+</IfModule>
+
+# the pages are large (maps and city data inside): send them compressed
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/javascript application/javascript application/json image/svg+xml application/xml
+</IfModule>
+
+# fingerprinted files never change; the map data rarely does
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|woff2?|webp|avif|jpe?g|png|svg)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.json$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "public, max-age=0, must-revalidate"
+  </FilesMatch>
+</IfModule>

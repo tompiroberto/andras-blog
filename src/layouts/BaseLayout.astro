@@ -58,6 +58,7 @@ interface Props {
 }
 
 const { lang, title, description = t(lang, 'meta.description'), ogType = 'website' } = Astro.props;
+const STATIC_EXPORT = import.meta.env.PUBLIC_STATIC_EXPORT === '1';
 const path = Astro.props.path ?? stripLang(Astro.url.pathname);
 
 const fullTitle = title ? `${title} · ${site.owner}` : `${t(lang, 'hero.title')} · ${site.owner}`;
@@ -218,7 +219,8 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
     <RouteView lang={lang} />
     <CvView lang={lang} />
     <PlaceMessage lang={lang} />
-    <DevMode lang={lang} />
+    {/* a static copy for another host (scripts/export.mjs) has no developer mode: it could not rebuild */}
+    {!STATIC_EXPORT && <DevMode lang={lang} />}
     <StreetView lang={lang} />
 
     <script>

@@ -4,7 +4,8 @@ import sitemap from '@astrojs/sitemap';
 
 // The live Netlify address (canonical links, hreflang, the sitemap and the structured data use it).
 // If the site gets its own domain, change it here and in public/robots.txt.
-const SITE = 'https://lambent-platypus-c39161.netlify.app';
+// An export for another host can set its own address: SITE_URL=https://… (scripts/export.mjs).
+const SITE = process.env.SITE_URL || 'https://lambent-platypus-c39161.netlify.app';
 
 export default defineConfig({
   site: SITE,

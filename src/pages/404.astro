@@ -1,0 +1,46 @@
+---
+/**
+ * Page not found – in all six languages, with a way home. Netlify serves it by itself; on Apache hosts
+ * public/.htaccess points ErrorDocument 404 here.
+ */
+import { LOCALES, NATIVE_NAMES, localePath } from '../i18n';
+
+const LINES: Record<string, string> = {
+  en: 'This page does not exist (any more).',
+  hu: 'Ez az oldal nem létezik (már).',
+  pt: 'Esta página não existe (ou já não existe).',
+  ro: 'Această pagină nu există (sau nu mai există).',
+  el: 'Αυτή η σελίδα δεν υπάρχει (πια).',
+  ka: 'ეს გვერდი არ არსებობს (აღარ).',
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>404 · András</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-content: center; gap: 18px; padding: 40px 16px; background: #7b2ff7; color: #fff; font-family: system-ui, sans-serif; text-align: center; }
+      h1 { margin: 0; font-size: clamp(60px, 14vw, 140px); line-height: 1; color: #ffd60a; text-shadow: 6px 6px 0 #141a33; }
+      ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+      a { color: #fff; font-weight: 700; }
+      a:hover { color: #ffd60a; }
+    </style>
+  </head>
+  <body>
+    <h1>404</h1>
+    <ul>
+      {
+        LOCALES.map((l) => (
+          <li lang={l}>
+            {LINES[l]} <a href={localePath(l)}>{NATIVE_NAMES[l]} →</a>
+          </li>
+        ))
+      }
+    </ul>
+  </body>
+</html>

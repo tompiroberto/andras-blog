@@ -38,6 +38,9 @@ async function viaFormspree(form: HTMLFormElement): Promise<void> {
 }
 
 async function viaNetlify(form: HTMLFormElement): Promise<void> {
+  // a copy on another host (scripts/export.mjs): there are no Netlify Forms – a plain server would even
+  // answer the POST with 200, so it must not be tried (the e-mail app is the fallback)
+  if (import.meta.env.PUBLIC_STATIC_EXPORT === '1') throw new Error('Netlify Forms: not on this host');
   const body = new URLSearchParams();
   new FormData(form).forEach((value, key) => body.append(key, typeof value === 'string' ? value : value.name));
   const res = await fetch(NETLIFY_FORM_ENDPOINT, {
