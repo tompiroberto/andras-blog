@@ -719,5 +719,8 @@
   "pmd.start.buddy": "Szia! Ekkor szívesen jönnék veled ({place}): ",
   "pmd.start.host": "Szia! Ekkor tudnék segíteni ({place}): ",
   "pmd.start.say": "Szia! Egy javaslat erre az időre ({place}): ",
-  "cal.hint": "Kattints egy napra – vagy húzd végig több napon –, és üzenhetsz rá."
+  "cal.hint": "Kattints egy napra – vagy húzd végig több napon –, és üzenhetsz rá.",
+  "cal.music": "Zene az eseményhez",
+  "cal.musicUpload": "Új zene feltöltése",
+  "cal.musicNone": "Még nincs zene a zenekönyvtárban – tölts fel lent."
 }

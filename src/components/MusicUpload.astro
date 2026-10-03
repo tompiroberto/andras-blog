@@ -224,7 +224,7 @@ const { lang } = Astro.props;
     const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
 
     // opened from the world map: the new music belongs to that place
-    let preset: { place?: string; lat?: number; lng?: number; post?: string } | null = null;
+    let preset: { place?: string; lat?: number; lng?: number; post?: string; event?: string } | null = null;
     const COORDS = /^(-?\d{1,2}(?:[.,]\d+)?)\s*[,; ]\s*(-?\d{1,3}(?:[.,]\d+)?)$/;
     /** a place name (looked up) or coordinates → the row's pin */
     const wirePlace = (row: HTMLElement) => {
@@ -254,7 +254,7 @@ const { lang } = Astro.props;
     };
 
     window.addEventListener('andras:upload-music', (e) => {
-      preset = (e as CustomEvent<{ place?: string; lat?: number; lng?: number; post?: string }>).detail ?? null;
+      preset = (e as CustomEvent<{ place?: string; lat?: number; lng?: number; post?: string; event?: string }>).detail ?? null;
       token.refresh();
       say('');
       if (!dialog.open) dialog.showModal();
@@ -307,6 +307,7 @@ const { lang } = Astro.props;
         const date = new Date().toISOString().slice(0, 10);
         const files: NewFile[] = [];
         const titles: string[] = [];
+        const uploaded: { id: string; file: string; title: string; artist?: string }[] = [];
         for (const row of rows) {
           const file = picked.get(row)!;
           const title = row.querySelector<HTMLInputElement>('.mup__title')!.value.trim();
@@ -338,9 +339,11 @@ lng: ${row.dataset.lng}`,
             .join('\n');
           files.push({ path: `src/content/music/${name}.yml`, text: `${yml}\n` });
           titles.push(`🎵 ${artist ? `${artist} – ` : ''}${title}`);
+          uploaded.push({ id: name, file: `/music/${name}.${ext}`, title, ...(artist ? { artist } : {}) });
         }
         await commitFiles(key, files, `Music: ${rows.length} new (uploaded from the site)`, titles);
         token.saved();
+        window.dispatchEvent(new CustomEvent('andras:music-uploaded', { detail: { items: uploaded, for: preset?.event } }));
         rows.forEach((r) => {
           picked.delete(r);
           r.remove();

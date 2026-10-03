@@ -719,5 +719,8 @@
   "pmd.start.buddy": "Hi! I'd come along then ({place}): ",
   "pmd.start.host": "Hi! I can help then ({place}): ",
   "pmd.start.say": "Hi! An idea for {place}: ",
-  "cal.hint": "Click a day – or drag across several days – to message me about it."
+  "cal.hint": "Click a day – or drag across several days – to message me about it.",
+  "cal.music": "Music for this event",
+  "cal.musicUpload": "Upload new music",
+  "cal.musicNone": "No music in the library yet – upload some below."
 }

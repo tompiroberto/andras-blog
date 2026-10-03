@@ -9,6 +9,7 @@
  */
 import Icon from './Icon.astro';
 import calendar from '../data/calendar.json';
+import { getCollection } from 'astro:content';
 import { HTML_LANG, t, type Lang } from '../i18n';
 
 interface Props {
@@ -36,7 +37,12 @@ const words = {
   saved: t(lang, 'gal.saved'),
   key: t(lang, 'dev.msgKey'),
   edit: t(lang, 'cal.edit'),
+  musicNone: t(lang, 'cal.musicNone'),
 };
+// the music library: tracks can be linked to an event (its "music" list of track ids)
+const tracks = (await getCollection('music'))
+  .map((e) => ({ id: e.id, file: e.data.file, title: e.data.title, ...(e.data.artist ? { artist: e.data.artist } : {}) }))
+  .sort((a, b) => a.title.localeCompare(b.title));
 ---
 
 <section class="cal-view" data-cal data-lang={HTML_LANG[lang]} data-live={live || undefined} aria-label={t(lang, 'cal.toggle')}>
@@ -80,6 +86,11 @@ const words = {
       <label>{words.to}<input type="date" required data-cf="to" /></label>
     </div>
     <label>{words.note}<textarea rows="2" maxlength="300" data-cf="note"></textarea></label>
+    <fieldset class="cal-form__music">
+      <legend>🎵 {t(lang, 'cal.music')}</legend>
+      <ul data-cf-music></ul>
+      <button type="button" class="cal-btn" data-cf-upload>⬆ {t(lang, 'cal.musicUpload')}</button>
+    </fieldset>
     <fieldset class="cal-form__colors">
       <legend>{words.color}</legend>
       {['#7B2FF7', '#FFD60A', '#E63946', '#FF5FA2', '#FF8C1A', '#2DBE6C', '#2F86D6', '#1B1B24'].map((c, i) => (
@@ -98,6 +109,7 @@ const words = {
   </form>
   <script type="application/json" data-cal-data set:html={JSON.stringify(calendar)} />
   <script type="application/json" data-cal-words set:html={JSON.stringify(words)} />
+  <script type="application/json" data-cal-tracks set:html={JSON.stringify(tracks)} />
 </section>
 
 <style is:global>
@@ -514,6 +526,19 @@ const words = {
   :root.dev-mode:not(.dev-preview) .cal-day__list button {
     display: inline;
   }
+  .cal-day__music {
+    display: grid;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .cal-day__music span {
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .cal-day__music audio {
+    width: 100%;
+    height: 34px;
+  }
   .cal-day__none {
     margin: 0 0 14px;
     color: var(--muted);
@@ -556,6 +581,40 @@ const words = {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+  }
+  .cal-form__music {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 8px 0 0;
+    border: 0;
+  }
+  .cal-form__music legend {
+    padding: 0;
+  }
+  .cal-form__music ul {
+    display: grid;
+    gap: 2px;
+    max-height: 150px;
+    overflow: auto;
+    margin: 0;
+    padding: 6px 8px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: #010409;
+    list-style: none;
+  }
+  .cal-form__music li label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .cal-form__music li input {
+    accent-color: #39d353;
+  }
+  .cal-form__music li em {
+    color: #8b949e;
   }
   .cal-form__colors {
     display: flex;
@@ -633,13 +692,18 @@ const words = {
   import { PLACE_MESSAGE_EVENT } from '../lib/constants';
   import { commitFiles, getToken } from '../lib/githubCommit';
 
-  type Ev = { id: string; title: string; place?: string; from: string; to: string; color: string; note?: string };
+  type Ev = { id: string; title: string; place?: string; from: string; to: string; color: string; note?: string; music?: string[] };
+  type Track = { id: string; file: string; title: string; artist?: string };
   const view = document.querySelector<HTMLElement>('[data-cal]');
   if (view) {
     const html = document.documentElement;
     const W = JSON.parse(view.querySelector('[data-cal-words]')!.textContent || '{}') as Record<string, string>;
     const data = JSON.parse(view.querySelector('[data-cal-data]')!.textContent || '{"events":[]}') as { events: Ev[] };
     const locale = view.dataset.lang || 'hu';
+    let tracks = JSON.parse(view.querySelector('[data-cal-tracks]')!.textContent || '[]') as Track[];
+    /** a copy on another host plays the main site's files (music uploaded later is only there) */
+    const audioSrc = (tr: Track) => (view.dataset.live ? view.dataset.live + tr.file : tr.file);
+    const trackName = (tr: Track) => (tr.artist ? `${tr.artist} – ${tr.title}` : tr.title);
     const body = view.querySelector<HTMLElement>('[data-cal-body]')!;
     const titleEl = view.querySelector<HTMLElement>('[data-cal-title]')!;
     let mode: 'month' | 'year' = 'month';
@@ -739,7 +803,8 @@ const words = {
               bar.classList.toggle('is-start', e.from === day);
               bar.classList.toggle('is-end', e.to === day);
               bar.textContent = startsHere ? e.title : ' ';
-              bar.title = `${e.title}${e.place ? ` · ${e.place}` : ''}`;
+              bar.title = `${e.title}${e.place ? ` · ${e.place}` : ''}${e.music?.length ? ' · 🎵' : ''}`;
+              if (startsHere && e.music?.length) bar.textContent = `♪ ${e.title}`;
             }
             cell.append(bar);
           }
@@ -841,6 +906,22 @@ const words = {
             p.textContent = e.note;
             li.append(p);
           }
+          // the event's music: small players
+          const music = (e.music ?? []).map((id) => tracks.find((x) => x.id === id)).filter((x): x is Track => !!x);
+          if (music.length) {
+            const box = document.createElement('div');
+            box.className = 'cal-day__music';
+            for (const tr of music) {
+              const label = document.createElement('span');
+              label.textContent = `🎵 ${trackName(tr)}`;
+              const audio = document.createElement('audio');
+              audio.controls = true;
+              audio.preload = 'none';
+              audio.src = audioSrc(tr);
+              box.append(label, audio);
+            }
+            li.append(box);
+          }
           return li;
         }),
       );
@@ -888,7 +969,12 @@ const words = {
         showDay(cell.dataset.day!);
       }
     });
-    view.querySelector('[data-cal-day-close]')!.addEventListener('click', () => (dayBox.hidden = true));
+    // closing the day box stops its music
+    const stopMusic = () => dayBox.querySelectorAll('audio').forEach((a) => a.pause());
+    view.querySelector('[data-cal-day-close]')!.addEventListener('click', () => {
+      stopMusic();
+      dayBox.hidden = true;
+    });
     // a message about that day (the place-message window: "I'd like to do something then")
     view.querySelector('[data-cal-day-msg]')!.addEventListener('click', () => {
       const when = openTo === openDay ? fmtDay.format(parse(openDay)) : `${fmtShort.format(parse(openDay))} – ${fmtShort.format(parse(openTo))}`;
@@ -901,6 +987,40 @@ const words = {
     const note = form.querySelector<HTMLElement>('[data-cf-note]')!;
     const del = form.querySelector<HTMLButtonElement>('[data-cf-delete]')!;
     let editing: Ev | null = null;
+    // the music library as ticks; the ticked ones belong to the event
+    const musicList = form.querySelector<HTMLElement>('[data-cf-music]')!;
+    function renderMusic(chosen: string[]) {
+      musicList.replaceChildren();
+      if (!tracks.length) {
+        const li = document.createElement('li');
+        li.innerHTML = '<em></em>';
+        li.querySelector('em')!.textContent = W.musicNone;
+        musicList.append(li);
+      }
+      for (const tr of tracks) {
+        const li = document.createElement('li');
+        const label = document.createElement('label');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.value = tr.id;
+        box.checked = chosen.includes(tr.id);
+        label.append(box, trackName(tr));
+        li.append(label);
+        musicList.append(li);
+      }
+    }
+    const chosenMusic = () => Array.from(musicList.querySelectorAll<HTMLInputElement>('input:checked')).map((b) => b.value);
+    // upload new music right here: it is ticked for this event when the upload is done
+    const formKey = () => editing?.id ?? 'new';
+    form.querySelector('[data-cf-upload]')!.addEventListener('click', () =>
+      window.dispatchEvent(new CustomEvent('andras:upload-music', { detail: { event: formKey(), ...(cf('place').value.trim() ? { place: cf('place').value.trim() } : {}) } })),
+    );
+    window.addEventListener('andras:music-uploaded', (ev) => {
+      const d = (ev as CustomEvent<{ items: Track[]; for?: string }>).detail;
+      const keep = chosenMusic();
+      tracks = [...tracks.filter((x) => !d.items.some((n) => n.id === x.id)), ...d.items];
+      renderMusic(!form.hidden && d.for === formKey() ? [...keep, ...d.items.map((x) => x.id)] : keep);
+    });
     function openForm(e: Ev | null, day = openDay || todayIso) {
       editing = e;
       form.querySelector('[data-cal-form-title]')!.textContent = e ? `✎ ${W.edit}` : `＋ ${W.add}`;
@@ -909,10 +1029,12 @@ const words = {
       cf('from').value = e?.from ?? day;
       cf('to').value = e?.to ?? (day === openDay && openTo ? openTo : day);
       cf('note').value = e?.note ?? '';
+      renderMusic(e?.music ?? []);
       const color = e?.color ?? '#7B2FF7';
       form.querySelectorAll<HTMLInputElement>('input[name="cal-color"]').forEach((r) => (r.checked = r.value.toLowerCase() === color.toLowerCase()));
       del.hidden = !e;
       note.textContent = '';
+      stopMusic();
       dayBox.hidden = true;
       form.hidden = false;
       cf('title').focus();
@@ -938,6 +1060,7 @@ const words = {
         to,
         color: form.querySelector<HTMLInputElement>('input[name="cal-color"]:checked')?.value ?? '#7B2FF7',
         ...(cf('note').value.trim() ? { note: cf('note').value.trim() } : {}),
+        ...(chosenMusic().length ? { music: chosenMusic() } : {}),
       };
       const before = data.events;
       data.events = [...data.events.filter((x) => x.id !== item.id), item];
@@ -977,6 +1100,7 @@ const words = {
         view.classList.remove('is-closing');
         render(true);
       } else {
+        stopMusic();
         dayBox.hidden = true;
         form.hidden = true;
         view.classList.add('is-closing');
@@ -986,7 +1110,10 @@ const words = {
     window.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape' || !html.classList.contains('cal-mode')) return;
       if (!form.hidden) form.hidden = true;
-      else if (!dayBox.hidden) dayBox.hidden = true;
+      else if (!dayBox.hidden) {
+        stopMusic();
+        dayBox.hidden = true;
+      }
     });
 
     // a copy on another host: the main site's calendar
@@ -998,6 +1125,12 @@ const words = {
           if (html.classList.contains('cal-mode')) render();
         })
         .catch((err) => console.warn('[calendar] the main site could not be reached', err));
+      fetch(`${view.dataset.live}/music.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((d: { items: Track[] }) => {
+          tracks = d.items.map((x) => ({ id: x.id, file: x.file, title: x.title, ...(x.artist ? { artist: x.artist } : {}) })).sort((a, b) => a.title.localeCompare(b.title));
+        })
+        .catch(() => {});
     }
   }
 </script>

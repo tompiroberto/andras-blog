@@ -74,16 +74,19 @@ const { lang } = Astro.props;
     // the transition rules must be on in the same style update as the new colours
     html.classList.add('vs-theme');
     window.clearTimeout(themeTimer);
-    themeTimer = window.setTimeout(() => html.classList.remove('vs-theme'), 1100);
+    themeTimer = window.setTimeout(() => html.classList.remove('vs-theme'), 1500);
     requestAnimationFrame(() => {
-      const w = document.createElement('div');
-      w.className = 'vs-wave';
-      w.setAttribute('aria-hidden', 'true');
+      // a flood of the new main colour, then three rings (main, second, main colour) rolling out after it
       const z = Number(getComputedStyle(html).zoom) || 1;
-      w.style.setProperty('--wx', `${lastPointer.x / z}px`);
-      w.style.setProperty('--wy', `${lastPointer.y / z}px`);
-      document.body.append(w);
-      window.setTimeout(() => w.remove(), 1200);
+      for (const [cls, life] of [['vs-flood', 1500], ['vs-wave', 1700], ['vs-wave vs-wave--2', 1900]] as const) {
+        const w = document.createElement('div');
+        w.className = cls;
+        w.setAttribute('aria-hidden', 'true');
+        w.style.setProperty('--wx', `${lastPointer.x / z}px`);
+        w.style.setProperty('--wy', `${lastPointer.y / z}px`);
+        document.body.append(w);
+        window.setTimeout(() => w.remove(), life);
+      }
     });
   }
   let theme = html.dataset.theme ?? '';
@@ -121,22 +124,47 @@ const { lang } = Astro.props;
   :root.vs-theme *::before,
   :root.vs-theme *::after {
     transition:
-      background-color 900ms ease,
-      color 900ms ease,
-      border-color 900ms ease,
-      fill 900ms ease,
-      stroke 900ms ease,
-      box-shadow 900ms ease !important;
+      background-color 1200ms ease,
+      color 1200ms ease,
+      border-color 1200ms ease,
+      fill 1200ms ease,
+      stroke 1200ms ease,
+      box-shadow 1200ms ease !important;
   }
   .vs-wave {
     position: fixed;
     inset: 0;
     z-index: 940;
     pointer-events: none;
-    background: radial-gradient(circle at var(--wx) var(--wy), transparent 0, transparent var(--r, 0px), var(--violet) calc(var(--r, 0px) + 2px), var(--yellow) calc(var(--r, 0px) + 26px), transparent calc(var(--r, 0px) + 60px));
-    animation: vs-wave 1100ms cubic-bezier(0.3, 0.6, 0.3, 1) forwards;
-    mix-blend-mode: normal;
-    opacity: 0.85;
+    background: radial-gradient(circle at var(--wx) var(--wy), transparent 0, transparent var(--r, 0px), var(--violet) calc(var(--r, 0px) + 2px), var(--violet) calc(var(--r, 0px) + 22px), var(--yellow) calc(var(--r, 0px) + 24px), var(--yellow) calc(var(--r, 0px) + 54px), var(--violet) calc(var(--r, 0px) + 56px), var(--violet) calc(var(--r, 0px) + 70px), transparent calc(var(--r, 0px) + 72px));
+    animation: vs-wave 1600ms cubic-bezier(0.25, 0.6, 0.3, 1) forwards;
+  }
+  .vs-wave--2 {
+    animation-delay: 220ms;
+    animation-fill-mode: both;
+  }
+  /* the new colour floods the screen from the click, then clears */
+  .vs-flood {
+    position: fixed;
+    inset: 0;
+    z-index: 939;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--wx) var(--wy), var(--yellow) 0, var(--violet) calc(var(--r, 0px) * 0.6), var(--violet) var(--r, 0px), transparent calc(var(--r, 0px) + 2px));
+    animation: vs-flood 1400ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  @keyframes vs-flood {
+    0% {
+      --r: 0px;
+      opacity: 0.75;
+    }
+    45% {
+      --r: 150vmax;
+      opacity: 0.6;
+    }
+    100% {
+      --r: 150vmax;
+      opacity: 0;
+    }
   }
   @property --r {
     syntax: '<length>';
@@ -146,6 +174,9 @@ const { lang } = Astro.props;
   @keyframes vs-wave {
     from {
       --r: 0px;
+      opacity: 1;
+    }
+    70% {
       opacity: 0.9;
     }
     to {

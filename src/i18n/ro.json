@@ -719,5 +719,8 @@
   "pmd.start.buddy": "Salut! Aș veni cu tine atunci ({place}): ",
   "pmd.start.host": "Salut! Te pot ajuta atunci ({place}): ",
   "pmd.start.say": "Salut! O idee pentru {place}: ",
-  "cal.hint": "Apasă pe o zi – sau trage peste mai multe zile – ca să-mi scrii despre ea."
+  "cal.hint": "Apasă pe o zi – sau trage peste mai multe zile – ca să-mi scrii despre ea.",
+  "cal.music": "Muzică pentru eveniment",
+  "cal.musicUpload": "Încarcă muzică nouă",
+  "cal.musicNone": "Încă nu e muzică în bibliotecă – încarcă mai jos."
 }

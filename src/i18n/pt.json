@@ -719,5 +719,8 @@
   "pmd.start.buddy": "Olá! Gostava de ir contigo nessa altura ({place}): ",
   "pmd.start.host": "Olá! Posso ajudar nessa altura ({place}): ",
   "pmd.start.say": "Olá! Uma ideia para {place}: ",
-  "cal.hint": "Clica num dia – ou arrasta por vários dias – para me escrever sobre isso."
+  "cal.hint": "Clica num dia – ou arrasta por vários dias – para me escrever sobre isso.",
+  "cal.music": "Música para este evento",
+  "cal.musicUpload": "Carregar música nova",
+  "cal.musicNone": "Ainda não há música na biblioteca – carrega abaixo."
 }
