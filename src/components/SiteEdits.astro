@@ -101,6 +101,15 @@ const fonts = {"heading": "'Unbounded', system-ui, sans-serif", "body": "'DM San
     if (s.hidden) el.setAttribute('data-ed-hidden', '');
     else el.removeAttribute('data-ed-hidden');
   }
+  /* a copy's own longer story: opens in an info box (src/lib/infobox.ts) when the copy is clicked */
+  function story(c, text) {
+    var b = c.querySelector('button') || c;
+    b.setAttribute('data-info-title', '');
+    b.setAttribute('data-info-title-from', 'h3, h2, strong');
+    b.setAttribute('data-info-text', text);
+    b.removeAttribute('data-info-wired');
+    return b;
+  }
   function added(a) {
     if (a.clone) {
       var src = resolve(a.clone);
@@ -117,6 +126,7 @@ const fonts = {"heading": "'Unbounded', system-ui, sans-serif", "body": "'DM San
       });
       c.querySelectorAll('[data-dev-ui], .dev-plus, .lay-bar, [data-ed-ph], .plan-note__hint').forEach(function (x) { x.remove(); });
       c.setAttribute('data-ed-id', a.id);
+      if (a.story) story(c, a.story);
       return c;
     }
     var n = document.createElement(a.tag === 'p' ? 'p' : 'h3');
@@ -189,7 +199,7 @@ const fonts = {"heading": "'Unbounded', system-ui, sans-serif", "body": "'DM San
       if (el) styleEl(el, styles[k]);
     });
   }
-  window.__siteEdits = { data: edits, resolve: resolve, pathOf: pathOf, styleEl: styleEl, added: added, move: move, unmoveAll: unmoveAll, applyTheme: applyTheme, page: page, full: full };
+  window.__siteEdits = { data: edits, resolve: resolve, pathOf: pathOf, styleEl: styleEl, added: added, story: story, move: move, unmoveAll: unmoveAll, applyTheme: applyTheme, page: page, full: full };
   try {
     apply();
   } catch (e) {

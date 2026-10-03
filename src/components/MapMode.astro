@@ -2768,7 +2768,8 @@ const LEGEND: { status: string; key: TKey }[] = [
     // ---- outer space: floaters around the globe (hidden behind it), each says something when clicked ----
     const spaceBox = view.querySelector<HTMLElement>('[data-mm-space]')!;
     const spaceKinds = Array.from(spaceBox.querySelectorAll<HTMLTemplateElement>('[data-mm-space-kind]'));
-    let floaters: { el: HTMLElement; x: number; y: number; size: number }[] = [];
+    // each floater orbits the Earth slowly: its own distance, speed and starting angle
+    let floaters: { el: HTMLElement; x: number; y: number; size: number; a: number; d: number; v: number }[] = [];
     function buildSpace() {
       floaters.forEach((f) => f.el.remove());
       floaters = [];
@@ -2780,6 +2781,8 @@ const LEGEND: { status: string; key: TKey }[] = [
         const angle = (i / n) * Math.PI * 2 + Math.random() * 0.3;
         const x = W / 2 + Math.cos(angle) * W * (0.42 + Math.random() * 0.06) - size / 2;
         const y = H / 2 + Math.sin(angle) * H * (0.4 + Math.random() * 0.06) - size / 2;
+        // distance from the globe's edge (px) and speed: one round in about 1.5–3 minutes
+        const orbit = { a: angle, d: 30 + Math.random() * 0.22 * Math.min(W, H), v: (Math.PI * 2) / (90 + Math.random() * 90) };
         const el = document.createElement('div');
         el.className = 'mm-floater';
         el.style.setProperty('--x', `${x.toFixed(0)}px`);
@@ -2805,15 +2808,40 @@ const LEGEND: { status: string; key: TKey }[] = [
           window.setTimeout(() => say.remove(), 2700);
         });
         spaceBox.append(el);
-        floaters.push({ el, x: x + size / 2, y: y + size / 2, size });
+        floaters.push({ el, x: x + size / 2, y: y + size / 2, size, ...orbit });
       }
       renderSpace();
     }
-    /** A floater in front of the globe would hide the map: those wait behind it */
+    /** Every floater circles the Earth just outside it (a slightly flattened orbit, wider on wide screens) */
     function renderSpace() {
-      const R = base * view3d.k + 20;
-      for (const f of floaters) f.el.classList.toggle('is-behind', Math.hypot(f.x - W / 2, f.y - H / 2) < R + f.size / 2);
+      const R = base * view3d.k;
+      const flat = Math.min(1.5, Math.max(1, W / H));
+      for (const f of floaters) {
+        const r = R + f.size / 2 + f.d;
+        const near = R + f.size / 2 + 6;
+        // on the screen when the globe is small enough; always just outside the globe
+        const rx = Math.max(Math.min(r * flat, W / 2 - f.size / 2 - 12), near);
+        const ry = Math.max(Math.min(r * 0.92, H / 2 - f.size / 2 - 12), near);
+        f.x = W / 2 + Math.cos(f.a) * rx;
+        f.y = H / 2 + Math.sin(f.a) * ry;
+        f.el.style.setProperty('--x', `${(f.x - f.size / 2).toFixed(1)}px`);
+        f.el.style.setProperty('--y', `${(f.y - f.size / 2).toFixed(1)}px`);
+      }
     }
+    let lastOrbit = 0;
+    const orbitStep = (now: number) => {
+      const dt = lastOrbit ? Math.min(0.1, (now - lastOrbit) / 1000) : 0;
+      lastOrbit = now;
+      // only while the world map is on the screen
+      if (isOnMap() && !document.hidden) {
+        const slow = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.25 : 1;
+        for (const f of floaters) f.a += f.v * dt * slow;
+        renderSpace();
+      }
+      requestAnimationFrame(orbitStep);
+    };
+    const isOnMap = () => document.documentElement.classList.contains('map-mode');
+    requestAnimationFrame(orbitStep);
     buildSpace();
     // start above Europe
     setView(europe());

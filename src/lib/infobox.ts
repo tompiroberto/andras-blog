@@ -19,13 +19,16 @@ function close(animate = true) {
   setTimeout(() => box.remove(), 400);
 }
 
+/** the title: data-info-title, or the text of the element named by data-info-title-from */
+const titleOf = (b: HTMLElement) => (b.dataset.infoTitleFrom ? b.querySelector(b.dataset.infoTitleFrom)?.textContent?.trim() : undefined) || b.dataset.infoTitle || '';
+
 function open(button: HTMLElement) {
   // on <body> (position: relative), above the background layer (--z-grid) with the city names
   const root = document.body;
   const box = document.createElement('div');
   box.className = 'infobox';
   box.setAttribute('role', 'dialog');
-  box.setAttribute('aria-label', button.dataset.infoTitle ?? '');
+  box.setAttribute('aria-label', titleOf(button));
 
   const arrow = document.createElement('span');
   arrow.className = 'infobox__arrow';
@@ -47,7 +50,7 @@ function open(button: HTMLElement) {
     head.append(holder);
   }
   const title = document.createElement('strong');
-  title.textContent = button.dataset.infoTitle ?? '';
+  title.textContent = titleOf(button);
   head.append(title);
 
   const text = document.createElement('p');

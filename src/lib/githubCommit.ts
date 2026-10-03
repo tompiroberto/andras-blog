@@ -55,9 +55,28 @@ function setPending(n: number) {
   window.dispatchEvent(new CustomEvent(PENDING_EVENT, { detail: n }));
 }
 
-/** Save to GitHub without a deploy (it waits for "Publish"). */
-export async function commitFiles(token: string, files: NewFile[], message: string): Promise<void> {
+/** What was saved and waits for "Publish" (the developer panel's change log) */
+export const PENDING_LOG_KEY = 'andras-pending-log';
+export type PendingEntry = { at: string; message: string; files: string[]; lines?: string[] };
+export function pendingLog(): PendingEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(PENDING_LOG_KEY) ?? '[]') as PendingEntry[];
+  } catch {
+    return [];
+  }
+}
+function setPendingLog(log: PendingEntry[]) {
+  try {
+    localStorage.setItem(PENDING_LOG_KEY, JSON.stringify(log.slice(-100)));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** Save to GitHub without a deploy (it waits for "Publish"). lines: what changed, in words (for the log) */
+export async function commitFiles(token: string, files: NewFile[], message: string, lines?: string[]): Promise<void> {
   await commitRaw(token, files, `${message} [skip netlify]`);
+  setPendingLog([...pendingLog(), { at: new Date().toISOString(), message, files: files.map((f) => f.path), lines }]);
   setPending(pendingCount() + 1);
 }
 
@@ -65,6 +84,7 @@ export async function commitFiles(token: string, files: NewFile[], message: stri
 export async function publishSite(token: string): Promise<void> {
   const n = pendingCount();
   await commitRaw(token, [{ path: 'src/data/published.json', text: `${JSON.stringify({ at: new Date().toISOString() }, null, 2)}\n` }], `Publish the site (${n} saved change${n === 1 ? '' : 's'})`);
+  setPendingLog([]);
   setPending(0);
 }
 

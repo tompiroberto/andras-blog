@@ -49,6 +49,15 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     <button type="button" class="dev-panel__btn" data-dev-post-edit><Icon name="file-pen" size={16} />{t(lang, 'dev.postEdit')}</button>
     <button type="button" class="dev-panel__btn dev-panel__btn--danger" data-dev-post-delete><Icon name="trash-2" size={16} />{t(lang, 'dev.postDelete')}</button>
   </div>
+  <details class="dev-log" data-dev-log>
+    <summary>📋 {t(lang, 'log.title')} <b data-dev-log-n>0</b></summary>
+    <p class="dev-log__h">{t(lang, 'log.unsaved')}</p>
+    <ul data-dev-log-now></ul>
+    <p class="dev-log__h">{t(lang, 'log.waiting')}</p>
+    <ul data-dev-log-saved></ul>
+    <p class="dev-log__empty" data-dev-log-empty>{t(lang, 'log.empty')}</p>
+  </details>
+  <template data-dev-loglabels>{JSON.stringify({ layout: t(lang, 'log.layout'), map: t(lang, 'log.map'), pictures: t(lang, 'log.pictures'), post: t(lang, 'log.post'), postDel: t(lang, 'log.postDel'), photos: t(lang, 'log.photos'), setting: t(lang, 'log.setting'), edits: t(lang, 'log.edits'), none: t(lang, 'log.none') })}</template>
   <button type="button" class="dev-panel__btn dev-panel__preview" data-dev-preview><Icon name="eye" size={16} />{t(lang, 'dev.preview')}</button>
   <fieldset class="dev-msg dev-theme" data-dev-theme>
     <legend>{t(lang, 'dev.theme')}</legend>
@@ -166,6 +175,55 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     color: #39d353;
     font-size: 16px;
     opacity: 0.7;
+  }
+  .dev-log {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+  }
+  .dev-log summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: #39d353;
+  }
+  .dev-log summary b {
+    display: inline-block;
+    min-width: 20px;
+    margin-left: 4px;
+    padding: 0 6px;
+    border-radius: 99px;
+    background: #39d353;
+    color: #000;
+    text-align: center;
+  }
+  .dev-log__h {
+    margin: 8px 0 2px;
+    color: #8b949e;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .dev-log ul {
+    display: grid;
+    gap: 3px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .dev-log ul:empty::after {
+    content: '–';
+    color: #6e7681;
+  }
+  .dev-log__empty {
+    margin: 6px 0 0;
+    color: #6e7681;
+    font-size: 12px;
+  }
+  .dev-log__empty[hidden] {
+    display: none;
   }
   .dev-panel[hidden] {
     display: none;
@@ -708,7 +766,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 </style>
 
 <script>
-  import { PENDING_EVENT, TOKEN_KEY, commitFiles, getToken, pendingCount, publishSite, readFile } from '../lib/githubCommit';
+  import { PENDING_EVENT, TOKEN_KEY, commitFiles, getToken, pendingCount, pendingLog, publishSite, readFile } from '../lib/githubCommit';
 
   const KEY = 'andras-dev-mode';
 
@@ -1282,7 +1340,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
         unsaved = false;
         return true;
       }
-      await commitFiles(key, files, 'Page edits: changed in developer mode');
+      await commitFiles(key, files, 'Page edits: changed in developer mode', logNow());
       try {
         localStorage.setItem(TOKEN_KEY, key);
       } catch {
@@ -1302,6 +1360,54 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     }
   }
   (window as unknown as { __devSave?: (key: string) => Promise<boolean> }).__devSave = async (key) => (unsaved ? saveNow(key) : true);
+
+  // ---- the change log: not saved yet (this page) + saved and waiting for 🚀 Publish ----
+  const logBox = document.querySelector<HTMLElement>('[data-dev-log]')!;
+  const LL = JSON.parse(document.querySelector<HTMLTemplateElement>('[data-dev-loglabels]')!.content.textContent ?? '{}') as Record<string, string>;
+  function logNow(): string[] {
+    const out = [...((window as unknown as { __editsLog?: () => string[] }).__editsLog?.() ?? [])];
+    if (layChanged) out.push(LL.layout);
+    const pics = (window as unknown as { __editsFiles?: () => unknown[] }).__editsFiles?.() ?? [];
+    if (pics.length) out.push(LL.pictures.replace('{n}', String(pics.length)));
+    const map = (window as unknown as { __mapFiles?: () => unknown[] }).__mapFiles?.() ?? [];
+    if (map.length) out.push(LL.map.replace('{n}', String(map.length)));
+    return out;
+  }
+  /** a saved change in words: its own lines, or what its files were */
+  const describe = (e: { message: string; files: string[]; lines?: string[] }): string[] => {
+    if (e.lines?.length) return e.lines;
+    const f = e.files;
+    if (f.some((p) => p.startsWith('src/content/posts/'))) {
+      const slug = f.find((p) => p.startsWith('src/content/posts/'))!.replace(/^.*\/|\.md$/g, '');
+      return [(e.message.startsWith('Post deleted') ? LL.postDel : LL.post).replace('{name}', slug)];
+    }
+    if (f.some((p) => p.startsWith('src/content/photos/'))) return [LL.photos.replace('{n}', String(f.filter((p) => p.endsWith('.yml')).length))];
+    if (f.includes('src/data/site.json')) return [LL.setting.replace('{name}', e.message.replace(/^Setting: /, ''))];
+    return [LL.edits];
+  };
+  const fill = (ul: HTMLElement, lines: string[]) => {
+    ul.replaceChildren(
+      ...lines.map((l) => {
+        const li = document.createElement('li');
+        li.textContent = l;
+        return li;
+      }),
+    );
+  };
+  const renderLog = () => {
+    if (panel?.hidden) return;
+    const now = unsaved ? logNow() : [];
+    const saved = pendingLog().flatMap(describe);
+    fill(logBox.querySelector('[data-dev-log-now]')!, now);
+    fill(logBox.querySelector('[data-dev-log-saved]')!, saved);
+    logBox.querySelector('[data-dev-log-n]')!.textContent = String(now.length + saved.length);
+    logBox.querySelector<HTMLElement>('[data-dev-log-empty]')!.hidden = now.length + saved.length > 0;
+  };
+  window.addEventListener('andras:dev-changed', () => window.setTimeout(renderLog, 400));
+  window.addEventListener(PENDING_EVENT, renderLog);
+  logBox.addEventListener('toggle', renderLog);
+  window.setInterval(renderLog, 2000);
+  renderLog();
   saveBar.querySelector('[data-ed-undo]')!.addEventListener('click', () => window.dispatchEvent(new Event('andras:undo')));
   saveBar.querySelector('[data-ed-redo]')!.addEventListener('click', () => window.dispatchEvent(new Event('andras:redo')));
 

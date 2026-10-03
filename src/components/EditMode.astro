@@ -40,6 +40,22 @@ const L = {
   up: t(lang, 'ed.up'),
   down: t(lang, 'ed.down'),
   addHere: t(lang, 'ed.addHere'),
+  trash: t(lang, 'ed.trash'),
+  story: t(lang, 'ed.story'),
+  storyHint: t(lang, 'ed.storyHint'),
+  save: t(lang, 'ed.storySave'),
+  grip: t(lang, 'ed.grip'),
+  logAdd: t(lang, 'log.add'),
+  logCopy: t(lang, 'log.copy'),
+  logDel: t(lang, 'log.del'),
+  logText: t(lang, 'log.text'),
+  logHide: t(lang, 'log.hide'),
+  logImg: t(lang, 'log.img'),
+  logPos: t(lang, 'log.pos'),
+  logStyle: t(lang, 'log.style'),
+  logOrder: t(lang, 'log.order'),
+  logTheme: t(lang, 'log.theme'),
+  logStory: t(lang, 'log.story'),
   more: t(lang, 'ed.more'),
 };
 ---
@@ -92,7 +108,20 @@ const L = {
   <button type="button" data-ed-addpick="p">＋¶ {L.paragraph}</button>
   <button type="button" data-ed-addpick="up">▲ {L.up}</button>
   <button type="button" data-ed-addpick="down">▼ {L.down}</button>
+  <button type="button" data-ed-addpick="story" hidden>📖 {L.story}</button>
+  <button type="button" data-ed-addpick="trash" class="ed-addmenu__danger">🗑 {L.trash}</button>
 </div>
+<!-- drag this to put the element somewhere else among its neighbours -->
+<button type="button" class="ed-grip" hidden data-dev-ui data-ed-grip title={L.grip} aria-label={L.grip}>⠿</button>
+<span class="ed-dropline" hidden data-dev-ui data-ed-dropline></span>
+<dialog class="ed-storybox" data-dev-ui data-ed-storybox>
+  <form method="dialog">
+    <strong>📖 {L.story}</strong>
+    <small>{L.storyHint}</small>
+    <textarea rows="8" maxlength="3000" data-ed-storytext></textarea>
+    <div><button value="cancel" formnovalidate>✕</button> <button value="ok" class="ed-storybox__ok">{L.save}</button></div>
+  </form>
+</dialog>
 <template data-ed-texts>{JSON.stringify(L)}</template>
 
 <style is:global>
@@ -130,6 +159,92 @@ const L = {
     outline: 2px solid #ffd60a !important;
     outline-offset: 3px;
     cursor: text;
+  }
+  .ed-addmenu__danger {
+    color: #ff7b7b !important;
+  }
+  .ed-grip {
+    position: fixed;
+    z-index: 679;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 2px solid #39ff14;
+    border-radius: 8px;
+    background: #000;
+    color: #39ff14;
+    font: 900 15px/1 ui-monospace, Consolas, monospace;
+    cursor: grab;
+    touch-action: none;
+  }
+  .ed-grip[hidden],
+  .ed-dropline[hidden] {
+    display: none;
+  }
+  :root.ed-dnd,
+  :root.ed-dnd * {
+    cursor: grabbing !important;
+    user-select: none;
+  }
+  .ed-dragging {
+    opacity: 0.45;
+    outline: 3px dashed #39ff14 !important;
+  }
+  .ed-dropline {
+    position: fixed;
+    z-index: 2040;
+    border-radius: 4px;
+    background: #39ff14;
+    box-shadow: 0 0 12px #39ff14;
+    pointer-events: none;
+  }
+  .ed-storybox {
+    width: min(520px, calc(100vw - 32px));
+    padding: 18px;
+    border: 2px solid #39ff14;
+    border-radius: 16px;
+    background: #0d1117;
+    color: #d6f5d6;
+    font: 14px ui-monospace, Consolas, monospace;
+  }
+  .ed-storybox::backdrop {
+    background: rgb(0 0 0 / 0.6);
+  }
+  .ed-storybox form {
+    display: grid;
+    gap: 10px;
+  }
+  .ed-storybox small {
+    color: #8b949e;
+  }
+  .ed-storybox textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    background: #010409;
+    color: #e6edf3;
+    font: 14px/1.5 'DM Sans', system-ui, sans-serif;
+    resize: vertical;
+  }
+  .ed-storybox div {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .ed-storybox button {
+    padding: 8px 14px;
+    border: 1px solid #30363d;
+    border-radius: 9px;
+    background: #161b22;
+    color: #d6f5d6;
+    font: 700 13px ui-monospace, Consolas, monospace;
+    cursor: pointer;
+  }
+  .ed-storybox .ed-storybox__ok {
+    border-color: #39d353;
+    background: #39d353;
+    color: #000;
   }
   .ed-addhere {
     position: fixed;
@@ -334,7 +449,7 @@ const L = {
 
   type Theme = { violet?: string; yellow?: string; bg?: string; ink?: string };
   type Style = { src?: string; x?: number; y?: number; w?: number; h?: number; hidden?: boolean; color?: string; bg?: string; font?: string; fs?: number; fw?: string; r?: number };
-  type Added = { id: string; after: string[]; tag?: 'h3' | 'p'; text?: string; clone?: string[] };
+  type Added = { id: string; after: string[]; tag?: 'h3' | 'p'; text?: string; clone?: string[]; story?: string };
   type Move = { id: string; path: string[]; after?: string[]; before?: string[] };
   interface Edits {
     style: Record<string, Record<string, Style>>;
@@ -349,6 +464,7 @@ const L = {
     pathOf: (el: Element) => string[];
     styleEl: (el: HTMLElement, s: Style) => void;
     added: (a: Added) => HTMLElement | null;
+    story: (c: HTMLElement, text: string) => HTMLElement;
     move: (m: Move) => void;
     unmoveAll: () => void;
     applyTheme: (t: Theme) => void;
@@ -538,6 +654,7 @@ const L = {
         deselect();
         hover?.classList.remove('ed-hover');
         addBtn.hidden = true;
+        gripBtn.hidden = true;
         addMenu.hidden = true;
       }
     };
@@ -551,6 +668,8 @@ const L = {
 
     const addBtn = document.querySelector<HTMLButtonElement>('[data-ed-addhere]')!;
     const addMenu = document.querySelector<HTMLElement>('[data-ed-addmenu]')!;
+    const gripBtn = document.querySelector<HTMLButtonElement>('[data-ed-grip]')!;
+    const dropLine = document.querySelector<HTMLElement>('[data-ed-dropline]')!;
     let addFor: HTMLElement | null = null;
     // an item of a list (a card, a plan note …) first – then a paragraph / heading
     const ITEMS = 'li, article, figure, .card';
@@ -559,6 +678,7 @@ const L = {
       const block = el?.closest<HTMLElement>(ITEMS) ?? el?.closest<HTMLElement>(BLOCKS) ?? el;
       if (!block || !pickable(block) || editing) {
         addBtn.hidden = true;
+        gripBtn.hidden = true;
         return;
       }
       addFor = block;
@@ -567,10 +687,15 @@ const L = {
       addBtn.style.left = `${(r.left + r.width / 2) / z - 13}px`;
       addBtn.style.top = `${r.bottom / z - 13}px`;
       addBtn.hidden = false;
+      gripBtn.style.left = `${(r.left + r.width / 2) / z - 45}px`;
+      gripBtn.style.top = `${r.bottom / z - 13}px`;
+      gripBtn.hidden = !neighbour(block, -1) && !neighbour(block, 1);
     };
     addBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      // a copy (a new plan / card) can get its own longer story
+      addMenu.querySelector<HTMLButtonElement>('[data-ed-addpick="story"]')!.hidden = !addedItem(addFor)?.clone;
       const r = addBtn.getBoundingClientRect();
       const z = Number(getComputedStyle(html).zoom) || 1;
       addMenu.hidden = false;
@@ -588,6 +713,8 @@ const L = {
         const pick = b.dataset.edAddpick;
         if (pick === 'more') cloneAfter(el, el);
         else if (pick === 'h3' || pick === 'p') insertAfter(pick, el);
+        else if (pick === 'trash') trash(el);
+        else if (pick === 'story') editStory(el);
         else moveEl(el, pick === 'up' ? -1 : 1);
       }),
     );
@@ -595,14 +722,85 @@ const L = {
       if (!(e.target instanceof Element) || !e.target.closest('[data-ed-addmenu], [data-ed-addhere]')) addMenu.hidden = true;
     });
     addEventListener('scroll', () => {
+      if (dnd) return;
       addBtn.hidden = true;
+      gripBtn.hidden = true;
       addMenu.hidden = true;
     }, true);
 
+    // ---- drag and drop: ⠿ takes the element to another place among its neighbours ----
+    let dnd: { el: HTMLElement; target: Element | null; side: 'before' | 'after' } | null = null;
+    const siblingsOf = (el: HTMLElement) =>
+      Array.from(el.parentElement?.children ?? []).filter(
+        (s) => s !== el && !s.hasAttribute('data-ed-ph') && !isDevUi(s) && !/^(SCRIPT|STYLE|TEMPLATE)$/.test(s.tagName) && !s.classList.contains('dev-plus') && !s.classList.contains('lay-bar') && (s as HTMLElement).offsetParent !== null,
+      );
+    gripBtn.addEventListener('pointerdown', (e) => {
+      if (!addFor) return;
+      e.preventDefault();
+      e.stopPropagation();
+      gripBtn.setPointerCapture(e.pointerId);
+      dnd = { el: addFor, target: null, side: 'after' };
+      addFor.classList.add('ed-dragging');
+      addBtn.hidden = true;
+      addMenu.hidden = true;
+      html.classList.add('ed-dnd');
+    });
+    gripBtn.addEventListener('pointermove', (e) => {
+      if (!dnd) return;
+      const z = Number(getComputedStyle(html).zoom) || 1;
+      gripBtn.style.left = `${e.clientX / z - 16}px`;
+      gripBtn.style.top = `${e.clientY / z - 16}px`;
+      const sibs = siblingsOf(dnd.el);
+      if (!sibs.length) return;
+      // the nearest neighbour; side by the layout (a row of cards: left / right, a column: above / below)
+      let best: Element = sibs[0];
+      let bd = Infinity;
+      for (const s of sibs) {
+        const r = s.getBoundingClientRect();
+        const dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
+        const dy = Math.max(r.top - e.clientY, 0, e.clientY - r.bottom);
+        const d = Math.hypot(dx, dy);
+        if (d < bd) {
+          bd = d;
+          best = s;
+        }
+      }
+      const r = best.getBoundingClientRect();
+      const row = sibs.some((s) => s !== best && Math.abs(s.getBoundingClientRect().top - r.top) < 12);
+      const side = row ? (e.clientX < r.left + r.width / 2 ? 'before' : 'after') : e.clientY < r.top + r.height / 2 ? 'before' : 'after';
+      dnd.target = best;
+      dnd.side = side;
+      dropLine.hidden = false;
+      dropLine.classList.toggle('is-v', row);
+      if (row) {
+        dropLine.style.left = `${(side === 'before' ? r.left - 6 : r.right + 2) / z}px`;
+        dropLine.style.top = `${r.top / z}px`;
+        dropLine.style.width = '4px';
+        dropLine.style.height = `${r.height / z}px`;
+      } else {
+        dropLine.style.left = `${r.left / z}px`;
+        dropLine.style.top = `${(side === 'before' ? r.top - 6 : r.bottom + 2) / z}px`;
+        dropLine.style.width = `${r.width / z}px`;
+        dropLine.style.height = '4px';
+      }
+    });
+    const endDnd = () => {
+      if (!dnd) return;
+      const { el, target, side } = dnd;
+      dnd = null;
+      el.classList.remove('ed-dragging');
+      html.classList.remove('ed-dnd');
+      dropLine.hidden = true;
+      gripBtn.hidden = true;
+      if (target) moveTo(el, target as HTMLElement, side);
+    };
+    gripBtn.addEventListener('pointerup', endDnd);
+    gripBtn.addEventListener('pointercancel', endDnd);
+
     document.addEventListener('mouseover', (e) => {
-      if (!html.classList.contains('ed-on') || drag) return;
+      if (!html.classList.contains('ed-on') || drag || dnd) return;
       // the "+" (and its menu) keep the element they belong to
-      if (e.target instanceof Element && e.target.closest('[data-ed-addhere], [data-ed-addmenu]')) return;
+      if (e.target instanceof Element && e.target.closest('[data-ed-addhere], [data-ed-addmenu], [data-ed-grip]')) return;
       if (addMenu.hidden) showAdd(pickable(e.target));
       const el = pickable(e.target);
       if (el === hover) return;
@@ -800,13 +998,110 @@ const L = {
     /** ▲ / ▼: swap with the neighbour (a new order for cards, plans, paragraphs …) */
     function moveEl(el: HTMLElement, dir: -1 | 1) {
       const to = neighbour(el, dir);
-      if (!to) return;
-      const m: Move = { id: el.dataset.edMv ?? Date.now().toString(36), path: api.pathOf(el), ...(dir > 0 ? { after: api.pathOf(to) } : { before: api.pathOf(to) }) };
+      if (to) moveTo(el, to as HTMLElement, dir > 0 ? 'after' : 'before');
+    }
+    function moveTo(el: HTMLElement, to: HTMLElement, side: 'before' | 'after') {
+      if (to === el || (side === 'after' && neighbour(el, -1) === to) || (side === 'before' && neighbour(el, 1) === to)) return;
+      const m: Move = { id: el.dataset.edMv ?? Date.now().toString(36), path: api.pathOf(el), ...(side === 'after' ? { after: api.pathOf(to) } : { before: api.pathOf(to) }) };
       draft.move![api.full].push(m);
       api.move(m);
       changed();
       select(el);
     }
+    /** the draft entry of an element added on the page (a subtitle, a paragraph, a copy) */
+    function addedItem(el: HTMLElement | null) {
+      const id = el?.dataset.edId;
+      return id ? draft.add[api.full].find((x) => x.id === id) : undefined;
+    }
+    /** 🗑: an element added on the page is deleted; one of the site's own is hidden (👁 shows it again) */
+    function trash(el: HTMLElement) {
+      const item = addedItem(el);
+      if (item) {
+        draft.add[api.full] = draft.add[api.full].filter((x) => x !== item);
+        // its texts and its place in a new order go with it
+        const pre = JSON.stringify([`ed:${item.id}`]).slice(0, -1);
+        for (const k of Object.keys(draft.text[api.full])) if (k.startsWith(pre)) delete draft.text[api.full][k];
+        draft.move![api.full] = draft.move![api.full].filter((m) => !JSON.stringify(m.path).startsWith(pre));
+        if (sel && el.contains(sel)) deselect();
+        el.remove();
+      } else {
+        const s = styleOf(el);
+        s.hidden = true;
+        api.styleEl(el, s);
+        if (sel && el.contains(sel)) deselect();
+      }
+      changed();
+    }
+    /** 📖: the longer story of a copy, shown in an info box when it is clicked */
+    const storyBox = document.querySelector<HTMLDialogElement>('[data-ed-storybox]')!;
+    const storyText = storyBox.querySelector<HTMLTextAreaElement>('[data-ed-storytext]')!;
+    let storyFor: HTMLElement | null = null;
+    function editStory(el: HTMLElement) {
+      const item = addedItem(el);
+      if (!item) return;
+      storyFor = el;
+      storyText.value = item.story ?? '';
+      storyBox.showModal();
+      storyText.focus();
+    }
+    storyBox.addEventListener('close', () => {
+      const el = storyFor;
+      storyFor = null;
+      const item = addedItem(el);
+      if (!el || !item || storyBox.returnValue !== 'ok') return;
+      const text = storyText.value.trim();
+      if ((item.story ?? '') === text) return;
+      if (text) {
+        item.story = text;
+        void import('../lib/infobox').then(({ wireInfoBoxes }) => wireInfoBoxes(api.story(el, text).parentElement ?? el));
+      } else {
+        delete item.story;
+        const b = el.querySelector('button') ?? el;
+        ['data-info-title', 'data-info-title-from', 'data-info-text'].forEach((k) => b.removeAttribute(k));
+      }
+      changed();
+    });
+
+    // ---- the change log (DevMode's panel shows it): what is changed on this page and not saved yet ----
+    const original: Edits = JSON.parse(JSON.stringify(api.data));
+    const short = (s: string | null | undefined) => {
+      const t = (s ?? '').replace(/\s+/g, ' ').trim();
+      return t.length > 42 ? `${t.slice(0, 40)}…` : t;
+    };
+    const nameOf = (path: string[] | string) => {
+      const el = api.resolve(typeof path === 'string' ? JSON.parse(path) : path);
+      return el ? `„${short(el.querySelector('h3, h2, strong')?.textContent || el.textContent) || el.tagName.toLowerCase()}”` : '';
+    };
+    (window as unknown as { __editsLog?: () => string[] }).__editsLog = () => {
+      if (!dirty) return [];
+      const out: string[] = [];
+      const was = original.add[api.full] ?? [];
+      for (const a of draft.add[api.full]) {
+        const o = was.find((x) => x.id === a.id);
+        if (!o) out.push(a.clone ? `${L.logCopy} ${nameOf([`ed:${a.id}`])}` : `${L.logAdd} „${short(a.text)}”`);
+        else if (o.text !== a.text && a.text) out.push(`${L.logText} „${short(a.text)}”`);
+        if ((o?.story ?? '') !== (a.story ?? '')) out.push(`${L.logStory} ${nameOf([`ed:${a.id}`])}`);
+      }
+      for (const o of was) if (!draft.add[api.full].some((x) => x.id === o.id)) out.push(`${L.logDel} „${short(o.text) || '…'}”`);
+      const t0 = original.text[api.full] ?? {};
+      for (const [k, v] of Object.entries(draft.text[api.full])) if (t0[k] !== v) out.push(`${L.logText} „${short(v)}”`);
+      const s0 = original.style[api.page] ?? {};
+      for (const [k, s] of Object.entries(draft.style[api.page])) {
+        const o = s0[k] ?? {};
+        if (JSON.stringify(o) === JSON.stringify(s)) continue;
+        const n = nameOf(k);
+        if (!!o.hidden !== !!s.hidden) out.push(`${L.logHide} ${n}`);
+        if ((o.src ?? '') !== (s.src ?? '')) out.push(`${L.logImg} ${n}`);
+        if (o.x !== s.x || o.y !== s.y || o.w !== s.w || o.h !== s.h) out.push(`${L.logPos} ${n}`);
+        if (o.color !== s.color || o.bg !== s.bg || o.font !== s.font || o.fs !== s.fs || o.fw !== s.fw || o.r !== s.r) out.push(`${L.logStyle} ${n}`);
+      }
+      const m0 = original.move?.[api.full]?.length ?? 0;
+      const moved = new Set(draft.move![api.full].slice(m0).map((m) => JSON.stringify(m.path)));
+      for (const p of moved) out.push(`${L.logOrder} ${nameOf(p)}`);
+      if (JSON.stringify(original.theme ?? {}) !== JSON.stringify(draft.theme ?? {})) out.push(L.logTheme);
+      return out;
+    };
+
     function insertAfter(tag: 'h3' | 'p', after: HTMLElement) {
       const item: Added = { id: Date.now().toString(36), after: api.pathOf(after), tag, text: tag === 'h3' ? L.newSubtitle : L.newParagraph };
       const n = api.added(item);
