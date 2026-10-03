@@ -1,0 +1,291 @@
+---
+/**
+ * Animations when the view changes:
+ *   – the CV opens (also on arriving): the sheet is "printed" – a light runs down it, the parts rise in;
+ *   – CV → blog: a curtain sweeps away and the blog's sections rise in one after the other;
+ *   – vertical ↔ horizontal page: a compass spins and settles on the new direction.
+ * Everything follows the classes on <html> (cv-mode, horizontal) whatever switched them.
+ */
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<template data-viewswitch={JSON.stringify({ blog: t(lang, 'view.blog'), horizontal: t(lang, 'view.horizontal'), vertical: t(lang, 'view.vertical') })}></template>
+
+<script>
+  const html = document.documentElement;
+  const T = JSON.parse(document.querySelector<HTMLTemplateElement>('[data-viewswitch]')?.dataset.viewswitch ?? '{}') as Record<string, string>;
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const flash = (cls: string, ms: number) => {
+    html.classList.remove(cls);
+    void html.offsetWidth;
+    html.classList.add(cls);
+    window.setTimeout(() => html.classList.remove(cls), ms);
+  };
+
+  function cvIn() {
+    if (!reduced()) flash('vs-cv-in', 1600);
+  }
+  function blogIn() {
+    if (reduced()) return;
+    const c = document.createElement('div');
+    c.className = 'vs-curtain';
+    c.setAttribute('aria-hidden', 'true');
+    c.innerHTML = `<span>${T.blog ?? 'Blog'}</span>`;
+    document.body.append(c);
+    flash('vs-blog-in', 1700);
+    window.setTimeout(() => c.remove(), 1300);
+  }
+  let compassAt = html.classList.contains('horizontal') ? 90 : 0;
+  function compass(horizontal: boolean) {
+    if (reduced()) return;
+    document.querySelector('.vs-compass')?.remove();
+    const to = horizontal ? 90 : 180;
+    const box = document.createElement('div');
+    box.className = 'vs-compass';
+    box.setAttribute('aria-hidden', 'true');
+    box.style.setProperty('--from', `${compassAt}deg`);
+    // one and a half turns, then it settles (east for the sideways page, south for the long one)
+    box.style.setProperty('--to', `${to + 540}deg`);
+    compassAt = to;
+    box.innerHTML = `<div class="vs-compass__dial">
+        <svg viewBox="-100 -100 200 200">
+          <circle r="92" class="vs-c-ring"/><circle r="78" class="vs-c-face"/>
+          ${Array.from({ length: 24 }, (_, i) => `<line y1="-78" y2="${i % 6 === 0 ? -64 : -70}" transform="rotate(${i * 15})" class="vs-c-tick"/>`).join('')}
+          <text y="-46">N</text><text x="50" y="6">E</text><text y="58">S</text><text x="-50" y="6">W</text>
+          <g class="vs-c-needle"><path d="M0 -60 L11 0 L-11 0 Z" class="vs-c-north"/><path d="M0 60 L11 0 L-11 0 Z" class="vs-c-south"/><circle r="7"/></g>
+        </svg></div>
+      <p>${horizontal ? T.horizontal : T.vertical}</p>`;
+    document.body.append(box);
+    window.setTimeout(() => box.remove(), 2100);
+  }
+
+  // the first view of this tab: the CV opens with its animation
+  if (html.classList.contains('cv-mode')) cvIn();
+  let wasCv = html.classList.contains('cv-mode');
+  let wasHorizontal = html.classList.contains('horizontal');
+  new MutationObserver(() => {
+    const cv = html.classList.contains('cv-mode');
+    const hz = html.classList.contains('horizontal');
+    if (cv !== wasCv) {
+      wasCv = cv;
+      if (cv) cvIn();
+      else blogIn();
+    }
+    if (hz !== wasHorizontal) {
+      wasHorizontal = hz;
+      compass(hz);
+    }
+  }).observe(html, { attributes: true, attributeFilter: ['class'] });
+</script>
+
+<style is:global>
+  /* ---- the CV is printed ---- */
+  :root.vs-cv-in .cv-view > * {
+    animation: vs-rise 700ms both cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  :root.vs-cv-in .cv-view > *:nth-child(2) {
+    animation-delay: 120ms;
+  }
+  :root.vs-cv-in .cv-view > *:nth-child(3) {
+    animation-delay: 240ms;
+  }
+  :root.vs-cv-in .cv-view > *:nth-child(n + 4) {
+    animation-delay: 360ms;
+  }
+  :root.vs-cv-in .cv-view::after {
+    content: '';
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 120px;
+    z-index: 5;
+    pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgb(123 47 247 / 0.18) 70%, rgb(255 214 10 / 0.9) 98%, transparent);
+    animation: vs-scan 1300ms cubic-bezier(0.5, 0, 0.5, 1) both;
+  }
+  :root.vs-cv-in .cv-view {
+    animation: vs-fadein 500ms both;
+  }
+
+  /* ---- CV → blog: a curtain sweeps off, the sections rise in ---- */
+  .vs-curtain {
+    position: fixed;
+    inset: 0;
+    z-index: 950;
+    display: grid;
+    place-items: center;
+    background: var(--violet);
+    color: #fff;
+    pointer-events: none;
+    animation: vs-curtain 1200ms cubic-bezier(0.7, 0, 0.3, 1) forwards;
+  }
+  .vs-curtain span {
+    padding: 12px 28px;
+    border: 4px solid var(--ink);
+    border-radius: 18px;
+    background: var(--yellow);
+    color: var(--ink);
+    font-family: var(--font-heading);
+    font-size: clamp(30px, 5vw, 70px);
+    box-shadow: 8px 8px 0 var(--ink);
+    animation: vs-pop 600ms both cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  :root.vs-blog-in main > * {
+    animation: vs-rise 800ms both cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  :root.vs-blog-in main > *:nth-child(1) {
+    animation-delay: 450ms;
+  }
+  :root.vs-blog-in main > *:nth-child(2) {
+    animation-delay: 560ms;
+  }
+  :root.vs-blog-in main > *:nth-child(n + 3) {
+    animation-delay: 680ms;
+  }
+  :root.vs-blog-in .site-header {
+    animation: vs-drop 700ms 350ms both cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* ---- the compass of the page direction ---- */
+  .vs-compass {
+    position: fixed;
+    inset: 0;
+    z-index: 950;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 14px;
+    background: radial-gradient(circle, rgb(20 16 60 / 0.55), rgb(10 8 30 / 0.25) 60%, transparent);
+    pointer-events: none;
+    animation: vs-compass-life 2000ms ease forwards;
+  }
+  .vs-compass__dial {
+    width: min(46vmin, 300px);
+    aspect-ratio: 1;
+    animation: vs-pop 700ms both cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .vs-compass svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    filter: drop-shadow(6px 6px 0 var(--ink));
+  }
+  .vs-c-ring {
+    fill: var(--yellow);
+    stroke: var(--ink);
+    stroke-width: 6;
+  }
+  .vs-c-face {
+    fill: #fff;
+    stroke: var(--ink);
+    stroke-width: 3;
+  }
+  .vs-c-tick {
+    stroke: var(--ink);
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+  .vs-compass text {
+    fill: var(--ink);
+    font: 800 22px var(--font-heading, sans-serif);
+    text-anchor: middle;
+  }
+  .vs-c-needle {
+    transform: rotate(var(--from));
+    animation: vs-needle 1500ms 200ms cubic-bezier(0.25, 1.25, 0.4, 1) forwards;
+  }
+  .vs-c-north {
+    fill: #e63946;
+    stroke: var(--ink);
+    stroke-width: 3;
+  }
+  .vs-c-south {
+    fill: var(--violet);
+    stroke: var(--ink);
+    stroke-width: 3;
+  }
+  .vs-c-needle circle {
+    fill: var(--ink);
+  }
+  .vs-compass p {
+    margin: 0;
+    padding: 8px 18px;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    background: var(--violet);
+    color: #fff;
+    font-family: var(--font-heading);
+    font-size: clamp(16px, 2vw, 24px);
+    box-shadow: 5px 5px 0 var(--ink);
+    animation: vs-pop 600ms 400ms both cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+
+  @keyframes vs-rise {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+  }
+  @keyframes vs-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-30px);
+    }
+  }
+  @keyframes vs-fadein {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes vs-scan {
+    from {
+      transform: translateY(-120px);
+    }
+    to {
+      transform: translateY(100vh);
+      opacity: 0.4;
+    }
+  }
+  @keyframes vs-curtain {
+    0%,
+    35% {
+      clip-path: inset(0 0 0 0);
+    }
+    100% {
+      clip-path: inset(0 0 0 100%);
+    }
+  }
+  @keyframes vs-pop {
+    from {
+      opacity: 0;
+      scale: 0.4;
+    }
+  }
+  @keyframes vs-needle {
+    to {
+      transform: rotate(var(--to));
+    }
+  }
+  @keyframes vs-compass-life {
+    0%,
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .vs-curtain,
+    .vs-compass {
+      display: none;
+    }
+  }
+</style>

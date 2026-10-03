@@ -25,7 +25,7 @@ const photos = await Promise.all(
 const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== undefined && p.lng !== undefined);
 ---
 
-<BaseLayout lang={lang} title={t(lang, 'gallery.title')}>
+<BaseLayout lang={lang} title={t(lang, 'gallery.title')} description={t(lang, 'gallery.lead')}>
   <section class="section gallery" data-dev-add="photo">
     <div class="container">
       <p class="gallery__back">

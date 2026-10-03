@@ -1,5 +1,29 @@
 User-agent: *
 Allow: /
 
-# TODO: update the domain once the site is live
-Sitemap: https://andras-blog.netlify.app/sitemap-index.xml
+# AI search and answer engines are welcome to read the site
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://lambent-platypus-c39161.netlify.app/sitemap-index.xml

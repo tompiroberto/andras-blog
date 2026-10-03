@@ -1,6 +1,6 @@
 ---
 import { render } from 'astro:content';
-import { Image } from 'astro:assets';
+import { Image, getImage } from 'astro:assets';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Globe from '../../../components/Globe.astro';
 import IconCircle from '../../../components/IconCircle.astro';
@@ -19,10 +19,22 @@ const lang = Astro.params.lang as Lang;
 const { Content } = await render(post);
 const { title, date, datePrecision, category, excerpt, cover, coverAlt, draft, facts, strava, lang: postLang } = post.data;
 const meta = categoryMeta(category);
+// the cover as the share picture (and in the structured data)
+const coverUrl = cover ? (await getImage({ src: cover, width: 1200 })).src : undefined;
+const postLd = {
+  '@type': 'BlogPosting',
+  headline: title,
+  description: excerpt,
+  ...(date ? { datePublished: date.toISOString() } : {}),
+  inLanguage: postLang,
+  articleSection: category,
+  ...(coverUrl ? { image: new URL(coverUrl, Astro.site).href } : {}),
+  mainEntityOfPage: new URL(Astro.url.pathname, Astro.site).href,
+};
 const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEnglish') : NATIVE_NAMES[postLang]) : undefined;
 ---
 
-<BaseLayout lang={lang} title={title} description={excerpt} ogType="article">
+<BaseLayout lang={lang} title={title} description={excerpt} ogType="article" image={coverUrl} jsonLd={postLd}>
   <article class="post">
     <header class="section post__header">
       <div class="bg-layer">

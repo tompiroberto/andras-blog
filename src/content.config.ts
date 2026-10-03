@@ -56,4 +56,16 @@ const photos = defineCollection({
     }),
 });
 
-export const collections = { posts, photos };
+/** Music uploaded in developer mode (src/components/MusicUpload.astro): the audio lives in public/music */
+const music = defineCollection({
+  loader: glob({ pattern: '**/*.{yml,yaml}', base: './src/content/music' }),
+  schema: z.object({
+    file: z.string(),
+    title: z.string(),
+    artist: z.string().optional(),
+    about: z.string().optional(),
+    date: z.coerce.date().optional(),
+  }),
+});
+
+export const collections = { posts, photos, music };

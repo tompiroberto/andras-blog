@@ -1,0 +1,296 @@
+---
+/**
+ * Developer mode → "Upload music": pick mp3 (or other audio) files, give each a title (and artist, a
+ * few words), press Upload. Each track becomes public/music/<name>.<ext> and src/content/music/<name>.yml,
+ * saved to GitHub with the key kept in this browser; 🚀 Publish puts them on the Music page.
+ */
+import Icon from './Icon.astro';
+import TokenField from './TokenField.astro';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<dialog class="mup" data-music-upload aria-labelledby="mup-title">
+  <form class="mup__form" novalidate data-mup-form>
+    <div class="mup__head">
+      <h2 id="mup-title"><Icon name="music" size={22} />{t(lang, 'music.uploadTitle')}</h2>
+      <button type="button" class="mup__x" aria-label={t(lang, 'facts.close')} data-mup-close><Icon name="x" size={20} /></button>
+    </div>
+    <label class="mup__pick">
+      <Icon name="file-music" size={22} />
+      <span>{t(lang, 'music.pick')}</span>
+      <input type="file" accept="audio/*,.mp3,.m4a,.ogg,.wav" multiple data-mup-files />
+    </label>
+    <p class="mup__note">{t(lang, 'music.sizeNote')}</p>
+    <ul class="mup__list" data-mup-list></ul>
+    <TokenField lang={lang} />
+    <p class="mup__status" role="status" aria-live="polite" data-mup-status></p>
+    <button type="submit" class="btn btn--primary" data-mup-send>
+      <Icon name="upload" size={18} />
+      <span data-mup-send-label>{t(lang, 'music.send')}</span>
+    </button>
+  </form>
+  <template data-mup-row>
+    <li class="mup__row">
+      <span class="mup__icon" aria-hidden="true">♪</span>
+      <div class="mup__inputs">
+        <input class="mup__title" type="text" maxlength="120" placeholder={t(lang, 'music.trackTitle')} aria-label={t(lang, 'music.trackTitle')} />
+        <input class="mup__artist" type="text" maxlength="80" placeholder={t(lang, 'music.artist')} aria-label={t(lang, 'music.artist')} />
+        <input class="mup__about" type="text" maxlength="200" placeholder={t(lang, 'music.about')} aria-label={t(lang, 'music.about')} />
+        <small class="mup__size" data-mup-size></small>
+      </div>
+      <button type="button" class="mup__remove" aria-label={t(lang, 'upload.remove')} title={t(lang, 'upload.remove')}><Icon name="trash-2" size={16} /></button>
+    </li>
+  </template>
+  <template data-mup-t-send>{t(lang, 'music.send')}</template>
+  <template data-mup-t-sending>{t(lang, 'music.sending')}</template>
+  <template data-mup-t-done>{t(lang, 'music.done')}</template>
+  <template data-mup-t-error>{t(lang, 'upload.error')}</template>
+  <template data-mup-t-need>{t(lang, 'music.need')}</template>
+  <template data-mup-t-needtitle>{t(lang, 'music.needTitle')}</template>
+  <template data-mup-t-needtoken>{t(lang, 'upload.needToken')}</template>
+  <template data-mup-t-toobig>{t(lang, 'music.tooBig')}</template>
+</dialog>
+
+<style>
+  .mup {
+    width: min(620px, calc(100vw - 24px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    border: 3px solid var(--ink);
+    border-radius: var(--radius-card);
+    background: var(--surface, #fff);
+    color: var(--ink);
+    box-shadow: 8px 8px 0 #39d353;
+  }
+  .mup::backdrop {
+    background: rgb(0 0 0 / 0.55);
+  }
+  .mup__form {
+    display: grid;
+    gap: 14px;
+    padding: 22px;
+  }
+  .mup__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .mup__head h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 22px;
+  }
+  .mup__x,
+  .mup__remove {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+  .mup__pick {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 18px;
+    border: 3px dashed var(--ink);
+    border-radius: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mup__pick input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .mup__note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .mup__list {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .mup__list:empty {
+    display: none;
+  }
+  .mup__row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 10px;
+    align-items: start;
+    padding: 10px;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+  }
+  .mup__icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--violet);
+    color: #fff;
+    font-size: 22px;
+  }
+  .mup__inputs {
+    display: grid;
+    gap: 6px;
+  }
+  .mup__inputs input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--ink);
+    font: inherit;
+    font-size: 15px;
+  }
+  .mup__inputs input[aria-invalid='true'] {
+    border-color: #d7263d;
+  }
+  .mup__size {
+    color: var(--muted);
+  }
+  .mup__status {
+    margin: 0;
+    font-weight: 700;
+  }
+  .mup__status:empty {
+    display: none;
+  }
+  .mup__status.is-ok {
+    color: #1f8a3a;
+  }
+  .mup__status.is-error {
+    color: #d7263d;
+  }
+</style>
+
+<script>
+  import { commitFiles, slugify, wireTokenField, type NewFile } from '../lib/githubCommit';
+
+  const dialog = document.querySelector<HTMLDialogElement>('[data-music-upload]');
+  if (dialog) {
+    const q = <T extends Element>(s: string) => dialog.querySelector<T>(s)!;
+    const text = (n: string) => q<HTMLTemplateElement>(`[data-mup-t-${n}]`).content.textContent ?? '';
+    const form = q<HTMLFormElement>('[data-mup-form]');
+    const picker = q<HTMLInputElement>('[data-mup-files]');
+    const list = q<HTMLUListElement>('[data-mup-list]');
+    const rowTpl = q<HTMLTemplateElement>('[data-mup-row]');
+    const status = q<HTMLElement>('[data-mup-status]');
+    const send = q<HTMLButtonElement>('[data-mup-send]');
+    const sendLabel = q<HTMLElement>('[data-mup-send-label]');
+    const token = wireTokenField(dialog);
+    const picked = new Map<HTMLLIElement, File>();
+    // GitHub takes files up to 100 MB; smaller files also spare Netlify's bandwidth credits
+    const MAX = 40 * 1024 * 1024;
+    const say = (msg: string, kind: '' | 'ok' | 'error' = '') => {
+      status.textContent = msg;
+      status.className = `mup__status${kind ? ` is-${kind}` : ''}`;
+    };
+    const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
+
+    window.addEventListener('andras:upload-music', () => {
+      token.refresh();
+      say('');
+      if (!dialog.open) dialog.showModal();
+    });
+    q('[data-mup-close]').addEventListener('click', () => dialog.close());
+
+    picker.addEventListener('change', () => {
+      for (const file of Array.from(picker.files ?? [])) {
+        const row = rowTpl.content.firstElementChild!.cloneNode(true) as HTMLLIElement;
+        // a title from the file name: "02 - Artist - Song_title.mp3" -> "Song title"
+        const base = file.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim();
+        const parts = base.split(/\s+-\s+/).map((s) => s.replace(/^\d+\s*[.)-]?\s*/, '').trim()).filter(Boolean);
+        row.querySelector<HTMLInputElement>('.mup__title')!.value = parts[parts.length - 1] ?? base;
+        if (parts.length > 1) row.querySelector<HTMLInputElement>('.mup__artist')!.value = parts[parts.length - 2];
+        const size = row.querySelector<HTMLElement>('[data-mup-size]')!;
+        size.textContent = `${file.name} · ${mb(file.size)}`;
+        if (file.size > MAX) size.textContent += ` – ${text('toobig')}`;
+        row.querySelector('.mup__remove')!.addEventListener('click', () => {
+          picked.delete(row);
+          row.remove();
+        });
+        picked.set(row, file);
+        list.append(row);
+      }
+      picker.value = '';
+    });
+
+    const toBase64 = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result).replace(/^data:[^,]*,/, ''));
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const rows = Array.from(picked.keys()).filter((r) => picked.get(r)!.size <= MAX);
+      if (!rows.length) return say(text('need'), 'error');
+      const missing = rows.filter((r) => !r.querySelector<HTMLInputElement>('.mup__title')!.value.trim());
+      missing.forEach((r) => r.querySelector('.mup__title')!.setAttribute('aria-invalid', 'true'));
+      if (missing.length) return say(text('needtitle'), 'error');
+      const key = token.read();
+      if (!key) return say(text('needtoken'), 'error');
+      send.disabled = true;
+      sendLabel.textContent = text('sending');
+      say('');
+      try {
+        const date = new Date().toISOString().slice(0, 10);
+        const files: NewFile[] = [];
+        const titles: string[] = [];
+        for (const row of rows) {
+          const file = picked.get(row)!;
+          const title = row.querySelector<HTMLInputElement>('.mup__title')!.value.trim();
+          const artist = row.querySelector<HTMLInputElement>('.mup__artist')!.value.trim();
+          const about = row.querySelector<HTMLInputElement>('.mup__about')!.value.trim();
+          const ext = (file.name.match(/\.([a-z0-9]{2,4})$/i)?.[1] ?? 'mp3').toLowerCase();
+          const name = `${date}-${slugify(title) || 'track'}-${Math.random().toString(36).slice(2, 6)}`;
+          files.push({ path: `public/music/${name}.${ext}`, base64: await toBase64(file) });
+          const yml = [`file: /music/${name}.${ext}`, `title: ${JSON.stringify(title)}`, artist && `artist: ${JSON.stringify(artist)}`, about && `about: ${JSON.stringify(about)}`, `date: ${date}`]
+            .filter(Boolean)
+            .join('\n');
+          files.push({ path: `src/content/music/${name}.yml`, text: `${yml}\n` });
+          titles.push(`🎵 ${artist ? `${artist} – ` : ''}${title}`);
+        }
+        await commitFiles(key, files, `Music: ${rows.length} new (uploaded from the site)`, titles);
+        token.saved();
+        rows.forEach((r) => {
+          picked.delete(r);
+          r.remove();
+        });
+        say(text('done'), 'ok');
+      } catch (err) {
+        console.error('[music upload]', err);
+        say(text('error').replace('{msg}', err instanceof Error ? err.message : String(err)), 'error');
+      } finally {
+        send.disabled = false;
+        sendLabel.textContent = text('send');
+      }
+    });
+  }
+</script>

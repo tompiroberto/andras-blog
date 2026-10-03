@@ -1342,61 +1342,6 @@ select {
   white-space: nowrap;
 }
 
-/* Footer easter egg (Footer.astro): circles become places, triangles point at the cursor */
-.egg-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 890;
-  pointer-events: none;
-  zoom: var(--inv-zoom, 1);
-  transition: opacity 600ms ease;
-}
-.egg-layer.is-leaving {
-  opacity: 0;
-}
-.egg-layer > span {
-  position: absolute;
-}
-.egg-place {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.egg-place i {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #141a33;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(123, 47, 247, 0.35);
-}
-.egg-place b {
-  padding: 2px 8px;
-  border: 2px solid #141a33;
-  border-radius: 8px;
-  background: #fff;
-  color: #141a33;
-  font: 700 13px 'DM Sans', system-ui, sans-serif;
-}
-.egg-tri {
-  width: 26px;
-  height: 22px;
-  margin: -11px 0 0 -13px;
-  background: #ffd60a;
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
-  filter: drop-shadow(2px 2px 0 #141a33);
-  transition: rotate 120ms linear;
-}
-.egg-say {
-  padding: 8px 14px;
-  border: 2px solid #141a33;
-  border-radius: 14px;
-  background: #7b2ff7;
-  color: #fff;
-  font: 800 18px 'Unbounded', system-ui, sans-serif;
-  box-shadow: 4px 4px 0 #141a33;
-  white-space: nowrap;
-}
 
 /* Switching to the world map: a spinning Earth flies in, then opens up into the map (MapMode.astro) */
 .mm-spin {
@@ -1491,4 +1436,60 @@ select {
   100% {
     opacity: 0;
   }
+}
+
+/* The end of the horizontal page: a two-screen-wide drawn panorama (BaseLayout + Landscape big) */
+.landscape-end {
+  display: none;
+}
+:root.horizontal .landscape-end {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  width: calc(140vw * var(--inv-zoom, 1));
+  height: calc(100vh * var(--inv-zoom, 1));
+  padding-bottom: var(--roadside-h);
+  overflow: hidden;
+  background: var(--violet);
+}
+.landscape-end__sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgb(255 255 255 / 0.5) 1px, transparent 1.6px) 0 0 / 90px 90px,
+    linear-gradient(180deg, color-mix(in srgb, var(--violet) 70%, #000), var(--violet) 70%);
+}
+.landscape-end__text {
+  position: absolute;
+  top: calc(var(--header-h, 80px) + 6vh);
+  left: calc(90vw * var(--inv-zoom, 1));
+  width: min(calc(80vw * var(--inv-zoom, 1)), 900px);
+  translate: -50% 0;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  color: #fff;
+  text-align: center;
+}
+.landscape-end__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(28px, 3.4vw, 54px);
+  text-shadow: 4px 4px 0 var(--ink);
+}
+.landscape-end__hint {
+  margin: 0;
+  opacity: 0.85;
+}
+
+/* on the horizontal page the footer's small landscape gives way to the big panorama after it */
+:root.horizontal .site-footer .landscape {
+  display: none;
+}
+:root.horizontal .landscape-end .landscape {
+  flex: none;
+  max-height: calc(100% - 40px);
 }

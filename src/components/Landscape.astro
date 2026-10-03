@@ -1,77 +1,111 @@
 ---
 /**
- * A drawn landscape at the very end of every page (inside the footer): mountains with a lake, a small
- * town, or a coast with a lighthouse – a different one on each visit. Flat shapes with the site's ink
- * outline; the colours follow the theme (the footer is the theme's main colour).
+ * A drawn landscape at the very end of every page: mountains with a lake, a small town, or a coast with
+ * a lighthouse. Layers (sky, far, middle, near) move apart a little (parallax: with the mouse, or with
+ * the sideways scroll on the horizontal page), clouds drift, and the scene changes every half minute.
+ * Clicking it makes things move: the sun turns into the moon (night), a runner leaves the tent, birds fly
+ * off, trees sway, the boat sails, the lighthouse sweeps, clouds rain, chimneys smoke.
+ * big: the full-screen panorama at the end of the horizontal page (BaseLayout).
  */
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  big?: boolean;
+  lang?: Lang;
+}
+
+const { big = false, lang = 'en' } = Astro.props;
+
+// a little runner (also rides out of the town and walks the beach)
+const RUNNER = `<g class="ls-runner"><circle cx="0" cy="-30" r="5" class="ls-head"/><path d="M0 -25 L-2 -12 M-2 -12 L-9 -2 M-2 -12 L5 -3 M0 -22 L-8 -16 M0 -22 L7 -17" class="ls-line"/></g>`;
+const CLOUD = (x: number, y: number, s: number) =>
+  `<g class="ls-cloud" data-act="cloud" style="--dur:${70 + Math.round(s * 40)}s;animation-delay:-${Math.round((x / 1200) * (70 + s * 40))}s"><g transform="translate(${x} ${y}) scale(${s})"><path d="M0 20 Q0 4 16 6 Q22 -8 40 -2 Q56 -6 60 10 Q74 10 72 22 Z" class="ls-cloud-body"/><path d="M14 30 l-4 10 M30 30 l-4 10 M46 30 l-4 10 M60 30 l-4 10" class="ls-rain"/></g></g>`;
+const STARS = `<g class="ls-stars">${[
+  [90, 40], [170, 90], [260, 30], [400, 60], [520, 25], [610, 80], [740, 36], [900, 50], [1010, 28], [1110, 70], [330, 110], [960, 110],
+]
+  .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.2"/>`)
+  .join('')}</g>`;
+const SUN = (x: number, y: number, r: number) =>
+  `<g class="ls-sun-g" data-act="sun" style="transform-origin:${x}px ${y}px"><circle cx="${x}" cy="${y}" r="${r + 12}" class="ls-halo"/><circle cx="${x}" cy="${y}" r="${r}" class="ls-sun"/><circle cx="${x + r * 0.45}" cy="${y - r * 0.25}" r="${r * 0.85}" class="ls-moon-shade"/></g>`;
+const BIRDS = (x: number, y: number) =>
+  `<g class="ls-birds" data-act="birds"><path d="M${x} ${y}q12 -10 24 0q12 -10 24 0" class="ls-bird"/><path d="M${x + 60} ${y + 22}q9 -8 18 0q9 -8 18 0" class="ls-bird"/><rect x="${x - 10}" y="${y - 20}" width="110" height="50" class="ls-hit"/></g>`;
+const TREE = (x: number, y: number) =>
+  `<g class="ls-tree-g" data-act="tree" style="transform-origin:${x}px ${y}px"><path d="M${x} ${y}V${y - 28}M${x - 10} ${y - 14}L${x} ${y - 30}L${x + 10} ${y - 14}M${x - 12} ${y - 4}L${x} ${y - 20}L${x + 12} ${y - 4}" class="ls-tree"/><rect x="${x - 14}" y="${y - 34}" width="28" height="36" class="ls-hit"/></g>`;
+
+const SCENES = [
+  // 1. mountains and a lake, with a tent
+  `<g class="ls-g" data-depth="0.1">${STARS}${SUN(840, 82, 32)}${CLOUD(120, 60, 1)}${CLOUD(620, 40, 0.8)}${BIRDS(430, 92)}</g>
+   <g class="ls-g" data-depth="0.25"><path d="M-80 260V184L120 104L210 160L330 66L460 170L560 116L690 180L820 92L950 170L1060 112L1280 180V260Z" class="ls-far"/><path d="M300 88L330 66L362 92L344 86L330 96Z M790 112L820 92L846 116L828 110L818 120Z" class="ls-snow"/></g>
+   <g class="ls-g" data-depth="0.55"><path d="M-80 260V208L160 154L280 202L420 144L560 212L700 158L850 208L1000 150L1120 200L1280 182V260Z" class="ls-mid"/></g>
+   <g class="ls-g" data-depth="1"><path d="M-80 260V236Q300 224 600 236T1280 232V260Z" class="ls-near"/><path d="M420 246Q600 232 800 246Q600 258 420 246Z" class="ls-water"/><path d="M480 246H570M630 250H720" class="ls-line"/>
+     <g data-act="tent"><path d="M214 240L240 204L266 240Z" class="ls-tent"/><path d="M240 204V240" class="ls-line"/><g class="ls-mover" style="--x0:244px;--y0:240px">${RUNNER}</g></g>
+     ${TREE(960, 236)}${TREE(1000, 238)}${TREE(140, 240)}</g>`,
+  // 2. a small town: hills, houses with chimneys, a church, utility poles, a road
+  `<g class="ls-g" data-depth="0.1">${STARS}${SUN(330, 78, 30)}${CLOUD(700, 50, 1)}${CLOUD(60, 34, 0.7)}${BIRDS(820, 70)}</g>
+   <g class="ls-g" data-depth="0.25"><path d="M-80 260V196Q200 136 420 186T820 166T1280 186V260Z" class="ls-far"/></g>
+   <g class="ls-g" data-depth="0.55"><g class="ls-house" data-act="houses">
+     <path d="M380 236V190H430V236Z M374 192L405 164L436 192Z"/><path d="M440 236V200H480V236Z M434 202L460 180L486 202Z"/>
+     <path d="M560 236V180H590V236Z M556 182L575 132L594 182Z"/><path d="M600 236V196H660V236Z M594 198L630 172L666 198Z"/>
+     <path d="M670 236V204H708V236Z M664 206L689 186L714 206Z"/><path d="M720 236V190H770V236Z M714 192L745 166L776 192Z"/>
+     <path d="M414 178V164H424V172Z M644 186V170H654V180Z" class="ls-chimney"/>
+     <path d="M396 216h10v20h-10z M450 212h10v12h-10z M612 212h12v24h-12z M680 214h10v10h-10z M732 212h10v24h-10z M752 202h10v10h-10z M566 150h8v10h-8z" class="ls-window"/>
+     <g class="ls-smoke"><circle cx="419" cy="158" r="5"/><circle cx="649" cy="164" r="5"/></g></g></g>
+   <g class="ls-g" data-depth="1"><path d="M-80 260V236H1280V260Z" class="ls-near"/><path d="M-80 248H1280" class="ls-road"/>
+     <path d="M140 236V160M128 168H152M1000 236V160M988 168H1012M140 168Q570 200 1000 168" class="ls-line"/>
+     <g data-act="bike"><rect x="40" y="200" width="80" height="44" class="ls-hit"/><g class="ls-mover" style="--x0:80px;--y0:246px">${RUNNER}</g></g>
+     ${TREE(250, 236)}${TREE(880, 236)}</g>`,
+  // 3. a coast: the sea, a boat, an island with a lighthouse, a beach
+  `<g class="ls-g" data-depth="0.1">${STARS}${SUN(640, 140, 40)}${CLOUD(160, 52, 1)}${CLOUD(900, 40, 0.8)}${BIRDS(380, 88)}</g>
+   <g class="ls-g" data-depth="0.25"><path d="M-80 260V200H1280V260Z" class="ls-water"/><path d="M40 212H160M260 222H400M520 210H620M760 220H880" class="ls-line ls-wave"/>
+     <g class="ls-boat" data-act="boat"><path d="M250 198L330 198L316 212H264Z" class="ls-tent"/><path d="M290 198V150L326 190Z" class="ls-snow"/><path d="M290 150V198" class="ls-line"/></g></g>
+   <g class="ls-g" data-depth="0.55"><path d="M880 260V196Q980 156 1060 176T1280 156V260Z" class="ls-mid"/>
+     <g data-act="lighthouse"><path d="M1010 176V106H1040V176Z" class="ls-light"/><path d="M1010 128H1040M1010 150H1040" class="ls-stripe"/><path d="M1004 108L1025 86L1046 108Z" class="ls-tent"/>
+       <g class="ls-beam-g" style="transform-origin:1025px 96px"><path d="M1025 96L940 76M1025 96L940 116" class="ls-beam"/></g></g></g>
+   <g class="ls-g" data-depth="1"><path d="M-80 260V244Q300 234 560 246T1280 242V260Z" class="ls-sand"/>
+     <path d="M150 244V236H162V244Z M146 236l4 -6 4 6 4 -6 4 6 4 -6" class="ls-tent" data-act="castle"/>
+     <g data-act="walk"><rect x="560" y="210" width="60" height="40" class="ls-hit"/><g class="ls-mover" style="--x0:590px;--y0:246px">${RUNNER}</g></g></g>`,
+];
 ---
 
-<div class="landscape" aria-hidden="true" data-landscape>
-  <!-- 1. mountains and a lake, with a tent -->
-  <svg class="landscape__scene" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMax slice" data-scene="0">
-    <circle cx="960" cy="70" r="34" class="ls-sun" />
-    <path d="M0 220V150L120 80L210 140L330 40L460 150L560 95L690 160L820 60L950 150L1060 90L1200 160V220Z" class="ls-far" />
-    <path d="M300 62L330 40L362 66L344 60L330 70Z M790 80L820 60L846 84L828 78L818 88Z" class="ls-snow" />
-    <path d="M0 220V175L160 120L280 172L420 110L560 180L700 125L850 178L1000 118L1120 170L1200 150V220Z" class="ls-near" />
-    <path d="M380 196Q600 176 820 196Q600 214 380 196Z" class="ls-water" />
-    <path d="M450 196H560M620 201H730M500 205H580" class="ls-line" />
-    <path d="M150 196L176 160L202 196Z" class="ls-tent" />
-    <path d="M176 160V196" class="ls-line" />
-    <path d="M1040 180V152M1030 166L1040 150L1050 166M1028 176L1040 160L1052 176" class="ls-tree" />
-    <path d="M1090 182V156M1080 170L1090 154L1100 170M1078 180L1090 164L1102 180" class="ls-tree" />
-  </svg>
-
-  <!-- 2. a small town: hills, houses, a church tower, utility poles -->
-  <svg class="landscape__scene is-off" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMax slice" data-scene="1">
-    <circle cx="200" cy="64" r="30" class="ls-sun" />
-    <path d="M0 220V160Q200 100 420 150T820 130T1200 150V220Z" class="ls-far" />
-    <path d="M0 220V196H1200V220Z" class="ls-near" />
-    <g class="ls-house">
-      <path d="M380 196V150H430V196Z M374 152L405 124L436 152Z" />
-      <path d="M440 196V160H480V196Z M434 162L460 140L486 162Z" />
-      <path d="M560 196V140H590V196Z M556 142L575 92L594 142Z" />
-      <path d="M600 196V156H660V196Z M594 158L630 132L666 158Z" />
-      <path d="M670 196V164H708V196Z M664 166L689 146L714 166Z" />
-      <path d="M720 196V150H770V196Z M714 152L745 126L776 152Z" />
-    </g>
-    <path d="M396 176h10v20h-10z M612 172h12v24h-12z M732 172h10v24h-10z M566 110h8v10h-8z" class="ls-window" />
-    <path d="M140 196V120M128 128H152M960 196V120M948 128H972M140 128Q550 160 960 128" class="ls-line" />
-    <path d="M0 208H1200" class="ls-road" />
-  </svg>
-
-  <!-- 3. a coast: the sea, a lighthouse and a boat -->
-  <svg class="landscape__scene is-off" viewBox="0 0 1200 220" preserveAspectRatio="xMidYMax slice" data-scene="2">
-    <circle cx="700" cy="120" r="44" class="ls-sun" />
-    <path d="M0 220V170H1200V220Z" class="ls-water" />
-    <path d="M60 182H180M260 192H400M520 180H620M760 190H900M980 182H1120" class="ls-line" />
-    <path d="M900 220V160Q980 120 1060 140T1200 120V220Z" class="ls-near" />
-    <path d="M1010 140V70H1040V140Z" class="ls-light" />
-    <path d="M1010 92H1040M1010 114H1040" class="ls-stripe" />
-    <path d="M1004 72L1025 50L1046 72Z" class="ls-tent" />
-    <path d="M1025 58L960 40M1025 58L960 76" class="ls-beam" />
-    <path d="M250 168L330 168L316 182H264Z" class="ls-tent" />
-    <path d="M290 168V120L326 160Z" class="ls-snow" />
-    <path d="M290 120V168" class="ls-line" />
-    <path d="M520 70q12 -10 24 0q12 -10 24 0" class="ls-bird" />
-    <path d="M590 92q9 -8 18 0q9 -8 18 0" class="ls-bird" />
-  </svg>
+<div class:list={['landscape', { 'landscape--big': big }]} aria-hidden="true" data-landscape title={t(lang, 'ls.hint')}>
+  {
+    SCENES.map((s, i) => (
+      <svg class:list={['landscape__scene', { 'is-off': i !== 0 }]} viewBox="0 0 1200 260" preserveAspectRatio="xMidYMax slice" data-scene={i} set:html={s} />
+    ))
+  }
 </div>
 
 <style>
   .landscape {
     position: relative;
-    height: clamp(120px, 16vw, 200px);
+    /* above the page's background layer (the world map with its cities) */
+    z-index: calc(var(--z-globe, 0) + 2);
+    width: 100%;
+    /* the whole drawing: the sun is never cut off */
+    aspect-ratio: 1200 / 260;
+    min-height: 110px;
     margin-top: 28px;
     overflow: hidden;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .landscape--big {
+    margin: 0;
   }
   .landscape__scene {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
+    overflow: visible;
+    transition: opacity 1.6s ease;
   }
   .landscape__scene.is-off {
-    display: none;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .landscape :global(.ls-g) {
+    transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.3, 1);
   }
   .landscape :global(path),
   .landscape :global(circle) {
@@ -80,74 +114,352 @@
     stroke-linejoin: round;
     stroke-linecap: round;
   }
-  .ls-sun {
-    fill: var(--yellow);
+  .landscape :global(.ls-hit) {
+    fill: transparent;
+    stroke: none;
   }
-  .ls-far {
+  .landscape :global(.ls-sun) {
+    fill: var(--yellow);
+    transition: fill 1s ease;
+  }
+  .landscape :global(.ls-halo) {
+    fill: var(--yellow);
+    opacity: 0.25;
+    stroke: none !important;
+    animation: ls-pulse 4s ease-in-out infinite;
+  }
+  .landscape :global(.ls-moon-shade) {
+    fill: var(--violet);
+    stroke: none !important;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+  .landscape :global(.ls-stars circle) {
+    fill: #fff;
+    stroke: none;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+  .landscape :global(.ls-far) {
     fill: color-mix(in srgb, var(--violet) 55%, #fff);
   }
-  .ls-near {
-    fill: color-mix(in srgb, var(--violet) 70%, #000);
+  .landscape :global(.ls-mid) {
+    fill: color-mix(in srgb, var(--violet) 75%, #000);
   }
-  .ls-snow {
+  .landscape :global(.ls-near) {
+    fill: color-mix(in srgb, var(--violet) 55%, #000);
+  }
+  .landscape :global(.ls-sand) {
+    fill: color-mix(in srgb, var(--yellow) 60%, #fff);
+  }
+  .landscape :global(.ls-snow),
+  .landscape :global(.ls-light),
+  .landscape :global(.ls-house path),
+  .landscape :global(.ls-cloud-body) {
     fill: #fff;
   }
-  .ls-water {
+  .landscape :global(.ls-water) {
     fill: color-mix(in srgb, #5ec8ff 70%, var(--violet));
   }
-  .ls-line,
-  .ls-road,
-  .ls-bird,
-  .ls-beam {
+  .landscape :global(.ls-line),
+  .landscape :global(.ls-road),
+  .landscape :global(.ls-bird),
+  .landscape :global(.ls-beam),
+  .landscape :global(.ls-tree),
+  .landscape :global(.ls-rain) {
     fill: none;
   }
-  .ls-road {
+  .landscape :global(.ls-road) {
     stroke-dasharray: 26 18;
     stroke: var(--yellow) !important;
   }
-  .ls-beam {
+  .landscape :global(.ls-beam) {
     stroke: var(--yellow) !important;
     stroke-width: 4 !important;
     animation: ls-blink 2.4s steps(1) infinite;
   }
-  .ls-tent {
+  .landscape :global(.ls-tent),
+  .landscape :global(.ls-window),
+  .landscape :global(.ls-head) {
     fill: var(--yellow);
   }
-  .ls-tree {
-    fill: none;
+  .landscape :global(.ls-chimney) {
+    fill: #fff;
+  }
+  .landscape :global(.ls-tree) {
     stroke: #fff !important;
   }
-  .ls-house :global(path) {
-    fill: #fff;
-  }
-  .ls-window {
-    fill: var(--yellow);
-  }
-  .ls-light {
-    fill: #fff;
-  }
-  .ls-stripe {
+  .landscape :global(.ls-stripe) {
     fill: none;
     stroke: #e63946 !important;
     stroke-width: 8 !important;
+  }
+  .landscape :global(.ls-rain) {
+    stroke: #5ec8ff !important;
+    opacity: 0;
+  }
+  .landscape :global(.ls-smoke circle) {
+    fill: #fff;
+    opacity: 0;
+  }
+  /* clouds drift across the sky (and come round again) */
+  .landscape :global(.ls-cloud) {
+    animation: ls-drift var(--dur, 90s) linear infinite;
+  }
+  .landscape :global(.ls-runner) {
+    opacity: 0;
+  }
+  .landscape :global(.ls-mover) {
+    transform: translate(var(--x0), var(--y0));
+  }
+
+  /* ---- what clicks do ---- */
+  .landscape.is-night :global(.ls-moon-shade) {
+    opacity: 1;
+  }
+  .landscape.is-night :global(.ls-sun),
+  .landscape.is-night :global(.ls-halo) {
+    fill: #f4f1de;
+  }
+  .landscape.is-night :global(.ls-stars circle) {
+    opacity: 1;
+    animation: ls-twinkle 2.4s ease-in-out infinite alternate;
+  }
+  .landscape.is-night :global(.ls-stars circle:nth-child(3n)) {
+    animation-delay: -1.2s;
+  }
+  .landscape.is-night :global(.ls-far),
+  .landscape.is-night :global(.ls-mid),
+  .landscape.is-night :global(.ls-near),
+  .landscape.is-night :global(.ls-water),
+  .landscape.is-night :global(.ls-sand) {
+    filter: brightness(0.55) saturate(0.8);
+  }
+  .landscape.is-night :global(.ls-window) {
+    fill: #ffe066;
+    filter: drop-shadow(0 0 4px #ffd60a);
+  }
+  .landscape :global(.ls-sun-g.is-act) {
+    animation: ls-spin 1s cubic-bezier(0.3, 1.4, 0.5, 1);
+  }
+  .landscape :global(.ls-birds.is-act) {
+    animation: ls-flyoff 4s ease-in forwards;
+  }
+  .landscape :global(.ls-tree-g.is-act),
+  .landscape.is-gust :global(.ls-tree-g) {
+    animation: ls-sway 1.4s ease-in-out;
+  }
+  .landscape :global(.ls-cloud.is-act .ls-rain) {
+    animation: ls-rain 0.5s linear 6;
+  }
+  .landscape :global(.is-act .ls-smoke circle) {
+    animation: ls-smoke 2.2s ease-out 2;
+  }
+  .landscape :global(.is-act .ls-smoke circle:nth-child(2)) {
+    animation-delay: 0.5s;
+  }
+  .landscape :global(.ls-house.is-act .ls-window) {
+    animation: ls-blink 0.4s steps(1) 6;
+  }
+  .landscape :global(.ls-boat.is-act) {
+    animation: ls-sail 7s ease-in-out;
+  }
+  .landscape :global(.is-act .ls-beam-g) {
+    animation: ls-sweep 2.4s ease-in-out 2;
+  }
+  .landscape :global(.is-act > .ls-mover) {
+    animation: ls-run 6s linear forwards;
+  }
+  .landscape :global(.is-act > .ls-mover .ls-runner) {
+    opacity: 1;
+    animation: ls-bob 0.3s ease-in-out infinite alternate;
+  }
+  .landscape :global([data-act='castle'].is-act) {
+    animation: ls-hop 0.6s ease 2;
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+  }
+
+  @keyframes ls-drift {
+    from {
+      transform: translateX(-1400px);
+    }
+    to {
+      transform: translateX(1400px);
+    }
   }
   @keyframes ls-blink {
     50% {
       opacity: 0;
     }
   }
+  @keyframes ls-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+  @keyframes ls-twinkle {
+    from {
+      opacity: 0.25;
+    }
+  }
+  @keyframes ls-spin {
+    from {
+      transform: rotate(0) scale(1);
+    }
+    50% {
+      transform: rotate(180deg) scale(1.3);
+    }
+    to {
+      transform: rotate(360deg) scale(1);
+    }
+  }
+  @keyframes ls-flyoff {
+    60% {
+      transform: translate(240px, -120px);
+      opacity: 0;
+    }
+    61% {
+      transform: translate(-300px, 0);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes ls-sway {
+    25% {
+      transform: rotate(-12deg);
+    }
+    60% {
+      transform: rotate(8deg);
+    }
+  }
+  @keyframes ls-rain {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
+  @keyframes ls-smoke {
+    from {
+      opacity: 0.9;
+      transform: translate(0, 0) scale(0.6);
+    }
+    to {
+      opacity: 0;
+      transform: translate(14px, -40px) scale(2);
+    }
+  }
+  @keyframes ls-sail {
+    50% {
+      transform: translateX(420px);
+    }
+  }
+  @keyframes ls-sweep {
+    50% {
+      transform: rotate(180deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes ls-run {
+    from {
+      transform: translate(var(--x0), var(--y0));
+    }
+    to {
+      transform: translate(calc(var(--x0) + 900px), var(--y0));
+    }
+  }
+  @keyframes ls-bob {
+    to {
+      translate: 0 -4px;
+    }
+  }
+  @keyframes ls-hop {
+    50% {
+      transform: translateY(-14px) rotate(8deg);
+    }
+  }
+  .landscape :global(.ls-sun-g),
+  .landscape :global(.ls-tree-g),
+  .landscape :global(.ls-beam-g) {
+    transform-box: view-box;
+  }
   @media (prefers-reduced-motion: reduce) {
-    .ls-beam {
-      animation: none;
+    .landscape :global(*) {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
     }
   }
 </style>
 
 <script>
-  // a different landscape on each visit
   document.querySelectorAll<HTMLElement>('[data-landscape]').forEach((box) => {
-    const scenes = Array.from(box.querySelectorAll<SVGElement>('[data-scene]'));
-    const pick = Math.floor(Math.random() * scenes.length);
-    scenes.forEach((s, i) => s.classList.toggle('is-off', i !== pick));
+    const scenes = Array.from(box.querySelectorAll<SVGSVGElement>('[data-scene]'));
+    let cur = Math.floor(Math.random() * scenes.length);
+    const show = (i: number) => {
+      cur = (i + scenes.length) % scenes.length;
+      scenes.forEach((s, k) => s.classList.toggle('is-off', k !== cur));
+    };
+    show(cur);
+    // the scene changes every half minute (only while it can be seen)
+    let visible = false;
+    new IntersectionObserver((e) => (visible = e.some((x) => x.isIntersecting))).observe(box);
+    window.setInterval(() => {
+      if (visible && !document.hidden) show(cur + 1);
+    }, 30000);
+
+    // parallax: the layers move apart a little
+    const shift = (o: number) => {
+      scenes[cur].querySelectorAll<SVGGElement>('.ls-g').forEach((g) => {
+        g.style.transform = `translateX(${(-o * Number(g.dataset.depth) * 40).toFixed(1)}px)`;
+      });
+    };
+    if (box.classList.contains('landscape--big')) {
+      // the horizontal page: with the sideways scroll
+      const onScroll = () => {
+        const r = box.getBoundingClientRect();
+        shift(Math.max(-1, Math.min(1, (r.left + r.width / 2 - window.innerWidth / 2) / window.innerWidth)));
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+    } else {
+      box.addEventListener('pointermove', (e) => {
+        const r = box.getBoundingClientRect();
+        shift(((e.clientX - r.left) / r.width - 0.5) * 2);
+      });
+      box.addEventListener('pointerleave', () => shift(0));
+    }
+
+    // clicks make things move
+    const restart = (el: Element, ms = 7000) => {
+      el.classList.remove('is-act');
+      void (el as HTMLElement).getBoundingClientRect();
+      el.classList.add('is-act');
+      window.setTimeout(() => el.classList.remove('is-act'), ms);
+    };
+    box.addEventListener('click', (e) => {
+      const hit = (e.target as Element).closest('[data-act]');
+      if (!hit) {
+        // a gust of wind
+        box.classList.remove('is-gust');
+        void box.offsetWidth;
+        box.classList.add('is-gust');
+        window.setTimeout(() => box.classList.remove('is-gust'), 1500);
+        return;
+      }
+      if (hit.getAttribute('data-act') === 'sun') {
+        box.classList.toggle('is-night');
+        restart(hit, 1100);
+        return;
+      }
+      restart(hit);
+    });
   });
 </script>

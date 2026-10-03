@@ -1,0 +1,482 @@
+---
+/**
+ * Easter egg behind the footer legend "circles = places · triangles = direction": a dark page opens out
+ * of the button like an iris. On a night-blue world the places András has been glow as circles, joined
+ * into a constellation; triangles point from home towards the places he is heading next (dashed routes
+ * running to them). Hover / tap a circle or triangle for its line from src/data/countries.json.
+ */
+import countriesData from '../data/countries.json';
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+type C = { id: string; isoNumeric: string; status: string; i18n: Record<string, { name: string; text?: string }> };
+const places = (countriesData.countries as C[]).map((c) => ({
+  iso: c.isoNumeric,
+  status: c.status,
+  name: (c.i18n[lang] ?? c.i18n.en).name,
+  text: (c.i18n[lang] ?? c.i18n.en).text ?? '',
+}));
+const been = places.filter((p) => p.status !== 'planned').length;
+const next = places.filter((p) => p.status === 'planned').length;
+const texts = {
+  title: t(lang, 'egg.title'),
+  sub: t(lang, 'egg.sub').replace('{n}', String(been)).replace('{m}', String(next)),
+  home: t(lang, 'egg.home'),
+  now: t(lang, 'egg.now'),
+  next: t(lang, 'egg.next'),
+  close: t(lang, 'egg.close'),
+  hint: t(lang, 'egg.hint'),
+};
+---
+
+<template data-starchart={JSON.stringify({ places, texts })}></template>
+
+<script>
+  type Place = { iso: string; status: string; name: string; text: string };
+  const tpl = document.querySelector<HTMLTemplateElement>('[data-starchart]');
+  const data = tpl ? (JSON.parse(tpl.dataset.starchart ?? '{}') as { places: Place[]; texts: Record<string, string> }) : null;
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = <K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>, parent?: Element) => {
+    const n = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
+    parent?.append(n);
+    return n;
+  };
+
+  let openNow = false;
+  async function openChart(from: HTMLElement) {
+    if (!data || openNow) return;
+    openNow = true;
+    const T = data.texts;
+    const r0 = from.getBoundingClientRect();
+    const z = Number(getComputedStyle(document.documentElement).zoom) || 1;
+    const ox = ((r0.left + r0.width / 2) / z / (window.innerWidth / z)) * 100;
+    const oy = ((r0.top + r0.height / 2) / z / (window.innerHeight / z)) * 100;
+
+    const box = document.createElement('div');
+    box.className = 'chart';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-label', T.title);
+    box.style.setProperty('--ox', `${ox}%`);
+    box.style.setProperty('--oy', `${oy}%`);
+    box.innerHTML = `<div class="chart__stars"></div><div class="chart__stars chart__stars--2"></div><span class="chart__shoot"></span>
+      <header class="chart__head"><h2>${T.title.replace('·', '<i>·</i>')}</h2><p>${T.sub}</p><small>${T.hint}</small></header>
+      <button type="button" class="chart__x" aria-label="${T.close}">✕</button>
+      <div class="chart__card" hidden><strong></strong><span></span></div>`;
+    const svg = el('svg', { class: 'chart__map', viewBox: '0 0 960 500', preserveAspectRatio: 'xMidYMid meet' });
+    box.append(svg);
+    document.body.append(box);
+    document.documentElement.classList.add('chart-open');
+    requestAnimationFrame(() => box.classList.add('is-open'));
+
+    const close = () => {
+      box.classList.remove('is-open');
+      box.classList.add('is-closing');
+      window.removeEventListener('keydown', onKey);
+      window.setTimeout(() => {
+        box.remove();
+        document.documentElement.classList.remove('chart-open');
+        openNow = false;
+        from.focus();
+      }, 700);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
+    window.addEventListener('keydown', onKey);
+    box.querySelector('.chart__x')!.addEventListener('click', close);
+    (box.querySelector('.chart__x') as HTMLElement).focus();
+
+    // ---- the world, the circles and the triangles ----
+    const [{ geoNaturalEarth1, geoPath, geoCentroid, geoGraticule10 }, topo, world] = await Promise.all([
+      import('d3-geo'),
+      import('topojson-client'),
+      fetch('/data/countries-110m.json').then((r) => r.json()),
+    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fc = topo.feature(world, world.objects.countries) as any;
+    const proj = geoNaturalEarth1().fitExtent(
+      [
+        [10, 70],
+        [950, 490],
+      ],
+      { type: 'Sphere' },
+    );
+    const path = geoPath(proj);
+    el('path', { d: path({ type: 'Sphere' }) ?? '', class: 'chart__sphere' }, svg);
+    el('path', { d: path(geoGraticule10()) ?? '', class: 'chart__grid' }, svg);
+    const land = el('g', { class: 'chart__land' }, svg);
+    const byIso = new Map<string, unknown>();
+    for (const f of fc.features) {
+      byIso.set(String(f.id).padStart(3, '0'), f);
+      const mine = data.places.find((p) => p.iso === String(f.id).padStart(3, '0'));
+      el('path', { d: path(f) ?? '', class: mine ? `is-${mine.status}` : '' }, land);
+    }
+    const at = (p: Place) => {
+      const f = byIso.get(p.iso);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const c = f ? proj(geoCentroid(f as any)) : null;
+      return c ? { x: c[0], y: c[1] } : null;
+    };
+    const pts = data.places.map((p) => ({ p, c: at(p) })).filter((x): x is { p: Place; c: { x: number; y: number } } => !!x.c);
+    const home = pts.find((x) => x.p.status === 'home') ?? pts[0];
+    const been = pts.filter((x) => x.p.status !== 'planned');
+    const ahead = pts.filter((x) => x.p.status === 'planned');
+
+    // the constellation: from home through every place in turn
+    const lines = el('g', { class: 'chart__lines' }, svg);
+    been.slice(1).forEach((b, i) => {
+      const a = been[i];
+      const l = el('line', { x1: a.c.x, y1: a.c.y, x2: b.c.x, y2: b.c.y, pathLength: 1 }, lines);
+      l.style.animationDelay = `${0.9 + i * 0.18}s`;
+    });
+    // directions: dashed arcs running from home to where he is heading
+    const dirs = el('g', { class: 'chart__dirs' }, svg);
+    ahead.forEach((d, i) => {
+      const mx = (home.c.x + d.c.x) / 2;
+      const my = Math.min(home.c.y, d.c.y) - 60 - i * 14;
+      el('path', { d: `M${home.c.x} ${home.c.y} Q${mx} ${my} ${d.c.x} ${d.c.y}`, class: 'chart__route' }, dirs);
+    });
+    const dots = el('g', { class: 'chart__dots' }, svg);
+    const card = box.querySelector<HTMLElement>('.chart__card')!;
+    const show = (p: Place, x: number, y: number) => {
+      card.hidden = false;
+      card.querySelector('strong')!.textContent = p.name;
+      const extra = p.status === 'home' ? T.home : p.status === 'now' ? T.now : p.status === 'planned' ? T.next : '';
+      card.querySelector('span')!.textContent = [extra, p.text].filter(Boolean).join(' – ');
+      const r = svg.getBoundingClientRect();
+      const s = r.width / 960;
+      card.style.left = `${Math.min(r.left + x * s, window.innerWidth - 300) / z}px`;
+      card.style.top = `${(r.top + y * s + 18) / z}px`;
+    };
+    const hook = (g: SVGGElement, p: Place, c: { x: number; y: number }) => {
+      g.setAttribute('tabindex', '0');
+      g.addEventListener('pointerenter', () => show(p, c.x, c.y));
+      g.addEventListener('focus', () => show(p, c.x, c.y));
+      g.addEventListener('click', () => show(p, c.x, c.y));
+      g.addEventListener('pointerleave', () => (card.hidden = true));
+    };
+    been.forEach(({ p, c }, i) => {
+      const g = el('g', { class: `chart__dot is-${p.status}` }, el('g', { transform: `translate(${c.x} ${c.y})` }, dots));
+      g.style.animationDelay = `${0.6 + i * 0.12}s`;
+      el('circle', { r: p.status === 'home' ? 13 : 9, class: 'chart__ring' }, g);
+      el('circle', { r: p.status === 'home' ? 7 : 5 }, g);
+      if (p.status === 'home' || p.status === 'now') el('text', { y: -18, 'text-anchor': 'middle' }, g).textContent = p.status === 'home' ? `${p.name} ⌂` : `● ${p.name}`;
+      hook(g, p, c);
+    });
+    ahead.forEach(({ p, c }, i) => {
+      // triangles = direction: pointing the way from home
+      const ang = (Math.atan2(c.y - home.c.y, c.x - home.c.x) * 180) / Math.PI;
+      const g = el('g', { class: 'chart__tri' }, el('g', { transform: `translate(${c.x} ${c.y})` }, dots));
+      g.style.animationDelay = `${1.6 + i * 0.25}s`;
+      el('path', { d: 'M-11 -10 L13 0 L-11 10 Z', transform: `rotate(${ang.toFixed(1)})` }, g);
+      el('text', { y: 26, 'text-anchor': 'middle' }, g).textContent = `→ ${p.name}`;
+      hook(g, p, c);
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    const b = (e.target as Element).closest<HTMLElement>('[data-legend-egg]');
+    if (b) void openChart(b);
+  });
+</script>
+
+<style is:global>
+  .chart {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    overflow: hidden;
+    zoom: var(--inv-zoom, 1);
+    background: radial-gradient(ellipse at 50% 60%, #12164a 0%, #070920 55%, #02030c 100%);
+    color: #e8ecff;
+    font-family: var(--font-body);
+    clip-path: circle(0 at var(--ox) var(--oy));
+    transition: clip-path 900ms cubic-bezier(0.7, 0, 0.2, 1);
+  }
+  .chart.is-open {
+    clip-path: circle(150% at var(--ox) var(--oy));
+  }
+  .chart.is-closing {
+    transition-duration: 650ms;
+  }
+  :root.chart-open {
+    overflow: hidden;
+  }
+  .chart__stars {
+    position: absolute;
+    inset: -50%;
+    background:
+      radial-gradient(circle, #fff 1px, transparent 1.6px) 0 0 / 83px 83px,
+      radial-gradient(circle, rgb(255 255 255 / 0.7) 0.8px, transparent 1.4px) 20px 40px / 127px 127px,
+      radial-gradient(circle, rgb(198 255 0 / 0.6) 1px, transparent 1.6px) 50px 10px / 211px 211px;
+    animation: chart-drift 120s linear infinite;
+    opacity: 0.8;
+  }
+  .chart__stars--2 {
+    background-size: 61px 61px;
+    opacity: 0.35;
+    animation-duration: 200s;
+    animation-direction: reverse;
+  }
+  .chart__shoot {
+    position: absolute;
+    top: 12%;
+    left: -10%;
+    width: 160px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #fff);
+    border-radius: 2px;
+    rotate: 18deg;
+    animation: chart-shoot 7s ease-in 2.2s infinite;
+    opacity: 0;
+  }
+  .chart__head {
+    position: absolute;
+    top: 3vh;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    padding: 0 60px;
+    text-align: center;
+    pointer-events: none;
+    animation: chart-rise 900ms 500ms both cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .chart__head h2 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: clamp(22px, 3.2vw, 46px);
+    letter-spacing: 0.02em;
+    color: #fff;
+    text-shadow: 0 0 22px rgb(123 47 247 / 0.9);
+  }
+  .chart__head h2 i {
+    font-style: normal;
+    color: #ffd60a;
+    padding: 0 0.3em;
+  }
+  .chart__head p {
+    margin: 0;
+    font-weight: 700;
+    color: #c6ff00;
+  }
+  .chart__head small {
+    opacity: 0.6;
+  }
+  .chart__x {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 3;
+    width: 46px;
+    height: 46px;
+    border: 2px solid #c6ff00;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 0.4);
+    color: #c6ff00;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .chart__map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    animation: chart-zoom 1.4s 0.2s both cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .chart__sphere {
+    fill: rgb(30 40 120 / 0.25);
+    stroke: rgb(140 160 255 / 0.35);
+    stroke-width: 1;
+  }
+  .chart__grid {
+    fill: none;
+    stroke: rgb(140 160 255 / 0.1);
+    stroke-width: 0.6;
+  }
+  .chart__land path {
+    fill: rgb(120 140 255 / 0.1);
+    stroke: rgb(160 180 255 / 0.28);
+    stroke-width: 0.5;
+  }
+  .chart__land path[class^='is-'] {
+    fill: rgb(123 47 247 / 0.45);
+    stroke: rgb(198 160 255 / 0.8);
+  }
+  .chart__land path.is-planned {
+    fill: rgb(255 214 10 / 0.18);
+    stroke: rgb(255 214 10 / 0.6);
+    stroke-dasharray: 2 2;
+  }
+  .chart__lines line {
+    stroke: rgb(255 255 255 / 0.55);
+    stroke-width: 1.2;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: chart-draw 0.6s forwards ease-out;
+  }
+  .chart__route {
+    fill: none;
+    stroke: #ffd60a;
+    stroke-width: 1.6;
+    stroke-dasharray: 6 7;
+    opacity: 0;
+    animation:
+      chart-fade 0.6s 1.5s forwards,
+      chart-march 1.2s linear infinite;
+  }
+  .chart__dot,
+  .chart__tri {
+    cursor: pointer;
+    outline: none;
+    opacity: 0;
+    animation: chart-pop 0.5s forwards cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .chart__dot circle {
+    fill: #fff;
+    filter: drop-shadow(0 0 6px #b48cff);
+  }
+  .chart__dot .chart__ring {
+    fill: none;
+    stroke: rgb(200 170 255 / 0.8);
+    stroke-width: 1.5;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: chart-ring 2.6s ease-out infinite;
+  }
+  .chart__dot.is-home circle:not(.chart__ring) {
+    fill: #c6ff00;
+    filter: drop-shadow(0 0 8px #c6ff00);
+  }
+  .chart__dot.is-now circle:not(.chart__ring) {
+    fill: #ff5fa2;
+    filter: drop-shadow(0 0 8px #ff5fa2);
+  }
+  .chart__dot text,
+  .chart__tri text {
+    fill: #fff;
+    font: 700 12px var(--font-body);
+    paint-order: stroke;
+    stroke: #070920;
+    stroke-width: 4px;
+  }
+  .chart__tri path {
+    fill: #ffd60a;
+    stroke: #070920;
+    stroke-width: 1.5;
+    filter: drop-shadow(0 0 8px #ffd60a);
+  }
+  .chart__tri text {
+    fill: #ffd60a;
+  }
+  .chart__dot:hover circle:not(.chart__ring),
+  .chart__dot:focus circle:not(.chart__ring) {
+    r: 8;
+  }
+  .chart__tri:hover path,
+  .chart__tri:focus path {
+    filter: drop-shadow(0 0 14px #ffd60a);
+  }
+  .chart__card {
+    position: fixed;
+    z-index: 4;
+    display: grid;
+    gap: 3px;
+    max-width: 280px;
+    padding: 10px 14px;
+    border: 1px solid rgb(198 255 0 / 0.6);
+    border-radius: 12px;
+    background: rgb(7 9 32 / 0.92);
+    box-shadow: 0 0 24px rgb(123 47 247 / 0.5);
+    font-size: 14px;
+    pointer-events: none;
+    translate: -50% 0;
+  }
+  .chart__card[hidden] {
+    display: none;
+  }
+  .chart__card strong {
+    color: #c6ff00;
+    font-family: var(--font-heading);
+  }
+  @keyframes chart-drift {
+    to {
+      transform: translate(83px, 166px);
+    }
+  }
+  @keyframes chart-shoot {
+    0% {
+      opacity: 0;
+      transform: translateX(0);
+    }
+    5% {
+      opacity: 1;
+    }
+    18%,
+    100% {
+      opacity: 0;
+      transform: translateX(130vw);
+    }
+  }
+  @keyframes chart-rise {
+    from {
+      opacity: 0;
+      transform: translateY(-24px);
+    }
+  }
+  @keyframes chart-zoom {
+    from {
+      opacity: 0;
+      transform: scale(0.82) rotate(-2deg);
+    }
+  }
+  @keyframes chart-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes chart-fade {
+    to {
+      opacity: 0.9;
+    }
+  }
+  @keyframes chart-march {
+    to {
+      stroke-dashoffset: -26;
+    }
+  }
+  @keyframes chart-pop {
+    from {
+      opacity: 0;
+      scale: 0;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+  @keyframes chart-ring {
+    from {
+      transform: scale(0.6);
+      opacity: 1;
+    }
+    to {
+      transform: scale(2.2);
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chart,
+    .chart * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>

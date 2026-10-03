@@ -11,6 +11,7 @@
 import Icon from './Icon.astro';
 import PhotoUpload from './PhotoUpload.astro';
 import PostEditor from './PostEditor.astro';
+import MusicUpload from './MusicUpload.astro';
 import EditMode from './EditMode.astro';
 import site from '../data/site.json';
 import layout from '../data/layout.json';
@@ -42,6 +43,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     <button type="button" class="dev-panel__btn" data-dev-insert="h3" title={t(lang, 'ins.hint')}><Icon name="heading" size={16} />{t(lang, 'ins.subtitle')}</button>
     <button type="button" class="dev-panel__btn" data-dev-insert="p" title={t(lang, 'ins.hint')}><Icon name="pilcrow" size={16} />{t(lang, 'ins.paragraph')}</button>
     <button type="button" class="dev-panel__btn" data-dev-upload><Icon name="image-plus" size={16} />{t(lang, 'dev.newPhoto')}</button>
+    <button type="button" class="dev-panel__btn" data-dev-music><Icon name="music" size={16} />{t(lang, 'music.upload')}</button>
     <button type="button" class="dev-panel__btn dev-panel__edit" aria-pressed="true" data-dev-edit><Icon name="move" size={16} /><span data-dev-edit-label>{t(lang, 'ed.on')}</span></button>
     <a class="dev-panel__btn" href={`${REPO}/tree/main/src/content/posts`} target="_blank" rel="noopener"><Icon name="layout-dashboard" size={16} />{t(lang, 'dev.admin')}</a>
   </div>
@@ -88,6 +90,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 </aside>
 <PhotoUpload lang={lang} />
 <PostEditor lang={lang} />
+<MusicUpload lang={lang} />
 <EditMode lang={lang} />
 <div class="dev-add-menu" hidden data-dev-add-menu>
   <button type="button" data-dev-add-pick="card" hidden><Icon name="copy-plus" size={18} /><span data-dev-card-label>{t(lang, 'ins.card')}</span></button>
@@ -1143,6 +1146,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
         e.stopPropagation();
         const kind = host.dataset.devAdd;
         if (kind === 'photo') return openPhoto();
+        if (kind === 'music') return window.dispatchEvent(new Event('andras:upload-music'));
         if (kind === 'post') return openPost(host.dataset.devCategory);
         menuCategory = host.dataset.devCategory;
         menuHost = host;
@@ -1381,6 +1385,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       const slug = f.find((p) => p.startsWith('src/content/posts/'))!.replace(/^.*\/|\.md$/g, '');
       return [(e.message.startsWith('Post deleted') ? LL.postDel : LL.post).replace('{name}', slug)];
     }
+    if (f.some((p) => p.startsWith('src/content/music/'))) return [`🎵 ${e.message}`];
     if (f.some((p) => p.startsWith('src/content/photos/'))) return [LL.photos.replace('{n}', String(f.filter((p) => p.endsWith('.yml')).length))];
     if (f.includes('src/data/site.json')) return [LL.setting.replace('{name}', e.message.replace(/^Setting: /, ''))];
     return [LL.edits];
@@ -1502,6 +1507,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     }
   };
   document.querySelector('[data-dev-upload]')?.addEventListener('click', openPhoto);
+  document.querySelector('[data-dev-music]')?.addEventListener('click', () => window.dispatchEvent(new Event('andras:upload-music')));
   document.querySelector('[data-dev-new-post]')?.addEventListener('click', () => openPost());
   try {
     if (localStorage.getItem(KEY) === '1') setDev(true);

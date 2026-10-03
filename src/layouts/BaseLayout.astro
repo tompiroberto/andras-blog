@@ -15,6 +15,8 @@ import dmSans700Preload from '@fontsource/dm-sans/files/dm-sans-latin-700-normal
 
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Landscape from '../components/Landscape.astro';
+import ViewSwitch from '../components/ViewSwitch.astro';
 import ChileScroll from '../components/ChileScroll.astro';
 import CoordinateGrid from '../components/CoordinateGrid.astro';
 import WorldLayer from '../components/WorldLayer.astro';
@@ -49,6 +51,10 @@ interface Props {
   ogType?: 'website' | 'article';
   /** Override the path used for alternates (defaults to the current URL) */
   path?: string;
+  /** Share image (absolute or site path), e.g. a post's cover */
+  image?: string;
+  /** Extra schema.org data for this page (a post: BlogPosting) */
+  jsonLd?: Record<string, unknown>;
 }
 
 const { lang, title, description = t(lang, 'meta.description'), ogType = 'website' } = Astro.props;
@@ -57,7 +63,41 @@ const path = Astro.props.path ?? stripLang(Astro.url.pathname);
 const fullTitle = title ? `${title} · ${site.owner}` : `${t(lang, 'hero.title')} · ${site.owner}`;
 const siteUrl = Astro.site ?? new URL('https://example.com');
 const canonical = new URL(localePath(lang, path), siteUrl).href;
-const ogImage = new URL('/images/andras.jpg', siteUrl).href;
+const ogImage = new URL(Astro.props.image ?? '/images/andras.jpg', siteUrl).href;
+// schema.org: who the site is about (answer engines and search use it), the site itself, and this page
+const personId = new URL('/#person', siteUrl).href;
+const structured = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': personId,
+    name: 'Vásárhelyi András Péter',
+    givenName: 'András',
+    familyName: 'Vásárhelyi',
+    alternateName: ['András', 'Péter', ...site.nicknames],
+    url: new URL(localePath(lang), siteUrl).href,
+    image: new URL('/images/cv-photo.jpg', siteUrl).href,
+    description: t(lang, 'meta.person'),
+    homeLocation: { '@type': 'City', name: 'Budapest', address: { '@type': 'PostalAddress', addressCountry: 'HU' } },
+    nationality: { '@type': 'Country', name: 'Hungary' },
+    alumniOf: { '@type': 'HighSchool', name: 'Budapesti Fazekas Mihály Gyakorló Általános Iskola és Gimnázium' },
+    knowsAbout: ['Skyrunning', 'Running', 'Hitchhiking', 'Low-budget travel', 'Geography', 'Maps', 'Transport networks', 'Erasmus+'],
+    knowsLanguage: ['hu', 'en', 'de', 'es', 'ka'],
+    memberOf: { '@type': 'SportsTeam', name: 'Hungarian national skyrunning team', sport: 'Skyrunning' },
+    sameAs: [site.instagram.url, site.facebook, site.strava],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': new URL('/#website', siteUrl).href,
+    name: `${site.owner} – blog & CV`,
+    url: siteUrl.href,
+    inLanguage: LOCALES.map((l) => HTML_LANG[l]),
+    author: { '@id': personId },
+    publisher: { '@id': personId },
+  },
+  ...(Astro.props.jsonLd ? [{ '@context': 'https://schema.org', author: { '@id': personId }, ...Astro.props.jsonLd }] : []),
+];
 const ogLocale = HTML_LANG[lang].replace('-', '_');
 const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
 ---
@@ -93,6 +133,8 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
       ))
     }
     <meta name="twitter:card" content="summary" />
+    <link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt" />
+    <script type="application/ld+json" set:html={JSON.stringify(structured)} />
 
     {
       usesLatinHeadings &&
@@ -152,6 +194,17 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
       <slot />
     </main>
     <Footer lang={lang} />
+    <ViewSwitch lang={lang} />
+    <!-- the end of the horizontal page: a wide drawn panorama -->
+    <section class="landscape-end" aria-label={t(lang, 'ls.end')}>
+      <div class="landscape-end__sky" aria-hidden="true"></div>
+      <div class="landscape-end__text">
+        <p class="landscape-end__title">{t(lang, 'ls.end')}</p>
+        <p class="landscape-end__hint">{t(lang, 'ls.hint')}</p>
+        <button type="button" class="btn btn--primary" data-ls-back>↩ {t(lang, 'ls.back')}</button>
+      </div>
+      <Landscape big lang={lang} />
+    </section>
     <SiteEdits />
     <Roadside />
     <ChileScroll lang={lang} />
@@ -297,6 +350,9 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
       syncSmil();
       reduced.addEventListener('change', syncSmil);
     </script>
+    <script>
+    document.querySelector('[data-ls-back]')?.addEventListener('click', () => window.scrollTo({ left: 0, top: 0, behavior: 'smooth' }));
+  </script>
   </body>
 </html>
 

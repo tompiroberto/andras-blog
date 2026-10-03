@@ -2,8 +2,9 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
-// TODO: replace with the real Netlify domain once the site is deployed.
-const SITE = 'https://andras-blog.netlify.app';
+// The live Netlify address (canonical links, hreflang, the sitemap and the structured data use it).
+// If the site gets its own domain, change it here and in public/robots.txt.
+const SITE = 'https://lambent-platypus-c39161.netlify.app';
 
 export default defineConfig({
   site: SITE,
