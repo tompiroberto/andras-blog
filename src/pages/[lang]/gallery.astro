@@ -9,6 +9,9 @@ import SectionHeading from '../../components/SectionHeading.astro';
 import Icon from '../../components/Icon.astro';
 import { getPhotos } from '../../lib/photos';
 import gallery from '../../data/gallery.json';
+
+/** the main site: a copy on another host shows the photos uploaded there too (/gallery.json) */
+const MAIN_SITE = import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app';
 import { HTML_LANG, langStaticPaths, localePath, t, type Lang } from '../../i18n';
 
 export const getStaticPaths = langStaticPaths;
@@ -35,7 +38,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
       <SectionHeading icon="camera" as="h1">{t(lang, 'gallery.title')}</SectionHeading>
       <p class="gallery__lead">{t(lang, 'gallery.lead')}</p>
 
-      {photos.length === 0 && <p class="gallery__empty">{t(lang, 'gallery.empty')}</p>}
+      {photos.length === 0 && <p class="gallery__empty" data-gallery-empty>{t(lang, 'gallery.empty')}</p>}
 
       {
         pinned.length > 0 && (
@@ -64,7 +67,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
         )
       }
 
-      <ul class="gallery__grid">
+      <ul class="gallery__grid" data-gallery-grid data-live={import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefined} data-lang={lang}>
         {
           photos.map((p, i) => (
             <li class="gallery__item" data-key={p.key} data-files={p.files ? JSON.stringify(p.files) : undefined}>
@@ -82,7 +85,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
               </button>
               <!-- developer mode: a place for the picture, or remove it from the gallery -->
               <span class="gallery__dev">
-                <button type="button" data-gal-place title={t(lang, 'gal.place')} aria-label={t(lang, 'gal.place')}>📍</button>
+                <button type="button" data-gal-place title={t(lang, 'gal.edit')} aria-label={t(lang, 'gal.edit')}>✎</button>
                 <button type="button" data-gal-del title={t(lang, 'gal.delete')} aria-label={t(lang, 'gal.delete')}>🗑</button>
               </span>
               <p class="gallery__caption">{p.caption}</p>
@@ -119,7 +122,8 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
     <button type="button" class="lightbox__btn lightbox__next" aria-label={t(lang, 'gallery.next')} data-lb-step="1"><Icon name="chevron-right" size={26} /></button>
   </dialog>
   <form class="gal-place" hidden data-gal-form>
-    <strong>📍 {t(lang, 'gal.place')}</strong>
+    <strong>✎ {t(lang, 'gal.edit')}</strong>
+    <textarea rows="3" maxlength="300" placeholder={t(lang, 'upload.caption')} data-gal-in-caption></textarea>
     <input type="text" maxlength="80" placeholder={t(lang, 'upload.place')} data-gal-in-place />
     <input type="text" maxlength="60" placeholder={t(lang, 'upload.coords')} data-gal-in-coords />
     <small data-gal-note></small>
@@ -203,6 +207,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
   .gal-place[hidden] {
     display: none;
   }
+  .gal-place textarea,
   .gal-place input {
     padding: 8px 10px;
     border: 1px solid #30363d;
@@ -585,8 +590,9 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
   }
 
   const box = document.querySelector<HTMLDialogElement>('[data-lightbox]');
-  const items = Array.from(document.querySelectorAll<HTMLButtonElement>('.gallery__open'));
-  if (box && items.length) {
+  const list = () => Array.from(document.querySelectorAll<HTMLButtonElement>('.gallery__item:not([hidden]) .gallery__open'));
+  if (box) {
+    let items = list();
     const img = box.querySelector<HTMLImageElement>('[data-lb-img]')!;
     const vid = box.querySelector<HTMLVideoElement>('[data-lb-video]')!;
     box.addEventListener('close', () => vid.pause());
@@ -596,6 +602,8 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
     let at = 0;
 
     const show = (i: number) => {
+      items = list();
+      if (!items.length) return;
       at = (i + items.length) % items.length;
       const d = items[at].dataset;
       vid.pause();
@@ -613,7 +621,10 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
       if (!box.open) box.showModal();
     };
 
-    items.forEach((b, i) => b.addEventListener('click', () => show(i)));
+    document.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest<HTMLButtonElement>('.gallery__open');
+      if (b) show(list().indexOf(b));
+    });
     box.querySelectorAll<HTMLButtonElement>('[data-lb-step]').forEach((b) => b.addEventListener('click', () => show(at + Number(b.dataset.lbStep))));
     box.querySelector('[data-lb-close]')!.addEventListener('click', () => box.close());
     box.addEventListener('click', (e) => {
@@ -638,7 +649,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
   const form = document.querySelector<HTMLFormElement>('[data-gal-form]');
   const raw = document.querySelector('[data-gal-data]');
   if (form && raw) {
-    const data = JSON.parse(raw.textContent || '{}') as { hidden: string[]; meta: Record<string, { place?: string; lat?: number; lng?: number }> };
+    const data = JSON.parse(raw.textContent || '{}') as { hidden: string[]; meta: Record<string, { caption?: string; place?: string; lat?: number; lng?: number }> };
     const tx = (n: string) => document.querySelector<HTMLTemplateElement>(`[data-gal-t-${n}]`)?.content.textContent ?? '';
     const key = () => {
       let k = getToken();
@@ -651,6 +662,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
       return commitFiles(k, [{ path: 'src/data/gallery.json', text: `${JSON.stringify(data, null, 2)}\n` }, ...extra], 'Gallery: changed on the site', lines);
     };
     const inPlace = form.querySelector<HTMLInputElement>('[data-gal-in-place]')!;
+    const inCaption = form.querySelector<HTMLTextAreaElement>('[data-gal-in-caption]')!;
     const inCoords = form.querySelector<HTMLInputElement>('[data-gal-in-coords]')!;
     const note = form.querySelector<HTMLElement>('[data-gal-note]')!;
     let item: HTMLElement | null = null;
@@ -659,6 +671,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
       li.querySelector('[data-gal-place]')!.addEventListener('click', (e) => {
         item = li;
         const m = data.meta[li.dataset.key!] ?? {};
+        inCaption.value = li.querySelector('.gallery__open')?.getAttribute('data-caption') ?? '';
         inPlace.value = m.place ?? li.querySelector('.gallery__open')?.getAttribute('data-place') ?? '';
         inCoords.value = m.lat !== undefined && m.lng !== undefined ? `${m.lat}, ${m.lng}` : '';
         note.textContent = '';
@@ -666,7 +679,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
         form.hidden = false;
         form.style.left = `${Math.max(12, Math.min(window.innerWidth - form.offsetWidth - 12, r.right - form.offsetWidth))}px`;
         form.style.top = `${Math.min(window.innerHeight - form.offsetHeight - 12, r.bottom + 8)}px`;
-        inPlace.focus();
+        inCaption.focus();
       });
       li.querySelector('[data-gal-del]')!.addEventListener('click', async () => {
         const caption = li.querySelector('.gallery__open')?.getAttribute('data-caption') ?? '';
@@ -694,27 +707,113 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
       if (!item) return;
       const k = item.dataset.key!;
       const place = inPlace.value.trim();
+      const caption = inCaption.value.trim();
+      const before = item.querySelector('.gallery__open')?.getAttribute('data-place') ?? '';
       const m = inCoords.value.trim().match(/^(-?\d{1,2}(?:[.,]\d+)?)\s*[,; ]\s*(-?\d{1,3}(?:[.,]\d+)?)$/);
       let lat: number | undefined;
       let lng: number | undefined;
       if (m) {
         lat = Number(m[1].replace(',', '.'));
         lng = Number(m[2].replace(',', '.'));
-      } else if (place) {
+      } else if (place && place !== before) {
         const hit = (await geocode(place, document.documentElement.lang || 'en').catch(() => []))[0];
         if (!hit) return void (note.textContent = tx('nogeo'));
         lat = Math.round(hit.latitude * 1e5) / 1e5;
         lng = Math.round(hit.longitude * 1e5) / 1e5;
       }
-      data.meta[k] = { ...(place ? { place } : {}), ...(lat !== undefined ? { lat, lng } : {}) };
+      const old = data.meta[k] ?? {};
+      data.meta[k] = {
+        ...(caption ? { caption } : {}),
+        ...(place ? { place } : {}),
+        ...(lat !== undefined ? { lat, lng } : old.lat !== undefined && place === before ? { lat: old.lat, lng: old.lng } : {}),
+      };
       try {
-        await save([`📍 ${item.querySelector('.gallery__open')?.getAttribute('data-caption') ?? ''}: ${place || `${lat}, ${lng}`}`]);
+        await save([`✎ 📷 ${caption}${place ? ` · 📍 ${place}` : ''}`]);
+        // show it at once
+        const open = item.querySelector<HTMLElement>('.gallery__open');
+        if (open) {
+          open.dataset.caption = caption;
+          open.dataset.place = place;
+        }
+        const cap = item.querySelector('.gallery__caption');
+        if (cap && caption) cap.textContent = caption;
         note.textContent = tx('saved');
         window.setTimeout(() => (form.hidden = true), 900);
       } catch (err) {
         if (err instanceof Error && err.message !== 'no key') note.textContent = err.message;
       }
     });
+  }
+</script>
+
+<script>
+  /*
+   * A copy of the site on another host: the gallery also shows what was uploaded on the main site since
+   * the copy was made (and leaves out what was removed there) – read from the main site's /gallery.json.
+   */
+  const grid = document.querySelector<HTMLElement>('[data-gallery-grid][data-live]');
+  if (grid) {
+    const live = grid.dataset.live!;
+    const fmt = new Intl.DateTimeFormat(document.documentElement.lang || 'hu', { year: 'numeric', month: 'long', day: 'numeric' });
+    type Item = { key: string; caption: string; place: string; date: string; post: string; video: string; large: string; thumb: string };
+    fetch(`${live}/gallery.json`, { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then(({ items }: { items: Item[] }) => {
+        const keys = new Set(items.map((x) => x.key));
+        // removed on the main site
+        grid.querySelectorAll<HTMLElement>('.gallery__item').forEach((li) => {
+          if (li.dataset.key && !keys.has(li.dataset.key)) li.hidden = true;
+        });
+        const have = new Set(Array.from(grid.querySelectorAll<HTMLElement>('.gallery__item')).map((li) => li.dataset.key));
+        const lang = grid.dataset.lang ?? 'hu';
+        const fresh = items.filter((x) => !have.has(x.key));
+        for (const x of fresh.reverse()) {
+          const li = document.createElement('li');
+          li.className = 'gallery__item';
+          li.dataset.key = x.key;
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'gallery__open';
+          const when = x.date ? fmt.format(new Date(x.date)) : '';
+          Object.assign(b.dataset, {
+            large: x.large ? live + x.large : '',
+            video: x.video ? live + x.video : '',
+            caption: x.caption,
+            place: x.place,
+            when,
+            post: x.post ? `${live}/${lang}/posts/${x.post}/` : '',
+          });
+          if (x.video) {
+            const v = document.createElement('video');
+            v.src = `${live}${x.video}#t=0.5`;
+            v.preload = 'metadata';
+            v.muted = true;
+            v.playsInline = true;
+            v.style.cssText = 'display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#000';
+            b.append(v);
+          } else {
+            const img = document.createElement('img');
+            img.src = live + x.thumb;
+            img.alt = x.caption;
+            img.loading = 'lazy';
+            b.append(img);
+          }
+          const cap = document.createElement('p');
+          cap.className = 'gallery__caption';
+          cap.textContent = x.caption;
+          li.append(b, cap);
+          if (x.place || when) {
+            const meta = document.createElement('p');
+            meta.className = 'gallery__meta';
+            meta.textContent = [x.place && `📍 ${x.place}`, when].filter(Boolean).join(' · ');
+            li.append(meta);
+          }
+          grid.prepend(li);
+        }
+        const empty = document.querySelector<HTMLElement>('[data-gallery-empty]');
+        if (empty) empty.hidden = !!grid.querySelector('.gallery__item:not([hidden])');
+      })
+      .catch((err) => console.warn('[gallery] the main site could not be reached', err));
   }
 </script>
 

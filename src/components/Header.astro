@@ -244,24 +244,21 @@ const citiesToggle = {
       opacity: 0;
     }
   }
-  /* narrow phones: no room next to the name – the stamp sits on the header's lower edge, on the right */
-  @media (max-width: 559px) {
-    .pum.pum {
-      top: auto;
-      bottom: -14px;
-      right: 14px;
-      font-size: 18px;
-      translate: none;
+  /* tablets: the stamp simply follows the buttons in the header row (no room to float over them) */
+  @media (min-width: 560px) and (max-width: 899px) {
+    .pum {
+      font-size: 22px;
+      margin-left: 10px;
     }
   }
-  @media (max-width: 899px) {
+  /* narrow phones: no room in the row – the stamp sits on the header's lower edge, on the right */
+  @media (max-width: 559px) {
     .pum {
       position: absolute;
-      top: 26px;
-      right: 116px;
+      bottom: -14px;
+      right: 14px;
       margin: 0;
-      font-size: 22px;
-      translate: 0 -50%;
+      font-size: 18px;
     }
   }
   @media (prefers-reduced-motion: reduce) {

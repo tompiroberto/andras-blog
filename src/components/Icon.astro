@@ -34,6 +34,10 @@ const CUSTOM: Record<string, { body: string; filled?: boolean }> = {
     filled: true,
     body: '<path d="M10.1 2 4 14h3.6l2.5-4.9 2.5 4.9h3.6L10.1 2Z"/><path d="m16.2 14-1.8 3.5L12.6 14H10l4.4 8 4.4-8h-2.6Z"/>',
   },
+  // LinkedIn: "in" in a rounded square
+  linkedin: {
+    body: '<rect x="2.5" y="2.5" width="19" height="19" rx="4"/><path d="M8 10.5V17"/><circle cx="8" cy="7.2" r="0.6" fill="currentColor"/><path d="M12 17v-6.5M12 13.2c0-1.6 1.1-2.7 2.5-2.7s2.5 1 2.5 2.7V17"/>',
+  },
   facebook: {
     body: '<circle cx="12" cy="12" r="9.5"/><path d="M15.5 7.5h-1.8a2.7 2.7 0 0 0-2.7 2.7V21.5"/><path d="M8.5 13.5h6"/>',
   },

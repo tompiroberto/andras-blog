@@ -20,6 +20,9 @@ const tracks = (await getCollection('music'))
 const tagCount = new Map<string, number>();
 for (const tr of tracks) for (const tg of tr.tags ?? []) tagCount.set(tg, (tagCount.get(tg) ?? 0) + 1);
 const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) => tg);
+/** the main site: a copy on another host also plays the music uploaded there (/music.json) */
+const MAIN_SITE = import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app';
+const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefined;
 ---
 
 <BaseLayout lang={lang} title={t(lang, 'music.title')} description={t(lang, 'music.lead')}>
@@ -31,24 +34,22 @@ const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) =
       <SectionHeading icon="headphones" as="h1">{t(lang, 'music.title')}</SectionHeading>
       <p class="music__lead">{t(lang, 'music.lead')}</p>
 
-      {tracks.length === 0 && <p class="music__empty">{t(lang, 'music.empty')}</p>}
+      {tracks.length === 0 && <p class="music__empty" data-music-empty>{t(lang, 'music.empty')}</p>}
 
-      {
-        allTags.length > 0 && (
-          <p class="music__tags" data-music-tags>
-            <button type="button" class="tagchip is-on" data-tag="">{t(lang, 'music.all')}</button>
-            {allTags.map((tg) => (
-              <button type="button" class="tagchip" data-tag={tg}>
-                #{tg}
-              </button>
-            ))}
-          </p>
-        )
-      }
-      <ol class="music__list" data-music-list>
+      <p class="music__tags" data-music-tags hidden={allTags.length === 0}>
+        <button type="button" class="tagchip is-on" data-tag="">{t(lang, 'music.all')}</button>
+        {
+          allTags.map((tg) => (
+            <button type="button" class="tagchip" data-tag={tg}>
+              #{tg}
+            </button>
+          ))
+        }
+      </p>
+      <ol class="music__list" data-music-list data-live={live}>
         {
           tracks.map((tr, i) => (
-            <li class="track" data-track={i} data-src={tr.file} data-id={tr.id} data-tags={(tr.tags ?? []).join(',')}>
+            <li class="track" data-track={i} data-src={tr.file} data-id={tr.id} data-tags={(tr.tags ?? []).join(',')} data-meta={JSON.stringify(tr)}>
               <button type="button" class="track__play" data-track-play aria-label={`${t(lang, 'music.play')}: ${tr.title}`}>
                 <span class="track__icon-play"><Icon name="play" size={22} /></span>
                 <span class="track__icon-pause"><Icon name="pause" size={22} /></span>
@@ -73,6 +74,7 @@ const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) =
                 <i />
                 <i />
               </span>
+              <button type="button" class="track__edit" data-track-edit title={t(lang, 'music.edit')} aria-label={t(lang, 'music.edit')}>✎</button>
               <button type="button" class="track__del" data-track-del title={t(lang, 'music.delete')} aria-label={t(lang, 'music.delete')}>
                 <Icon name="trash-2" size={16} />
               </button>
@@ -81,6 +83,39 @@ const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) =
         }
       </ol>
       <audio preload="none" data-music-audio></audio>
+      <!-- an empty track, filled for the music that comes from the main site (copies on other hosts) -->
+      <template data-track-tpl>
+        <li class="track" data-track>
+          <button type="button" class="track__play" data-track-play aria-label={t(lang, 'music.play')}>
+            <span class="track__icon-play"><Icon name="play" size={22} /></span>
+            <span class="track__icon-pause"><Icon name="pause" size={22} /></span>
+          </button>
+          <div class="track__body">
+            <strong class="track__title"></strong>
+            <span class="track__artist"></span>
+            <p class="track__about"></p>
+            <span class="track__place"></span>
+            <span class="track__tags"></span>
+            <div class="track__bar" data-track-bar><span class="track__fill" data-track-fill></span></div>
+            <span class="track__time"><span data-track-time>0:00</span><time></time></span>
+          </div>
+          <span class="track__eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <button type="button" class="track__del" data-track-del title={t(lang, 'music.delete')} aria-label={t(lang, 'music.delete')}><Icon name="trash-2" size={16} /></button>
+        </li>
+      </template>
+      <!-- developer mode: rewrite a track's details -->
+      <form class="track-form" hidden data-track-form>
+        <strong>✎ {t(lang, 'music.edit')}</strong>
+        <input type="text" maxlength="120" placeholder={t(lang, 'music.trackTitle')} data-tf="title" />
+        <input type="text" maxlength="80" placeholder={t(lang, 'music.artist')} data-tf="artist" />
+        <textarea rows="3" maxlength="300" placeholder={t(lang, 'music.about')} data-tf="about"></textarea>
+        <input type="text" maxlength="200" placeholder={t(lang, 'music.tags')} data-tf="tags" />
+        <input type="text" maxlength="80" placeholder={t(lang, 'music.place')} data-tf="place" />
+        <small data-tf-note></small>
+        <div><button type="button" data-tf-cancel>✕</button><button type="submit">{t(lang, 'gal.save')}</button></div>
+      </form>
+      <template data-music-saved>{t(lang, 'gal.saved')}</template>
+      <template data-music-nogeo>{t(lang, 'upload.noGeo')}</template>
       <template data-music-confirm>{t(lang, 'music.deleteConfirm')}</template>
       <template data-music-deleted>{t(lang, 'music.deleted')}</template>
       <template data-music-needkey>{t(lang, 'dev.msgKey')}</template>
@@ -129,7 +164,12 @@ const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) =
     padding: 0;
     list-style: none;
   }
-  .track[hidden] {
+  .track[hidden],
+  .music__tags[hidden],
+  .track__artist:empty,
+  .track__about:empty,
+  .track__place:empty,
+  .track__tags:empty {
     display: none;
   }
   .track__place,
@@ -261,6 +301,68 @@ const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) =
   .track__body {
     grid-column: 1 / -1;
   }
+  .track__edit {
+    position: absolute;
+    right: 54px;
+    bottom: 10px;
+    display: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 2px solid #39d353;
+    border-radius: 50%;
+    background: none;
+    color: #39d353;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  :global(html.dev-mode:not(.dev-preview)) .track__edit {
+    display: grid;
+  }
+  .track-form {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    z-index: 2000;
+    display: grid;
+    gap: 8px;
+    width: min(380px, calc(100vw - 24px));
+    padding: 16px;
+    border: 2px solid #39d353;
+    border-radius: 14px;
+    background: #0d1117;
+    color: #d6f5d6;
+    font: 13px ui-monospace, Consolas, monospace;
+    translate: -50% -50%;
+    box-shadow: 0 10px 40px rgb(0 0 0 / 0.5);
+  }
+  .track-form[hidden] {
+    display: none;
+  }
+  .track-form input,
+  .track-form textarea {
+    padding: 8px 10px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: #010409;
+    color: #e6edf3;
+    font: inherit;
+  }
+  .track-form div {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .track-form button {
+    padding: 7px 12px;
+    border: 1px solid #39d353;
+    border-radius: 8px;
+    background: #161b22;
+    color: #39d353;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
   .track__del {
     position: absolute;
     right: 10px;
@@ -279,7 +381,7 @@ const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) =
     display: grid;
   }
   :global(html.dev-mode:not(.dev-preview)) .track__time {
-    padding-right: 40px;
+    padding-right: 90px;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -294,13 +396,67 @@ const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) =
   import { commitFiles, getToken } from '../../lib/githubCommit';
 
   // hashtag filter
-  document.querySelectorAll<HTMLButtonElement>('[data-music-tags] [data-tag]').forEach((b, _i, all) =>
-    b.addEventListener('click', () => {
-      all.forEach((x) => x.classList.toggle('is-on', x === b));
-      const tag = b.dataset.tag;
-      document.querySelectorAll<HTMLElement>('[data-track]').forEach((tr) => (tr.hidden = !!tag && !(tr.dataset.tags ?? '').split(',').includes(tag)));
-    }),
-  );
+  const tagBox = document.querySelector<HTMLElement>('[data-music-tags]');
+  tagBox?.addEventListener('click', (e) => {
+    const b = (e.target as Element).closest<HTMLButtonElement>('[data-tag]');
+    if (!b) return;
+    tagBox.querySelectorAll('[data-tag]').forEach((x) => x.classList.toggle('is-on', x === b));
+    const tag = b.dataset.tag;
+    document.querySelectorAll<HTMLElement>('[data-track]').forEach((tr) => (tr.hidden = !!tag && !(tr.dataset.tags ?? '').split(',').includes(tag)));
+  });
+
+  /*
+   * A copy of the site on another host: the music uploaded on the main site since the copy was made is
+   * added (and what was removed there is left out) – read from the main site's /music.json.
+   */
+  type Track = { id: string; file: string; title: string; artist?: string; about?: string; tags?: string[]; place?: string; date: string };
+  const list = document.querySelector<HTMLElement>('[data-music-list]');
+  const liveSite = list?.dataset.live;
+  const fromMain: Promise<void> = liveSite
+    ? fetch(`${liveSite}/music.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then(({ items }: { items: Track[] }) => {
+          const ids = new Set(items.map((x) => x.id));
+          list!.querySelectorAll<HTMLElement>('[data-track]').forEach((tr) => {
+            if (!ids.has(tr.dataset.id ?? '')) tr.remove();
+          });
+          const have = new Set(Array.from(list!.querySelectorAll<HTMLElement>('[data-track]')).map((tr) => tr.dataset.id));
+          const tpl = document.querySelector<HTMLTemplateElement>('[data-track-tpl]')!;
+          const fmt = new Intl.DateTimeFormat(document.documentElement.lang || 'hu', { year: 'numeric', month: 'long', day: 'numeric' });
+          for (const x of items.filter((y) => !have.has(y.id)).reverse()) {
+            const li = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+            li.dataset.src = liveSite + x.file;
+            li.dataset.id = x.id;
+            li.dataset.tags = (x.tags ?? []).join(',');
+            const set = (sel: string, text: string) => (li.querySelector(sel)!.textContent = text);
+            set('.track__title', x.title);
+            set('.track__artist', x.artist ?? '');
+            set('.track__about', x.about ?? '');
+            set('.track__place', x.place ? `📍 ${x.place}` : '');
+            set('.track__tags', (x.tags ?? []).map((tg) => `#${tg}`).join(' '));
+            set('time', x.date ? ` · ${fmt.format(new Date(x.date))}` : '');
+            list!.prepend(li);
+            // new hashtags get their own button
+            for (const tg of x.tags ?? []) {
+              if (tagBox && !tagBox.querySelector(`[data-tag="${CSS.escape(tg)}"]`)) {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'tagchip';
+                b.dataset.tag = tg;
+                b.textContent = `#${tg}`;
+                tagBox.append(b);
+                tagBox.hidden = false;
+              }
+            }
+          }
+          const empty = document.querySelector<HTMLElement>('[data-music-empty]');
+          if (empty) empty.hidden = !!list!.querySelector('[data-track]');
+        })
+        .catch((err) => console.warn('[music] the main site could not be reached', err))
+    : Promise.resolve();
+
+  void fromMain.then(startPlayer);
+  function startPlayer() {
   const audio = document.querySelector<HTMLAudioElement>('[data-music-audio]');
   const tracks = Array.from(document.querySelectorAll<HTMLElement>('[data-track]'));
   if (audio && tracks.length) {
@@ -373,4 +529,96 @@ const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) =
       }),
     );
   }
+  }
 </script>
+
+<script>
+  /*
+   * Developer mode: ✎ on a track rewrites its title, artist, words, hashtags and place
+   * (src/content/music/<id>.yml, saved to GitHub; 🚀 Publish puts it online).
+   */
+  import { commitFiles, getToken } from '../../lib/githubCommit';
+  import { geocode } from '../../lib/geocode';
+
+  const form = document.querySelector<HTMLFormElement>('[data-track-form]');
+  if (form) {
+    const tx = (n: string) => document.querySelector<HTMLTemplateElement>(`[data-music-${n}]`)?.content.textContent ?? '';
+    const field = (n: string) => form.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-tf="${n}"]`)!;
+    const note = form.querySelector<HTMLElement>('[data-tf-note]')!;
+    type Meta = { id: string; file: string; title: string; artist?: string; about?: string; tags?: string[]; place?: string; lat?: number; lng?: number; date?: string; post?: string };
+    let tr: HTMLElement | null = null;
+    let meta: Meta | null = null;
+    document.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest('[data-track-edit]');
+      if (!b) return;
+      tr = b.closest<HTMLElement>('[data-track]');
+      if (!tr?.dataset.meta) return;
+      meta = JSON.parse(tr.dataset.meta) as Meta;
+      field('title').value = meta.title;
+      field('artist').value = meta.artist ?? '';
+      field('about').value = meta.about ?? '';
+      field('tags').value = (meta.tags ?? []).map((x) => `#${x}`).join(' ');
+      field('place').value = meta.place ?? '';
+      note.textContent = '';
+      form.hidden = false;
+      field('about').focus();
+    });
+    form.querySelector('[data-tf-cancel]')!.addEventListener('click', () => (form.hidden = true));
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!tr || !meta) return;
+      const title = field('title').value.trim() || meta.title;
+      const artist = field('artist').value.trim();
+      const about = field('about').value.trim();
+      const tags = field('tags').value.split(/[#,]/).map((x) => x.trim().toLowerCase()).filter(Boolean);
+      const place = field('place').value.trim();
+      let lat = meta.lat;
+      let lng = meta.lng;
+      if (place !== (meta.place ?? '')) {
+        lat = lng = undefined;
+        if (place) {
+          const hit = (await geocode(place, document.documentElement.lang || 'en').catch(() => []))[0];
+          if (!hit) return void (note.textContent = tx('nogeo'));
+          lat = Math.round(hit.latitude * 1e5) / 1e5;
+          lng = Math.round(hit.longitude * 1e5) / 1e5;
+        }
+      }
+      const date = meta.date ? String(meta.date).slice(0, 10) : '';
+      const yml = [
+        `file: ${meta.file}`,
+        `title: ${JSON.stringify(title)}`,
+        artist && `artist: ${JSON.stringify(artist)}`,
+        about && `about: ${JSON.stringify(about)}`,
+        date && `date: ${date}`,
+        meta.post && `post: ${meta.post}`,
+        tags.length && `tags: ${JSON.stringify(tags)}`,
+        place && `place: ${JSON.stringify(place)}`,
+        lat !== undefined && lng !== undefined && `lat: ${lat}\nlng: ${lng}`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+      let key = getToken();
+      if (!key) key = (window.prompt(tx('needkey')) ?? '').trim();
+      if (!key) return;
+      try {
+        await commitFiles(key, [{ path: `src/content/music/${meta.id}.yml`, text: `${yml}\n` }], `Music edited on the site: ${title}`, [`✎ 🎵 ${title}`]);
+        // show it at once
+        const set = (sel: string, text: string) => {
+          const el = tr!.querySelector(sel);
+          if (el) el.textContent = text;
+        };
+        set('.track__title', title);
+        set('.track__artist', artist);
+        set('.track__about', about);
+        set('.track__place', place ? `📍 ${place}` : '');
+        set('.track__tags', tags.map((x) => `#${x}`).join(' '));
+        tr.dataset.meta = JSON.stringify({ ...meta, title, artist, about, tags, place, lat, lng });
+        note.textContent = tx('saved');
+        window.setTimeout(() => (form.hidden = true), 900);
+      } catch (err) {
+        note.textContent = err instanceof Error ? err.message : String(err);
+      }
+    });
+  }
+</script>
+

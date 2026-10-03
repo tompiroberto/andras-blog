@@ -11,6 +11,19 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# copies of the site on other hosts read the gallery from here
+[[headers]]
+  for = "/music.json"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Cache-Control = "public, max-age=60"
+
+[[headers]]
+  for = "/gallery.json"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Cache-Control = "public, max-age=60"
+
 [[headers]]
   for = "/data/*"
   [headers.values]

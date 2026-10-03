@@ -690,5 +690,7 @@
   "med.addMusic": "Música",
   "dev.postPhoto": "Foto / vídeo para esta publicação",
   "dev.postMusic": "Música para esta publicação",
-  "dev.copyNote": "Esta é uma cópia do site. 🚀 Publicar atualiza logo o site principal (Netlify); esta cópia mostra as alterações depois do próximo carregamento (automático se o envio por FTP estiver configurado, senão com um novo zip)."
+  "dev.copyNote": "Esta é uma cópia do site. 🚀 Publicar atualiza logo o site principal (Netlify); esta cópia mostra as alterações depois do próximo carregamento (automático se o envio por FTP estiver configurado, senão com um novo zip).",
+  "gal.edit": "Descrição e local",
+  "music.edit": "Título, descrição, hashtags, local"
 }

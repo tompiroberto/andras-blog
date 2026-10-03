@@ -19,6 +19,8 @@ const { lang } = Astro.props;
 const cv = CV[lang];
 /** the CV's own contact address (the rest of the site uses site.json → email) */
 const CV_EMAIL = 'kormoran905@gmail.com';
+/** LinkedIn profile (the address with its accented letters encoded, as LinkedIn itself writes it) */
+const CV_LINKEDIN = 'https://www.linkedin.com/in/andr%C3%A1s-p%C3%A9ter-v%C3%A1s%C3%A1rhelyi-347a6b440';
 /** full name: Hungarian order in Hungarian, given names first everywhere else */
 const fullName = lang === 'hu' ? 'Vásárhelyi András Péter' : 'András Péter Vásárhelyi';
 /** the CV photo is optional: shown when public/images/cv-photo.jpg exists */
@@ -70,6 +72,7 @@ const main: { title: string; items: CvItem[] }[] = [
           <h2>{cv.h.contact}</h2>
           <ul class="cv-contact">
             <li><Icon name="mail" size={15} /><a href={`mailto:${CV_EMAIL}`}>{CV_EMAIL}</a></li>
+            <li><Icon name="linkedin" size={15} /><a href={CV_LINKEDIN} target="_blank" rel="noopener">LinkedIn</a></li>
           </ul>
         </section>
         <section>
@@ -383,8 +386,23 @@ const main: { title: string; items: CvItem[] }[] = [
     .cv-sheet__head {
       padding: 20px;
     }
+    /* phones: the photo above the name, the name across the whole width (never letter by letter) */
+    .cv-sheet__head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .cv-sheet__who {
+      flex: none;
+      width: 100%;
+    }
+    .cv-sheet__photo {
+      width: 108px;
+      height: 108px;
+    }
     .cv-sheet__name {
-      font-size: 32px;
+      font-size: clamp(24px, 7.4vw, 32px);
+      overflow-wrap: normal;
+      word-break: normal;
     }
     .cv-item {
       grid-template-columns: 1fr;
