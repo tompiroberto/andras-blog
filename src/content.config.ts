@@ -31,6 +31,10 @@ const posts = defineCollection({
       facts: z.array(z.object({ icon: z.string(), label: z.string() })).optional(),
       /** Strava activities to embed (id + token from Strava's "Embed on blog" code) */
       strava: z.array(z.object({ id: z.string(), token: z.string() })).optional(),
+      /** Where the post happened (written from the world map): a pin there in map mode */
+      place: z.string().optional(),
+      lat: z.number().min(-90).max(90).optional(),
+      lng: z.number().min(-180).max(180).optional(),
       /** Ids from src/data/countries.json, e.g. ["SK", "AT"] */
       countries: z
         .array(z.string())
@@ -46,7 +50,11 @@ const photos = defineCollection({
   loader: glob({ pattern: '**/*.{yml,yaml}', base: './src/content/photos' }),
   schema: ({ image }) =>
     z.object({
-      image: image(),
+      /** a picture (src/assets/photos) – or a video (video: /videos/….mp4 in public/videos) */
+      image: image().optional(),
+      video: z.string().optional(),
+      /** the post it belongs to (slug): shown at the end of that post */
+      post: z.string().optional(),
       caption: z.string(),
       place: z.string().optional(),
       date: z.coerce.date().optional(),
@@ -65,6 +73,14 @@ const music = defineCollection({
     artist: z.string().optional(),
     about: z.string().optional(),
     date: z.coerce.date().optional(),
+    /** the post it belongs to (slug): played at the end of that post */
+    post: z.string().optional(),
+    /** hashtags, without the # */
+    tags: z.array(z.string()).optional(),
+    /** where it belongs (a pin on the world map) */
+    place: z.string().optional(),
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
   }),
 });
 

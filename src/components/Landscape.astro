@@ -67,7 +67,7 @@ const SCENES = [
 ];
 ---
 
-<div class:list={['landscape', { 'landscape--big': big }]} aria-hidden="true" data-landscape title={t(lang, 'ls.hint')}>
+<div class:list={['landscape', { 'landscape--big': big }]} aria-hidden="true" data-landscape>
   {
     SCENES.map((s, i) => (
       <svg class:list={['landscape__scene', { 'is-off': i !== 0 }]} viewBox="0 0 1200 260" preserveAspectRatio="xMidYMax slice" data-scene={i} set:html={s} />

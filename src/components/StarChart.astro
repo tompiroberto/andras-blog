@@ -54,8 +54,9 @@ const texts = {
     const T = data.texts;
     const r0 = from.getBoundingClientRect();
     const z = Number(getComputedStyle(document.documentElement).zoom) || 1;
-    const ox = ((r0.left + r0.width / 2) / z / (window.innerWidth / z)) * 100;
-    const oy = ((r0.top + r0.height / 2) / z / (window.innerHeight / z)) * 100;
+    // from the button – kept on the screen, so the circle always opens over it
+    const ox = Math.min(100, Math.max(0, ((r0.left + r0.width / 2) / window.innerWidth) * 100));
+    const oy = Math.min(100, Math.max(0, ((r0.top + r0.height / 2) / window.innerHeight) * 100));
 
     const box = document.createElement('div');
     box.className = 'chart';
@@ -67,6 +68,7 @@ const texts = {
     box.innerHTML = `<div class="chart__stars"></div><div class="chart__stars chart__stars--2"></div><span class="chart__shoot"></span>
       <header class="chart__head"><h2>${T.title.replace('·', '<i>·</i>')}</h2><p>${T.sub}</p><small>${T.hint}</small></header>
       <button type="button" class="chart__x" aria-label="${T.close}">✕</button>
+      <div class="chart__zoom"><button type="button" data-chart-zoom="1.6" aria-label="+">+</button><button type="button" data-chart-zoom="0.625" aria-label="−">−</button><button type="button" data-chart-zoom="0" aria-label="⟲">⟲</button></div>
       <div class="chart__card" hidden><strong></strong><span></span></div>`;
     const svg = el('svg', { class: 'chart__map', viewBox: '0 0 960 500', preserveAspectRatio: 'xMidYMid meet' });
     box.append(svg);
@@ -91,13 +93,13 @@ const texts = {
     (box.querySelector('.chart__x') as HTMLElement).focus();
 
     // ---- the world, the circles and the triangles ----
-    const [{ geoNaturalEarth1, geoPath, geoCentroid, geoGraticule10 }, topo, world] = await Promise.all([
+    const [{ geoNaturalEarth1, geoPath, geoCentroid, geoGraticule10 }, topo, atlas] = await Promise.all([
       import('d3-geo'),
       import('topojson-client'),
       fetch('/data/countries-110m.json').then((r) => r.json()),
     ]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fc = topo.feature(world, world.objects.countries) as any;
+    const fc = topo.feature(atlas, atlas.objects.countries) as any;
     const proj = geoNaturalEarth1().fitExtent(
       [
         [10, 70],
@@ -106,9 +108,10 @@ const texts = {
       { type: 'Sphere' },
     );
     const path = geoPath(proj);
-    el('path', { d: path({ type: 'Sphere' }) ?? '', class: 'chart__sphere' }, svg);
-    el('path', { d: path(geoGraticule10()) ?? '', class: 'chart__grid' }, svg);
-    const land = el('g', { class: 'chart__land' }, svg);
+    const world = el('g', { class: 'chart__world' }, svg);
+    el('path', { d: path({ type: 'Sphere' }) ?? '', class: 'chart__sphere' }, world);
+    el('path', { d: path(geoGraticule10()) ?? '', class: 'chart__grid' }, world);
+    const land = el('g', { class: 'chart__land' }, world);
     const byIso = new Map<string, unknown>();
     for (const f of fc.features) {
       byIso.set(String(f.id).padStart(3, '0'), f);
@@ -121,36 +124,120 @@ const texts = {
       const c = f ? proj(geoCentroid(f as any)) : null;
       return c ? { x: c[0], y: c[1] } : null;
     };
+    // ---- zoom: wheel / pinch / the buttons, drag to move; the circles and triangles keep their size ----
+    const view = { k: 1, x: 0, y: 0 };
+    const markers: { g: SVGGElement; c: { x: number; y: number } }[] = [];
+    function keep(g: SVGGElement, c: { x: number; y: number }) {
+      markers.push({ g, c });
+      return g;
+    }
+    const applyView = () => {
+      world.setAttribute('transform', `translate(${view.x.toFixed(1)} ${view.y.toFixed(1)}) scale(${view.k.toFixed(3)})`);
+      for (const m of markers) m.g.setAttribute('transform', `translate(${m.c.x} ${m.c.y}) scale(${(1 / view.k).toFixed(3)})`);
+      card.hidden = true;
+    };
+    /** zoom by f around the svg point (px, py) */
+    const zoomAt = (f: number, px: number, py: number) => {
+      const k = Math.min(12, Math.max(1, view.k * f));
+      const real = k / view.k;
+      view.x = px - (px - view.x) * real;
+      view.y = py - (py - view.y) * real;
+      view.k = k;
+      if (k === 1) view.x = view.y = 0;
+      applyView();
+    };
+    const toSvg = (cx: number, cy: number) => {
+      const pt = svg.createSVGPoint();
+      pt.x = cx;
+      pt.y = cy;
+      const r = pt.matrixTransform(svg.getScreenCTM()!.inverse());
+      return [r.x, r.y] as const;
+    };
+    svg.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const [px, py] = toSvg(e.clientX, e.clientY);
+        zoomAt(e.deltaY < 0 ? 1.25 : 0.8, px, py);
+      },
+      { passive: false },
+    );
+    const pointers = new Map<number, { x: number; y: number }>();
+    let pinch = 0;
+    svg.addEventListener('pointerdown', (e) => {
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      svg.setPointerCapture(e.pointerId);
+    });
+    svg.addEventListener('pointermove', (e) => {
+      const prev = pointers.get(e.pointerId);
+      if (!prev) return;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinch) {
+          const [px, py] = toSvg((a.x + b.x) / 2, (a.y + b.y) / 2);
+          zoomAt(d / pinch, px, py);
+        }
+        pinch = d;
+        return;
+      }
+      if (view.k === 1) return;
+      const m = svg.getScreenCTM()!;
+      view.x += (e.clientX - prev.x) / m.a;
+      view.y += (e.clientY - prev.y) / m.d;
+      applyView();
+    });
+    const up = (e: PointerEvent) => {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinch = 0;
+    };
+    svg.addEventListener('pointerup', up);
+    svg.addEventListener('pointercancel', up);
+    box.querySelectorAll<HTMLButtonElement>('[data-chart-zoom]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const f = Number(b.dataset.chartZoom);
+        if (f === 0) {
+          view.k = 1;
+          view.x = view.y = 0;
+          applyView();
+        } else zoomAt(f, 480, 280);
+      }),
+    );
+
     const pts = data.places.map((p) => ({ p, c: at(p) })).filter((x): x is { p: Place; c: { x: number; y: number } } => !!x.c);
     const home = pts.find((x) => x.p.status === 'home') ?? pts[0];
     const been = pts.filter((x) => x.p.status !== 'planned');
     const ahead = pts.filter((x) => x.p.status === 'planned');
 
     // the constellation: from home through every place in turn
-    const lines = el('g', { class: 'chart__lines' }, svg);
+    const lines = el('g', { class: 'chart__lines' }, world);
     been.slice(1).forEach((b, i) => {
       const a = been[i];
       const l = el('line', { x1: a.c.x, y1: a.c.y, x2: b.c.x, y2: b.c.y, pathLength: 1 }, lines);
       l.style.animationDelay = `${0.9 + i * 0.18}s`;
     });
     // directions: dashed arcs running from home to where he is heading
-    const dirs = el('g', { class: 'chart__dirs' }, svg);
+    const dirs = el('g', { class: 'chart__dirs' }, world);
     ahead.forEach((d, i) => {
       const mx = (home.c.x + d.c.x) / 2;
       const my = Math.min(home.c.y, d.c.y) - 60 - i * 14;
       el('path', { d: `M${home.c.x} ${home.c.y} Q${mx} ${my} ${d.c.x} ${d.c.y}`, class: 'chart__route' }, dirs);
     });
-    const dots = el('g', { class: 'chart__dots' }, svg);
+    const dots = el('g', { class: 'chart__dots' }, world);
     const card = box.querySelector<HTMLElement>('.chart__card')!;
     const show = (p: Place, x: number, y: number) => {
       card.hidden = false;
       card.querySelector('strong')!.textContent = p.name;
       const extra = p.status === 'home' ? T.home : p.status === 'now' ? T.now : p.status === 'planned' ? T.next : '';
       card.querySelector('span')!.textContent = [extra, p.text].filter(Boolean).join(' – ');
-      const r = svg.getBoundingClientRect();
-      const s = r.width / 960;
-      card.style.left = `${Math.min(r.left + x * s, window.innerWidth - 300) / z}px`;
-      card.style.top = `${(r.top + y * s + 18) / z}px`;
+      // where the place is on the screen now (the map may be zoomed / moved)
+      const pt = svg.createSVGPoint();
+      pt.x = x * view.k + view.x;
+      pt.y = y * view.k + view.y;
+      const sp = pt.matrixTransform(svg.getScreenCTM() ?? undefined);
+      card.style.left = `${Math.min(sp.x, window.innerWidth - 150) / z}px`;
+      card.style.top = `${(sp.y + 18) / z}px`;
     };
     const hook = (g: SVGGElement, p: Place, c: { x: number; y: number }) => {
       g.setAttribute('tabindex', '0');
@@ -160,20 +247,18 @@ const texts = {
       g.addEventListener('pointerleave', () => (card.hidden = true));
     };
     been.forEach(({ p, c }, i) => {
-      const g = el('g', { class: `chart__dot is-${p.status}` }, el('g', { transform: `translate(${c.x} ${c.y})` }, dots));
+      const g = el('g', { class: `chart__dot is-${p.status}` }, keep(el('g', { transform: `translate(${c.x} ${c.y})` }, dots), c));
       g.style.animationDelay = `${0.6 + i * 0.12}s`;
       el('circle', { r: p.status === 'home' ? 13 : 9, class: 'chart__ring' }, g);
       el('circle', { r: p.status === 'home' ? 7 : 5 }, g);
-      if (p.status === 'home' || p.status === 'now') el('text', { y: -18, 'text-anchor': 'middle' }, g).textContent = p.status === 'home' ? `${p.name} ⌂` : `● ${p.name}`;
       hook(g, p, c);
     });
     ahead.forEach(({ p, c }, i) => {
       // triangles = direction: pointing the way from home
       const ang = (Math.atan2(c.y - home.c.y, c.x - home.c.x) * 180) / Math.PI;
-      const g = el('g', { class: 'chart__tri' }, el('g', { transform: `translate(${c.x} ${c.y})` }, dots));
+      const g = el('g', { class: 'chart__tri' }, keep(el('g', { transform: `translate(${c.x} ${c.y})` }, dots), c));
       g.style.animationDelay = `${1.6 + i * 0.25}s`;
       el('path', { d: 'M-11 -10 L13 0 L-11 10 Z', transform: `rotate(${ang.toFixed(1)})` }, g);
-      el('text', { y: 26, 'text-anchor': 'middle' }, g).textContent = `→ ${p.name}`;
       hook(g, p, c);
     });
   }
@@ -283,7 +368,27 @@ const texts = {
     font-size: 20px;
     cursor: pointer;
   }
+  .chart__zoom {
+    position: absolute;
+    right: 16px;
+    bottom: 20px;
+    z-index: 3;
+    display: grid;
+    gap: 8px;
+  }
+  .chart__zoom button {
+    width: 44px;
+    height: 44px;
+    border: 2px solid #c6ff00;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 0.45);
+    color: #c6ff00;
+    font: 800 20px var(--font-body);
+    cursor: pointer;
+  }
   .chart__map {
+    touch-action: none;
+    cursor: grab;
     position: absolute;
     inset: 0;
     width: 100%;
@@ -299,6 +404,10 @@ const texts = {
     fill: none;
     stroke: rgb(140 160 255 / 0.1);
     stroke-width: 0.6;
+  }
+  .chart__world path,
+  .chart__world line {
+    vector-effect: non-scaling-stroke;
   }
   .chart__land path {
     fill: rgb(120 140 255 / 0.1);

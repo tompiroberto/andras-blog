@@ -16,6 +16,10 @@ const fmt = new Intl.DateTimeFormat(HTML_LANG[lang], { year: 'numeric', month: '
 const tracks = (await getCollection('music'))
   .map((e) => ({ id: e.id, ...e.data }))
   .sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
+// every hashtag, the most used first
+const tagCount = new Map<string, number>();
+for (const tr of tracks) for (const tg of tr.tags ?? []) tagCount.set(tg, (tagCount.get(tg) ?? 0) + 1);
+const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) => tg);
 ---
 
 <BaseLayout lang={lang} title={t(lang, 'music.title')} description={t(lang, 'music.lead')}>
@@ -29,10 +33,22 @@ const tracks = (await getCollection('music'))
 
       {tracks.length === 0 && <p class="music__empty">{t(lang, 'music.empty')}</p>}
 
+      {
+        allTags.length > 0 && (
+          <p class="music__tags" data-music-tags>
+            <button type="button" class="tagchip is-on" data-tag="">{t(lang, 'music.all')}</button>
+            {allTags.map((tg) => (
+              <button type="button" class="tagchip" data-tag={tg}>
+                #{tg}
+              </button>
+            ))}
+          </p>
+        )
+      }
       <ol class="music__list" data-music-list>
         {
           tracks.map((tr, i) => (
-            <li class="track" data-track={i} data-src={tr.file} data-id={tr.id}>
+            <li class="track" data-track={i} data-src={tr.file} data-id={tr.id} data-tags={(tr.tags ?? []).join(',')}>
               <button type="button" class="track__play" data-track-play aria-label={`${t(lang, 'music.play')}: ${tr.title}`}>
                 <span class="track__icon-play"><Icon name="play" size={22} /></span>
                 <span class="track__icon-pause"><Icon name="pause" size={22} /></span>
@@ -41,6 +57,8 @@ const tracks = (await getCollection('music'))
                 <strong class="track__title">{tr.title}</strong>
                 {tr.artist && <span class="track__artist">{tr.artist}</span>}
                 {tr.about && <p class="track__about">{tr.about}</p>}
+                {tr.place && <span class="track__place">📍 {tr.place}</span>}
+                {tr.tags && tr.tags.length > 0 && <span class="track__tags">{tr.tags.map((tg) => `#${tg}`).join(' ')}</span>}
                 <div class="track__bar" data-track-bar>
                   <span class="track__fill" data-track-fill />
                 </div>
@@ -82,20 +100,58 @@ const tracks = (await getCollection('music'))
     max-width: 640px;
     color: var(--muted);
   }
+  .music__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 22px 0 0;
+  }
+  .tagchip {
+    padding: 6px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tagchip.is-on {
+    background: var(--yellow);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  /* small tiles side by side */
   .music__list {
     display: grid;
-    gap: 14px;
-    margin: 28px 0 0;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
+    margin: 24px 0 0;
     padding: 0;
     list-style: none;
+  }
+  .track[hidden] {
+    display: none;
+  }
+  .track__place,
+  .track__tags {
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0.85;
+  }
+  .track__tags {
+    color: var(--violet);
+  }
+  .track.is-playing .track__tags {
+    color: var(--yellow);
   }
   .track {
     position: relative;
     display: grid;
-    grid-template-columns: 56px 1fr auto auto;
-    gap: 16px;
-    align-items: center;
-    padding: 14px 18px;
+    grid-template-columns: 56px 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 12px 14px;
+    align-content: start;
+    padding: 14px;
     border: 3px solid var(--ink);
     border-radius: var(--radius-card);
     background: var(--surface, #fff);
@@ -165,6 +221,9 @@ const tracks = (await getCollection('music'))
     opacity: 0.8;
   }
   .track__eq {
+    position: absolute;
+    top: 18px;
+    right: 16px;
     display: flex;
     align-items: flex-end;
     gap: 3px;
@@ -199,7 +258,13 @@ const tracks = (await getCollection('music'))
       height: 26px;
     }
   }
+  .track__body {
+    grid-column: 1 / -1;
+  }
   .track__del {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
     display: none;
     place-items: center;
     width: 36px;
@@ -213,19 +278,10 @@ const tracks = (await getCollection('music'))
   :global(html.dev-mode:not(.dev-preview)) .track__del {
     display: grid;
   }
-  @media (max-width: 599px) {
-    .track {
-      grid-template-columns: 48px 1fr auto;
-      padding: 12px;
-    }
-    .track__eq {
-      display: none;
-    }
-    .track__play {
-      width: 48px;
-      height: 48px;
-    }
+  :global(html.dev-mode:not(.dev-preview)) .track__time {
+    padding-right: 40px;
   }
+
   @media (prefers-reduced-motion: reduce) {
     .track.is-playing .track__eq i {
       animation: none;
@@ -237,6 +293,14 @@ const tracks = (await getCollection('music'))
 <script>
   import { commitFiles, getToken } from '../../lib/githubCommit';
 
+  // hashtag filter
+  document.querySelectorAll<HTMLButtonElement>('[data-music-tags] [data-tag]').forEach((b, _i, all) =>
+    b.addEventListener('click', () => {
+      all.forEach((x) => x.classList.toggle('is-on', x === b));
+      const tag = b.dataset.tag;
+      document.querySelectorAll<HTMLElement>('[data-track]').forEach((tr) => (tr.hidden = !!tag && !(tr.dataset.tags ?? '').split(',').includes(tag)));
+    }),
+  );
   const audio = document.querySelector<HTMLAudioElement>('[data-music-audio]');
   const tracks = Array.from(document.querySelectorAll<HTMLElement>('[data-track]'));
   if (audio && tracks.length) {

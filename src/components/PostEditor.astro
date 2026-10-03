@@ -53,6 +53,8 @@ const { lang } = Astro.props;
       <span>{t(lang, 'post.excerpt')} *</span>
       <input name="excerpt" type="text" maxlength="220" required />
     </label>
+    <!-- opened from the world map: the post is pinned to this place -->
+    <p class="ped__place" hidden data-ped-place></p>
 
     <div class="ped__cover">
       <label class="ped__pick">
@@ -111,6 +113,13 @@ const { lang } = Astro.props;
 </dialog>
 
 <style>
+  .ped__place {
+    margin: 0;
+    font-weight: 700;
+  }
+  .ped__place[hidden] {
+    display: none;
+  }
   .ped {
     width: min(760px, calc(100vw - 24px));
     max-height: calc(100vh - 24px);
@@ -333,6 +342,7 @@ const { lang } = Astro.props;
 
 <script>
   import { commitFiles, fileExists, getToken, readFile, shrinkToJpeg, slugify, wireTokenField, type NewFile } from '../lib/githubCommit';
+  // (a post written from the world map gets place / lat / lng in its front matter)
   import { fieldValue, parsePost, setFields, writePost, type ParsedPost } from '../lib/frontmatter';
 
   const dialog = document.querySelector<HTMLDialogElement>('[data-post-editor]');
@@ -401,10 +411,16 @@ const { lang } = Astro.props;
       }
     });
 
+    let pinned: { place?: string; lat?: number; lng?: number } | null = null;
+    const placeNote = q<HTMLElement>('[data-ped-place]');
     window.addEventListener('andras:new-post', (e) => {
       editing = null;
       heading.innerHTML = headingNew;
-      const category = (e as CustomEvent<{ category?: string }>).detail?.category;
+      const d = (e as CustomEvent<{ category?: string; place?: string; lat?: number; lng?: number }>).detail;
+      pinned = d?.lat !== undefined && d?.lng !== undefined ? { place: d.place, lat: d.lat, lng: d.lng } : null;
+      placeNote.hidden = !pinned;
+      if (pinned) placeNote.textContent = `📍 ${pinned.place ?? ''} · ${pinned.lat!.toFixed(3)}, ${pinned.lng!.toFixed(3)}`;
+      const category = d?.category;
       if (category) field<HTMLSelectElement>('category').value = category;
       const date = field<HTMLInputElement>('date');
       if (!date.value) date.value = new Date().toISOString().slice(0, 10);
@@ -512,6 +528,7 @@ const { lang } = Astro.props;
           `lang: ${postLang}`,
           `excerpt: ${JSON.stringify(excerpt.value.trim())}`,
         ];
+        if (pinned) front.push(...[pinned.place && `place: ${JSON.stringify(pinned.place)}`, `lat: ${Math.round(pinned.lat! * 1e5) / 1e5}`, `lng: ${Math.round(pinned.lng! * 1e5) / 1e5}`].filter((x): x is string => !!x));
         if (cover) {
           files.push({ path: `src/assets/posts/${slug}-cover.jpg`, base64: await shrink(cover) });
           front.push(`cover: ../../assets/posts/${slug}-cover.jpg`, `coverAlt: ${JSON.stringify(title.value.trim())}`, `coverPosition: ${coverPosition}`);

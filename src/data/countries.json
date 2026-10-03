@@ -470,6 +470,130 @@
           "text": "დაგეგმილი – ენა და კულტურა"
         }
       }
+    },
+    {
+      "id": "NO",
+      "isoNumeric": "578",
+      "status": "planned",
+      "i18n": {
+        "en": {
+          "name": "Norway",
+          "text": "Planned – the Nordic countries"
+        },
+        "hu": {
+          "name": "Norvégia",
+          "text": "Tervben – a skandináv országok"
+        },
+        "pt": {
+          "name": "Noruega",
+          "text": "Planeado – os países nórdicos"
+        },
+        "ro": {
+          "name": "Norvegia",
+          "text": "Planificat – țările nordice"
+        },
+        "el": {
+          "name": "Νορβηγία",
+          "text": "Στα σχέδια – οι σκανδιναβικές χώρες"
+        },
+        "ka": {
+          "name": "ნორვეგია",
+          "text": "დაგეგმილი – სკანდინავიის ქვეყნები"
+        }
+      }
+    },
+    {
+      "id": "SE",
+      "isoNumeric": "752",
+      "status": "planned",
+      "i18n": {
+        "en": {
+          "name": "Sweden",
+          "text": "Planned – the Nordic countries"
+        },
+        "hu": {
+          "name": "Svédország",
+          "text": "Tervben – a skandináv országok"
+        },
+        "pt": {
+          "name": "Suécia",
+          "text": "Planeado – os países nórdicos"
+        },
+        "ro": {
+          "name": "Suedia",
+          "text": "Planificat – țările nordice"
+        },
+        "el": {
+          "name": "Σουηδία",
+          "text": "Στα σχέδια – οι σκανδιναβικές χώρες"
+        },
+        "ka": {
+          "name": "შვედეთი",
+          "text": "დაგეგმილი – სკანდინავიის ქვეყნები"
+        }
+      }
+    },
+    {
+      "id": "DK",
+      "isoNumeric": "208",
+      "status": "planned",
+      "i18n": {
+        "en": {
+          "name": "Denmark",
+          "text": "Planned – the Nordic countries"
+        },
+        "hu": {
+          "name": "Dánia",
+          "text": "Tervben – a skandináv országok"
+        },
+        "pt": {
+          "name": "Dinamarca",
+          "text": "Planeado – os países nórdicos"
+        },
+        "ro": {
+          "name": "Danemarca",
+          "text": "Planificat – țările nordice"
+        },
+        "el": {
+          "name": "Δανία",
+          "text": "Στα σχέδια – οι σκανδιναβικές χώρες"
+        },
+        "ka": {
+          "name": "დანია",
+          "text": "დაგეგმილი – სკანდინავიის ქვეყნები"
+        }
+      }
+    },
+    {
+      "id": "FI",
+      "isoNumeric": "246",
+      "status": "planned",
+      "i18n": {
+        "en": {
+          "name": "Finland",
+          "text": "Planned – the Nordic countries"
+        },
+        "hu": {
+          "name": "Finnország",
+          "text": "Tervben – a skandináv országok"
+        },
+        "pt": {
+          "name": "Finlândia",
+          "text": "Planeado – os países nórdicos"
+        },
+        "ro": {
+          "name": "Finlanda",
+          "text": "Planificat – țările nordice"
+        },
+        "el": {
+          "name": "Φινλανδία",
+          "text": "Στα σχέδια – οι σκανδιναβικές χώρες"
+        },
+        "ka": {
+          "name": "ფინეთი",
+          "text": "დაგეგმილი – სკანდინავიის ქვეყნები"
+        }
+      }
     }
   ]
 }

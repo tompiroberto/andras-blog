@@ -65,6 +65,36 @@ const { lang } = Astro.props;
     window.setTimeout(() => box.remove(), 2100);
   }
 
+  // ---- a new theme: the colours flow over, and a wave of the new main colour spreads from the click ----
+  let lastPointer = { x: window.innerWidth / 2, y: 80 };
+  document.addEventListener('pointerdown', (e) => (lastPointer = { x: e.clientX, y: e.clientY }), true);
+  let themeTimer = 0;
+  function themeWave() {
+    if (reduced()) return;
+    // the transition rules must be on in the same style update as the new colours
+    html.classList.add('vs-theme');
+    window.clearTimeout(themeTimer);
+    themeTimer = window.setTimeout(() => html.classList.remove('vs-theme'), 1100);
+    requestAnimationFrame(() => {
+      const w = document.createElement('div');
+      w.className = 'vs-wave';
+      w.setAttribute('aria-hidden', 'true');
+      const z = Number(getComputedStyle(html).zoom) || 1;
+      w.style.setProperty('--wx', `${lastPointer.x / z}px`);
+      w.style.setProperty('--wy', `${lastPointer.y / z}px`);
+      document.body.append(w);
+      window.setTimeout(() => w.remove(), 1200);
+    });
+  }
+  let theme = html.dataset.theme ?? '';
+  new MutationObserver(() => {
+    const now = html.dataset.theme ?? '';
+    if (now !== theme) {
+      theme = now;
+      themeWave();
+    }
+  }).observe(html, { attributes: true, attributeFilter: ['data-theme'] });
+
   // the first view of this tab: the CV opens with its animation
   if (html.classList.contains('cv-mode')) cvIn();
   let wasCv = html.classList.contains('cv-mode');
@@ -85,6 +115,45 @@ const { lang } = Astro.props;
 </script>
 
 <style is:global>
+  /* ---- theme change: colours flow over, a ring of the new colour spreads ---- */
+  :root.vs-theme,
+  :root.vs-theme *,
+  :root.vs-theme *::before,
+  :root.vs-theme *::after {
+    transition:
+      background-color 900ms ease,
+      color 900ms ease,
+      border-color 900ms ease,
+      fill 900ms ease,
+      stroke 900ms ease,
+      box-shadow 900ms ease !important;
+  }
+  .vs-wave {
+    position: fixed;
+    inset: 0;
+    z-index: 940;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--wx) var(--wy), transparent 0, transparent var(--r, 0px), var(--violet) calc(var(--r, 0px) + 2px), var(--yellow) calc(var(--r, 0px) + 26px), transparent calc(var(--r, 0px) + 60px));
+    animation: vs-wave 1100ms cubic-bezier(0.3, 0.6, 0.3, 1) forwards;
+    mix-blend-mode: normal;
+    opacity: 0.85;
+  }
+  @property --r {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 0px;
+  }
+  @keyframes vs-wave {
+    from {
+      --r: 0px;
+      opacity: 0.9;
+    }
+    to {
+      --r: 150vmax;
+      opacity: 0;
+    }
+  }
+
   /* ---- the CV is printed ---- */
   :root.vs-cv-in .cv-view > * {
     animation: vs-rise 700ms both cubic-bezier(0.2, 0.8, 0.2, 1);

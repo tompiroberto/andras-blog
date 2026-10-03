@@ -15,8 +15,9 @@ interface Props {
 
 const { lang } = Astro.props;
 const SHOWN = 6;
-const all = await getPhotos();
-const photos = all.slice(0, SHOWN);
+const all = await getPhotos(lang);
+// the home strip shows pictures only (videos are in the gallery)
+const photos = all.filter((p) => !p.video).slice(0, SHOWN);
 ---
 
 <section class="section photos" id="photos" data-lay="photos" data-dev-add="photo" aria-labelledby="photos-title">
@@ -32,7 +33,11 @@ const photos = all.slice(0, SHOWN);
           {photos.map((p) => (
             <li class="photos__item reveal">
               <a href={localePath(lang, 'gallery')}>
-                <Image src={p.image} alt={p.caption} widths={[320, 640]} sizes="(max-width: 600px) 100vw, 320px" loading="lazy" />
+                {p.image ? (
+                  <Image src={p.image} alt={p.caption} widths={[320, 640]} sizes="(max-width: 600px) 100vw, 320px" loading="lazy" />
+                ) : (
+                  <img src={p.src} alt={p.caption} loading="lazy" />
+                )}
               </a>
               <p class="photos__caption">
                 {p.caption}

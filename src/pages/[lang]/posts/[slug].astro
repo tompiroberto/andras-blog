@@ -8,6 +8,8 @@ import StravaEmbeds from '../../../components/StravaEmbeds.astro';
 import { HTML_LANG, LOCALES, NATIVE_NAMES, localePath, t, type Lang } from '../../../i18n';
 import { categoryMeta } from '../../../lib/categories';
 import { formatDate, getPosts } from '../../../lib/posts';
+import { getCollection } from 'astro:content';
+import { getPhotos } from '../../../lib/photos';
 
 export async function getStaticPaths() {
   const posts = await getPosts();
@@ -19,6 +21,13 @@ const lang = Astro.params.lang as Lang;
 const { Content } = await render(post);
 const { title, date, datePrecision, category, excerpt, cover, coverAlt, draft, facts, strava, lang: postLang } = post.data;
 const meta = categoryMeta(category);
+// photos / videos and music uploaded for this post
+const postPhotos = await Promise.all(
+  (await getPhotos(lang))
+    .filter((p) => p.post === post.id && p.files)
+    .map(async (p) => ({ ...p, thumb: p.image ? (await getImage({ src: p.image, width: 640 })).src : p.src, large: p.image ? (await getImage({ src: p.image, width: 1800 })).src : p.src })),
+);
+const postMusic = (await getCollection('music')).filter((m) => m.data.post === post.id);
 // the cover as the share picture (and in the structured data)
 const coverUrl = cover ? (await getImage({ src: cover, width: 1200 })).src : undefined;
 const postLd = {
@@ -77,6 +86,37 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
           <Content />
         </div>
         {strava && strava.length > 0 && <StravaEmbeds lang={lang} activities={strava} />}
+        {
+          postPhotos.length > 0 && (
+            <ul class="post-media">
+              {postPhotos.map((p) => (
+                <li>
+                  {p.video ? (
+                    <video src={p.video} controls preload="metadata" playsinline />
+                  ) : (
+                    <a href={p.large} target="_blank" rel="noopener">
+                      <img src={p.thumb} alt={p.caption} loading="lazy" />
+                    </a>
+                  )}
+                  <span>{p.caption}</span>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+        {
+          postMusic.length > 0 && (
+            <ul class="post-music">
+              {postMusic.map((m) => (
+                <li>
+                  <strong>♪ {m.data.artist ? `${m.data.artist} – ${m.data.title}` : m.data.title}</strong>
+                  {m.data.tags && <small>{m.data.tags.map((x) => `#${x}`).join(' ')}</small>}
+                  <audio src={m.data.file} controls preload="none" />
+                </li>
+              ))}
+            </ul>
+          )
+        }
         <p><a class="link-arrow back-link" href={localePath(lang, category)}>{t(lang, meta.linkKey)}</a></p>
       </div>
     </div>
@@ -84,6 +124,53 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
 </BaseLayout>
 
 <style>
+  .post-media {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .post-media li {
+    display: grid;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .post-media img,
+  .post-media video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border: var(--border);
+    border-radius: 14px;
+    background: #000;
+  }
+  .post-music {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .post-music li {
+    display: grid;
+    gap: 6px;
+    padding: 12px 14px;
+    border: var(--border);
+    border-radius: 14px;
+    background: var(--violet-tint);
+  }
+  .post-music small {
+    color: var(--violet);
+    font-weight: 700;
+  }
+  .post-music audio {
+    width: 100%;
+  }
   .post__header {
     padding-block: clamp(32px, 6vw, 72px) 0;
   }

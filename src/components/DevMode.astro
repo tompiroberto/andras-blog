@@ -49,6 +49,8 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   </div>
   <div class="dev-panel__post" hidden data-dev-post>
     <button type="button" class="dev-panel__btn" data-dev-post-edit><Icon name="file-pen" size={16} />{t(lang, 'dev.postEdit')}</button>
+    <button type="button" class="dev-panel__btn" data-dev-post-photo><Icon name="image-plus" size={16} />{t(lang, 'dev.postPhoto')}</button>
+    <button type="button" class="dev-panel__btn" data-dev-post-music><Icon name="music" size={16} />{t(lang, 'dev.postMusic')}</button>
     <button type="button" class="dev-panel__btn dev-panel__btn--danger" data-dev-post-delete><Icon name="trash-2" size={16} />{t(lang, 'dev.postDelete')}</button>
   </div>
   <details class="dev-log" data-dev-log>
@@ -1443,6 +1445,9 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   if (postSlug && postBox) {
     postBox.hidden = false;
     postBox.querySelector('[data-dev-post-edit]')!.addEventListener('click', () => window.dispatchEvent(new CustomEvent('andras:edit-post', { detail: { slug: postSlug } })));
+    // photos / videos / music that belong to this post (they show at its end)
+    postBox.querySelector('[data-dev-post-photo]')!.addEventListener('click', () => window.dispatchEvent(new CustomEvent('andras:upload-photos', { detail: { post: postSlug } })));
+    postBox.querySelector('[data-dev-post-music]')!.addEventListener('click', () => window.dispatchEvent(new CustomEvent('andras:upload-music', { detail: { post: postSlug } })));
     postBox.querySelector('[data-dev-post-delete]')!.addEventListener('click', async () => {
       if (!window.confirm(tpl('postconfirm'))) return;
       let key = getToken();
@@ -1515,7 +1520,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     /* storage unavailable */
   }
 
-  // 5 quick clicks on the header title; the clicks are counted across a page load too
+  // 5 quick clicks on the header title (or its planet, which never leaves the page); counted across a page load too
   document.querySelectorAll<HTMLAnchorElement>('.site-header .brand').forEach((brand) =>
     brand.addEventListener('click', (e) => {
       const now = Date.now();
@@ -1526,8 +1531,14 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
         /* storage unavailable */
       }
       clicks = [...clicks.filter((c) => now - c < WINDOW_MS), now];
+      // the planet itself does not lead home: it is the door to developer mode (it spins a little)
+      const planet = (e.target as Element).closest<HTMLElement>('.icon-circle');
+      if (planet) {
+        e.preventDefault();
+        planet.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: 500, easing: 'ease-out' });
+      }
       // already on this page: no reload, so the clicks can follow each other quickly
-      if (new URL(brand.href).pathname === location.pathname) {
+      else if (new URL(brand.href).pathname === location.pathname) {
         e.preventDefault();
         window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
       }

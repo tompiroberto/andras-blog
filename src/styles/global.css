@@ -717,7 +717,7 @@ select {
 :root.map-mode {
   overflow: hidden;
 }
-:root.map-mode body > :not(.map-mode-view):not(.chaos-view):not(.fact-card):not(.place-msg):not(.route-view):not(.dev-panel):not(.dev-toast):not(.dev-tip):not(.lay-save):not(.upl):not(.ped):not(.dev-gate):not(.mm-spin):not(script):not(style) {
+:root.map-mode body > :not(.map-mode-view):not(.chaos-view):not(.fact-card):not(.place-msg):not(.route-view):not(.dev-panel):not(.dev-toast):not(.dev-tip):not(.lay-save):not(.upl):not(.ped):not(.mup):not(.dev-gate):not(.mm-spin):not(script):not(style) {
   visibility: hidden;
 }
 

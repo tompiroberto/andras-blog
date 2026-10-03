@@ -25,7 +25,7 @@ const { lang } = Astro.props;
     <label class="upl__pick">
       <Icon name="images" size={22} />
       <span>{t(lang, 'upload.pick')}</span>
-      <input type="file" accept="image/*" multiple data-upload-files />
+      <input type="file" accept="image/*,video/*" multiple data-upload-files />
     </label>
 
     <ul class="upl__list" data-upload-list></ul>
@@ -67,6 +67,7 @@ const { lang } = Astro.props;
   <template data-upl-text-geofound>{t(lang, 'upload.geoFound')}</template>
   <template data-upl-text-coordsset>{t(lang, 'upload.coordsSet')}</template>
   <template data-upl-text-badcoords>{t(lang, 'upload.badCoords')}</template>
+  <template data-upl-text-videobig>{t(lang, 'upload.videoBig')}</template>
   <template data-upl-text-nogeo>{t(lang, 'upload.noGeo')}</template>
   <template data-upl-text-live>{t(lang, 'upload.live')}</template>
   <template data-upl-text-badimage>{t(lang, 'upload.badImage')}</template>
@@ -357,7 +358,19 @@ const { lang } = Astro.props;
       });
     };
 
-    const open = () => {
+    // opened from the world map (a city / a search): the new photos belong to that place
+    let preset: { place?: string; lat?: number; lng?: number; post?: string } | null = null;
+    // videos go up as they are (GitHub takes up to 100 MB; small ones spare Netlify's traffic)
+    const VIDEO_MAX = 40 * 1024 * 1024;
+    const toBase64 = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result).replace(/^data:[^,]*,/, ''));
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+    const open = (e?: Event) => {
+      preset = (e as CustomEvent<{ place?: string; lat?: number; lng?: number; post?: string }> | undefined)?.detail ?? null;
       if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
       token.refresh();
       say('');
@@ -368,7 +381,18 @@ const { lang } = Astro.props;
     picker.addEventListener('change', () => {
       for (const file of Array.from(picker.files ?? [])) {
         const row = rowTpl.content.firstElementChild!.cloneNode(true) as HTMLLIElement;
-        const thumb = row.querySelector<HTMLImageElement>('.upl__thumb')!;
+        let thumb = row.querySelector<HTMLImageElement>('.upl__thumb')!;
+        if (file.type.startsWith('video/')) {
+          // a video: its first frame as the thumbnail
+          const v = document.createElement('video');
+          v.className = 'upl__thumb';
+          v.muted = true;
+          v.preload = 'metadata';
+          thumb.replaceWith(v);
+          thumb = v as unknown as HTMLImageElement;
+          row.dataset.video = '1';
+          if (file.size > VIDEO_MAX) row.querySelector<HTMLElement>('[data-geo]')!.textContent = text('videobig');
+        }
         thumb.src = URL.createObjectURL(file);
         row.querySelector('.upl__remove')!.addEventListener('click', () => {
           URL.revokeObjectURL(thumb.src);
@@ -377,6 +401,13 @@ const { lang } = Astro.props;
         });
         row.querySelector('.upl__caption')!.addEventListener('input', (e) => (e.target as HTMLInputElement).removeAttribute('aria-invalid'));
         wireGeo(row, file);
+        if (preset?.lat !== undefined && preset.lng !== undefined) {
+          row.querySelector<HTMLInputElement>('.upl__place')!.value = preset.place ?? '';
+          row.dataset.lat = String(preset.lat);
+          row.dataset.lng = String(preset.lng);
+          row.dataset.fromGps = '1';
+          geoLine(row, preset.place ?? '');
+        }
         picked.set(row, file);
         list.append(row);
       }
@@ -407,19 +438,32 @@ const { lang } = Astro.props;
           const caption = row.querySelector<HTMLInputElement>('.upl__caption')!.value.trim();
           const place = row.querySelector<HTMLInputElement>('.upl__place')!.value.trim();
           const name = `${date}-${slugify(caption)}-${Math.random().toString(36).slice(2, 6)}`;
+          const file = picked.get(row)!;
+          const isVideo = !!row.dataset.video;
           let base64: string;
-          try {
-            base64 = await shrinkToJpeg(picked.get(row)!);
-          } catch {
-            throw new Error(`${text('badimage')} (${picked.get(row)!.name})`);
+          let media: string;
+          if (isVideo) {
+            if (file.size > VIDEO_MAX) throw new Error(`${text('videobig')} (${file.name})`);
+            base64 = await toBase64(file);
+            const ext = (file.name.match(/\.([a-z0-9]{2,4})$/i)?.[1] ?? 'mp4').toLowerCase();
+            files.push({ path: `public/videos/${name}.${ext}`, base64 });
+            media = `video: /videos/${name}.${ext}`;
+          } else {
+            try {
+              base64 = await shrinkToJpeg(file);
+            } catch {
+              throw new Error(`${text('badimage')} (${file.name})`);
+            }
+            files.push({ path: `src/assets/photos/${name}.jpg`, base64 });
+            previews.push([`data:image/jpeg;base64,${base64}`, caption, place]);
+            media = `image: ../../assets/photos/${name}.jpg`;
           }
-          files.push({ path: `src/assets/photos/${name}.jpg`, base64 });
-          previews.push([`data:image/jpeg;base64,${base64}`, caption, place]);
           // JSON strings are valid YAML, so quotes and colons in the description cannot break the file
           const lat = row.dataset.lat ? Math.round(Number(row.dataset.lat) * 1e5) / 1e5 : null;
           const lng = row.dataset.lng ? Math.round(Number(row.dataset.lng) * 1e5) / 1e5 : null;
           const yml = [
-            `image: ../../assets/photos/${name}.jpg`,
+            media,
+            preset?.post && `post: ${preset.post}`,
             `caption: ${JSON.stringify(caption)}`,
             place && `place: ${JSON.stringify(place)}`,
             `date: ${date}`,
