@@ -752,5 +752,19 @@
   "cal.photosUpload": "Képek / videók feltöltése",
   "cal.noPhotos": "Még nincs kép.",
   "cal.seePhotos": "Képek megtekintése",
-  "cal.hearMusic": "Zene meghallgatása"
+  "cal.hearMusic": "Zene meghallgatása",
+  "cal.abroad": "külföldön töltött nap idén ({year})",
+  "music.playlists": "Az utazásaim playlistjei",
+  "music.songs": "{n} dal",
+  "music.playAll": "Az összes lejátszása",
+  "cal.playlist": "A playlistje",
+  "cal.abroadPct": "az idei napjaimnak ennyi részét töltöttem külföldön ({year})",
+  "cal.since": "Ennyi idő telt el a legutóbbi kaland óta",
+  "cal.noLast": "Még nem volt kaland",
+  "cal.hintSince": "Kattints: mennyi idő telt el a legutóbbi kaland óta",
+  "cal.hintTo": "Kattints: visszaszámlálás a következőig",
+  "cal.tlAdd": "Új kaland",
+  "cal.tlSchema": "cím · hely · dátum · zászló · szín",
+  "cal.phTitle": "pl. Görögország – Erasmus+",
+  "cal.phPlace": "pl. Elafonisszosz"
 }

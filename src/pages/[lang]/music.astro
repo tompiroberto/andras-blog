@@ -8,6 +8,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import SectionHeading from '../../components/SectionHeading.astro';
 import Icon from '../../components/Icon.astro';
 import { HTML_LANG, langStaticPaths, localePath, t, type Lang } from '../../i18n';
+import calendar from '../../data/calendar.json';
 
 export const getStaticPaths = langStaticPaths;
 
@@ -23,6 +24,10 @@ const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) =
 /** the main site: a copy on another host also plays the music uploaded there (/music.json) */
 const MAIN_SITE = import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app';
 const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefined;
+// every calendar event with music is a playlist (the newest trip first); built in the browser, so a copy
+// on another host can use the main site's calendar too
+type CalEvent = { id: string; title: string; title_en?: string; country?: string; from: string; to: string; color: string; music?: string[] };
+const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length);
 ---
 
 <BaseLayout lang={lang} title={t(lang, 'music.title')} description={t(lang, 'music.lead')}>
@@ -36,6 +41,14 @@ const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefine
 
       {tracks.length === 0 && <p class="music__empty" data-music-empty>{t(lang, 'music.empty')}</p>}
 
+      <!-- playlists: one for each calendar event that has music -->
+      <section class="music__playlists" hidden data-music-playlists data-lang={lang} aria-label={t(lang, 'music.playlists')}>
+        <h2 class="music__pl-title">🎧 {t(lang, 'music.playlists')}</h2>
+        <div class="music__pl-row" data-pl-row></div>
+      </section>
+      <script type="application/json" data-pl-events set:html={JSON.stringify(calEvents)} />
+      <template data-pl-songs>{t(lang, 'music.songs')}</template>
+      <template data-pl-all>{t(lang, 'music.playAll')}</template>
       <p class="music__tags" data-music-tags hidden={allTags.length === 0}>
         <button type="button" class="tagchip is-on" data-tag="">{t(lang, 'music.all')}</button>
         {
@@ -141,7 +154,7 @@ const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefine
     gap: 8px;
     margin: 22px 0 0;
   }
-  .tagchip {
+  :global(.tagchip) {
     padding: 6px 14px;
     border: 2px solid var(--ink);
     border-radius: 999px;
@@ -151,9 +164,74 @@ const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefine
     font-weight: 700;
     cursor: pointer;
   }
-  .tagchip.is-on {
+  :global(.tagchip.is-on) {
     background: var(--yellow);
     box-shadow: 3px 3px 0 var(--ink);
+  }
+  /* playlists: one card per trip */
+  .music__playlists {
+    margin: 26px 0 0;
+  }
+  .music__playlists[hidden] {
+    display: none;
+  }
+  .music__pl-title {
+    margin: 0 0 12px;
+    font-size: clamp(20px, 2.4vw, 26px);
+  }
+  .music__pl-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  :global(.plcard) {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--c) 30%, var(--surface, #fff)), var(--surface, #fff));
+    color: var(--ink);
+    box-shadow: 4px 4px 0 var(--c);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 160ms ease;
+  }
+  :global(.plcard:hover) {
+    transform: translate(-2px, -2px);
+  }
+  :global(.plcard.is-on) {
+    outline: 3px solid var(--yellow);
+    outline-offset: 2px;
+  }
+  :global(.plcard img) {
+    width: 36px;
+    height: 24px;
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    object-fit: cover;
+  }
+  :global(.plcard strong) {
+    display: block;
+    line-height: 1.2;
+  }
+  :global(.plcard small) {
+    color: var(--muted);
+    font-weight: 700;
+  }
+  :global(.plcard__play) {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--yellow);
+    font-size: 15px;
   }
   /* small tiles side by side */
   .music__list {
@@ -401,8 +479,69 @@ const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefine
     const b = (e.target as Element).closest<HTMLButtonElement>('[data-tag]');
     if (!b) return;
     tagBox.querySelectorAll('[data-tag]').forEach((x) => x.classList.toggle('is-on', x === b));
+    document.querySelectorAll('.plcard').forEach((x) => x.classList.remove('is-on'));
     const tag = b.dataset.tag;
     document.querySelectorAll<HTMLElement>('[data-track]').forEach((tr) => (tr.hidden = !!tag && !(tr.dataset.tags ?? '').split(',').includes(tag)));
+  });
+
+  // playlists: every calendar event with music; a click shows its songs and plays them one after the other
+  type PlEvent = { id: string; title: string; title_en?: string; country?: string; from: string; color: string; music?: string[] };
+  const plBox = document.querySelector<HTMLElement>('[data-music-playlists]');
+  const plTpl = (n: string) => document.querySelector<HTMLTemplateElement>(`[data-pl-${n}]`)?.content.textContent ?? '';
+  function renderPlaylists(events: PlEvent[]) {
+    if (!plBox) return;
+    const isHu = plBox.dataset.lang === 'hu';
+    const have = new Set(Array.from(document.querySelectorAll<HTMLElement>('[data-track]')).map((tr) => tr.dataset.id));
+    const row = plBox.querySelector<HTMLElement>('[data-pl-row]')!;
+    const lists = events
+      .map((e) => ({ e, ids: (e.music ?? []).filter((id) => have.has(id)) }))
+      .filter((x) => x.ids.length)
+      .sort((a, b) => b.e.from.localeCompare(a.e.from));
+    row.replaceChildren(
+      ...lists.map(({ e, ids }) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'plcard';
+        b.dataset.pl = e.id;
+        b.dataset.ids = ids.join(',');
+        b.style.setProperty('--c', e.color);
+        if (e.country) {
+          const img = document.createElement('img');
+          img.src = `/flags/${e.country.toLowerCase()}.svg`;
+          img.alt = '';
+          b.append(img);
+        } else b.append(document.createElement('span'));
+        const txt = document.createElement('span');
+        const strong = document.createElement('strong');
+        strong.textContent = isHu ? e.title : e.title_en || e.title;
+        const small = document.createElement('small');
+        small.textContent = plTpl('songs').replace('{n}', String(ids.length));
+        txt.append(strong, small);
+        const play = document.createElement('span');
+        play.className = 'plcard__play';
+        play.textContent = '▶';
+        play.title = plTpl('all');
+        b.append(txt, play);
+        return b;
+      }),
+    );
+    plBox.hidden = !lists.length;
+  }
+  plBox?.addEventListener('click', (e) => {
+    const b = (e.target as Element).closest<HTMLElement>('.plcard');
+    if (!b) return;
+    const on = !b.classList.contains('is-on');
+    plBox.querySelectorAll('.plcard').forEach((x) => x.classList.toggle('is-on', x === b && on));
+    tagBox?.querySelectorAll('[data-tag]').forEach((x) => x.classList.toggle('is-on', !on && (x as HTMLElement).dataset.tag === ''));
+    const ids = on ? (b.dataset.ids ?? '').split(',') : null;
+    const shown: HTMLElement[] = [];
+    document.querySelectorAll<HTMLElement>('[data-track]').forEach((tr) => {
+      tr.hidden = !!ids && !ids.includes(tr.dataset.id ?? '');
+      if (!tr.hidden) shown.push(tr);
+    });
+    // in the playlist's order
+    if (ids) shown.sort((a, c) => ids.indexOf(a.dataset.id!) - ids.indexOf(c.dataset.id!)).forEach((tr) => tr.parentElement!.append(tr));
+    if (on) shown[0]?.querySelector<HTMLButtonElement>('[data-track-play]')?.click();
   });
 
   /*
@@ -455,7 +594,23 @@ const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefine
         .catch((err) => console.warn('[music] the main site could not be reached', err))
     : Promise.resolve();
 
-  void fromMain.then(startPlayer);
+  void fromMain.then(async () => {
+    startPlayer();
+    let events = JSON.parse(document.querySelector('[data-pl-events]')?.textContent || '[]') as PlEvent[];
+    if (liveSite)
+      events = await fetch(`${liveSite}/calendar.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((d: { events: PlEvent[] }) => d.events.filter((e) => e.music?.length))
+        .catch(() => events);
+    renderPlaylists(events);
+    // ?playlist=<event id> (from the calendar): that playlist starts
+    const want = new URLSearchParams(location.search).get('playlist');
+    if (want) {
+      const card = plBox?.querySelector<HTMLElement>(`[data-pl="${CSS.escape(want)}"]`);
+      card?.scrollIntoView({ block: 'center' });
+      card?.click();
+    }
+  });
   function startPlayer() {
   const audio = document.querySelector<HTMLAudioElement>('[data-music-audio]');
   const tracks = Array.from(document.querySelectorAll<HTMLElement>('[data-track]'));
@@ -468,7 +623,8 @@ const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefine
         current = tr;
         audio.src = tr.dataset.src!;
       }
-      void audio.play();
+      // (a link that opens a playlist cannot start the sound by itself: the browser waits for a click)
+      audio.play().catch(() => {});
     };
     tracks.forEach((tr) => {
       tr.querySelector('[data-track-play]')!.addEventListener('click', () => {
@@ -495,7 +651,9 @@ const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefine
     });
     // one after the other
     audio.addEventListener('ended', () => {
-      const next = tracks[tracks.indexOf(current!) + 1];
+      // the next one that is shown (a hashtag or a playlist: only those), in the list's order
+      const order = Array.from(document.querySelectorAll<HTMLElement>('[data-track]')).filter((x) => !x.hidden);
+      const next = order[order.indexOf(current!) + 1];
       current?.classList.remove('is-playing');
       if (next) play(next);
     });

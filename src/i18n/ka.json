@@ -752,5 +752,19 @@
   "cal.photosUpload": "ფოტოების / ვიდეოების ატვირთვა",
   "cal.noPhotos": "ჯერ ფოტო არ არის.",
   "cal.seePhotos": "ფოტოების ნახვა",
-  "cal.hearMusic": "მუსიკის მოსმენა"
+  "cal.hearMusic": "მუსიკის მოსმენა",
+  "cal.abroad": "დღე საზღვარგარეთ წელს ({year})",
+  "music.playlists": "ჩემი მოგზაურობების playlist-ები",
+  "music.songs": "{n} სიმღერა",
+  "music.playAll": "ყველას დაკვრა",
+  "cal.playlist": "მისი playlist",
+  "cal.abroadPct": "წლევანდელი დღეებიდან საზღვარგარეთ ({year})",
+  "cal.since": "ჩემი ბოლო თავგადასავლიდან",
+  "cal.noLast": "ჯერ თავგადასავალი არ ყოფილა",
+  "cal.hintSince": "დააჭირე: ბოლო თავგადასავლიდან გასული დრო",
+  "cal.hintTo": "დააჭირე: უკუთვლა შემდეგამდე",
+  "cal.tlAdd": "ახალი თავგადასავალი",
+  "cal.tlSchema": "სათაური · ადგილი · თარიღები · დროშა · ფერი",
+  "cal.phTitle": "მაგ. საბერძნეთი – Erasmus+",
+  "cal.phPlace": "მაგ. ელაფონისოსი"
 }

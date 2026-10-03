@@ -13,6 +13,12 @@
 
 # copies of the site on other hosts read the gallery from here
 [[headers]]
+  for = "/map.json"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Cache-Control = "public, max-age=60"
+
+[[headers]]
   for = "/friends.json"
   [headers.values]
     Access-Control-Allow-Origin = "*"

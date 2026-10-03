@@ -13,7 +13,7 @@ import { getCollection } from 'astro:content';
 import { countries as FLAG_CODES } from 'country-flag-icons';
 import { getImage } from 'astro:assets';
 import { getPhotos } from '../lib/photos';
-import { HTML_LANG, t, type Lang } from '../i18n';
+import { HTML_LANG, localePath, t, type Lang } from '../i18n';
 
 interface Props {
   lang: Lang;
@@ -52,6 +52,17 @@ const words = {
   planWhen: t(lang, 'cal.planWhen'),
   planAdd: t(lang, 'cal.planAdd'),
   confirmPlan: t(lang, 'cal.confirmPlan'),
+  abroad: t(lang, 'cal.abroad'),
+  abroadPct: t(lang, 'cal.abroadPct'),
+  since: t(lang, 'cal.since'),
+  countdown: t(lang, 'cal.countdown'),
+  noLast: t(lang, 'cal.noLast'),
+  hintSince: t(lang, 'cal.hintSince'),
+  hintTo: t(lang, 'cal.hintTo'),
+  tlAdd: t(lang, 'cal.tlAdd'),
+  tlSchema: t(lang, 'cal.tlSchema'),
+  playlist: t(lang, 'cal.playlist'),
+  musicPage: localePath(lang, 'music'),
   d: t(lang, 'cal.cd.d'),
   h: t(lang, 'cal.cd.h'),
   m: t(lang, 'cal.cd.m'),
@@ -104,30 +115,38 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
   <!-- right: the countdown to the next adventure; below: planned – join me -->
   <aside class="cal-side cal-side--right">
     <div class="cal-cd" data-cal-cd>
-      <p class="cal-side__title">⏳ {t(lang, 'cal.countdown')}</p>
-      <p class="cal-cd__to" data-cal-cd-to></p>
-      <div class="cal-cd__digits" data-cal-cd-digits>
-        {['d', 'h', 'm', 's'].map((u) => (
-          <span class="cal-cd__unit"><b data-cd={u}>0</b><small>{words[u as 'd']}</small></span>
-        ))}
+      <!-- a click: the time since the last adventure (and back) -->
+      <div class="cal-cd__top" role="button" tabindex="0" data-cal-cd-toggle>
+        <p class="cal-side__title" data-cal-cd-title>⏳ {t(lang, 'cal.countdown')}</p>
+        <p class="cal-cd__to" data-cal-cd-to></p>
+        <div class="cal-cd__digits" data-cal-cd-digits>
+          {['d', 'h', 'm', 's'].map((u) => (
+            <span class="cal-cd__unit"><b data-cd={u}>0</b><small>{words[u as 'd']}</small></span>
+          ))}
+        </div>
+        <p class="cal-cd__date" data-cal-cd-date></p>
+        <small class="cal-cd__hint" data-cal-cd-hint></small>
       </div>
-      <p class="cal-cd__date" data-cal-cd-date></p>
       <p class="cal-cd__now" hidden data-cal-cd-now></p>
+      <!-- days spent abroad this year (so far) -->
+      <button type="button" class="cal-cd__abroad" data-cal-abroad-toggle><b data-cal-abroad>0</b><span data-cal-abroad-label></span></button>
     </div>
     <div class="cal-plans">
       <p class="cal-side__title">💡 {t(lang, 'cal.plans')}</p>
-      <ul class="cal-plans__list" data-cal-plans></ul>
+      <button type="button" class="cal-btn cal-btn--add cal-plans__add" data-cal-plan-add>＋ {words.planAdd}</button>
+      <!-- developer mode: a new plan is written straight into a card that looks like the others -->
       <form class="cal-plans__form" hidden data-cal-plan-form>
-        <input type="text" maxlength="120" required data-cp="text" placeholder={`🇭🇺 ${words.planText}`} />
-        <input type="text" maxlength="120" data-cp="text_en" placeholder="🇬🇧 English" />
-        <input type="text" maxlength="40" data-cp="when" placeholder={`🇭🇺 ${words.planWhen}`} />
-        <input type="text" maxlength="40" data-cp="when_en" placeholder="🇬🇧 When? (English)" />
+        <input class="cal-plans__in-text" type="text" maxlength="120" required data-cp="text" placeholder={`🇭🇺 ${words.planText}`} />
+        <input class="cal-plans__in-small" type="text" maxlength="120" data-cp="text_en" placeholder="🇬🇧 English" />
+        <span class="cal-plans__when">🗓 <input class="cal-plans__in-small" type="text" maxlength="40" data-cp="when" placeholder={`🇭🇺 ${words.planWhen}`} /></span>
+        <span class="cal-plans__when">🗓 <input class="cal-plans__in-small" type="text" maxlength="40" data-cp="when_en" placeholder="🇬🇧 When? (e.g. around spring)" /></span>
+        <span class="cal-btn cal-plans__join cal-plans__preview" aria-hidden="true">✋ {words.join}</span>
         <div class="cal-form__actions">
           <button type="button" class="cal-btn" data-cp-cancel>✕</button>
           <button type="submit" class="cal-btn cal-btn--add">{words.save}</button>
         </div>
       </form>
-      <button type="button" class="cal-btn cal-btn--add cal-plans__add" data-cal-plan-add>＋ {words.planAdd}</button>
+      <ul class="cal-plans__list" data-cal-plans></ul>
     </div>
   </aside>
   </div>
@@ -145,12 +164,12 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
   <form class="cal-form" hidden data-cal-form>
     <strong data-cal-form-title>＋ {words.add}</strong>
     <div class="cal-form__row">
-      <label>{words.title} 🇭🇺<input type="text" maxlength="80" required data-cf="title" /></label>
-      <label>English 🇬🇧<input type="text" maxlength="80" data-cf="title_en" /></label>
+      <label>{words.title} 🇭🇺<input type="text" maxlength="80" required data-cf="title" placeholder={t(lang, 'cal.phTitle')} /></label>
+      <label>English 🇬🇧<input type="text" maxlength="80" data-cf="title_en" placeholder="e.g. Greece – Erasmus+" /></label>
     </div>
     <div class="cal-form__row">
-      <label>{words.place} 🇭🇺<input type="text" maxlength="80" data-cf="place" /></label>
-      <label>English 🇬🇧<input type="text" maxlength="80" data-cf="place_en" /></label>
+      <label>{words.place} 🇭🇺<input type="text" maxlength="80" data-cf="place" placeholder={t(lang, 'cal.phPlace')} /></label>
+      <label>English 🇬🇧<input type="text" maxlength="80" data-cf="place_en" placeholder="e.g. Elafonisos" /></label>
     </div>
     <label>{t(lang, 'cal.country')}<select data-cf="country"><option value="">—</option></select></label>
     <div class="cal-form__row">
@@ -501,6 +520,60 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
     font-size: 14px;
     font-weight: 700;
   }
+  .cal-cd__top {
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .cal-cd__top:focus-visible {
+    outline: 3px solid var(--violet);
+    outline-offset: 4px;
+  }
+  .cal-cd.is-since .cal-cd__unit {
+    background: color-mix(in srgb, var(--violet) 22%, var(--surface, #fff));
+  }
+  .cal-cd__hint {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .cal-cd__abroad {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    background: none;
+    color: inherit;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .cal-cd__abroad b {
+    transition: background-color 200ms ease;
+  }
+  .cal-cd__abroad.is-pct b {
+    background: var(--yellow);
+  }
+  .cal-cd__abroad {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding-top: 10px;
+    border-top: 2px dashed color-mix(in srgb, var(--ink) 25%, transparent);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: left;
+  }
+  .cal-cd__abroad b {
+    padding: 2px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    background: var(--surface, #fff);
+    box-shadow: 2px 2px 0 var(--violet);
+    font: 900 18px / 1.2 var(--font-heading);
+    font-variant-numeric: tabular-nums;
+  }
   .cal-cd__now[hidden],
   .cal-cd__digits[hidden],
   .cal-plans__form[hidden] {
@@ -563,16 +636,75 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
   :root.dev-mode:not(.dev-preview) .cal-plans__add {
     display: inline-flex;
   }
+  /* the new plan: a card like the others, its fields written in place */
   .cal-plans__form {
     display: grid;
-    gap: 8px;
-    margin-top: 10px;
+    gap: 6px;
+    margin: 0 0 10px;
+    padding: 10px;
+    border: 2px dashed #1f8a3a;
+    border-radius: 12px;
+    background: color-mix(in srgb, #39d353 8%, transparent);
+    animation: cal-tl-in 400ms cubic-bezier(0.3, 1.4, 0.5, 1);
   }
   .cal-plans__form input {
-    padding: 8px 10px;
-    border: 2px solid var(--ink);
-    border-radius: 8px;
+    width: 100%;
+    padding: 2px 0;
+    border: 0;
+    border-bottom: 1.5px dashed color-mix(in srgb, var(--ink) 35%, transparent);
+    background: none;
+    color: inherit;
     font: inherit;
+  }
+  .cal-plans__form input:focus {
+    outline: 0;
+    border-bottom-color: var(--violet);
+  }
+  .cal-plans__in-text {
+    font-weight: 800 !important;
+    line-height: 1.25;
+  }
+  .cal-plans__in-small {
+    color: var(--muted) !important;
+    font-size: 13px !important;
+  }
+  .cal-plans__when {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+  }
+  .cal-plans__preview {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  @container (min-width: 1080px) and (min-height: 480px) {
+    .cal-plans {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    /* the plans scroll on their own */
+    .cal-plans__list {
+      flex: 0 1 auto;
+      min-height: 0;
+      overflow: auto;
+      overscroll-behavior: contain;
+      padding: 2px 4px 2px 0;
+    }
+  }
+  /* developer mode: "+ new adventure" at the end of the timeline */
+  .cal-tl__add {
+    display: none !important;
+    border: 2px dashed #1f8a3a !important;
+    background: color-mix(in srgb, #39d353 8%, transparent);
+    color: #1f8a3a;
+  }
+  .cal-tl__add::before {
+    background: #39d353 !important;
+  }
+  :root.dev-mode:not(.dev-preview) .cal-tl__add {
+    display: grid !important;
   }
   /* the sheet flips down from the top, like a wall calendar's page */
   .cal-sheet {
@@ -968,6 +1100,12 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
   .cal-day__media .cal-btn[aria-expanded='true'] {
     background: var(--yellow);
   }
+  .cal-day__pl {
+    justify-self: start;
+    color: var(--violet);
+    font-size: 13px;
+    font-weight: 800;
+  }
   .cal-day__music[hidden] {
     display: none;
   }
@@ -1344,19 +1482,23 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
         const side = list.closest<HTMLElement>('.cal-side')!;
         requestAnimationFrame(() => (side.scrollTop = side.scrollHeight));
       }
-      // countdown
-      const to = view!.querySelector<HTMLElement>('[data-cal-cd-to]')!;
-      to.replaceChildren();
-      if (next) {
-        const flag = flagImg(next.country);
-        if (flag) to.append(flag);
-        to.append(tr(next, 'place') && next.country ? regionNames.of(next.country) ?? tr(next, 'title') : tr(next, 'title'));
-        view!.querySelector('[data-cal-cd-date]')!.textContent = [...new Set([tr(next, 'title'), tr(next, 'place')].filter(Boolean))].concat(range(next)).join(' · ');
-      } else {
-        to.textContent = W.noNext;
-        view!.querySelector('[data-cal-cd-date]')!.textContent = '';
-      }
-      view!.querySelector<HTMLElement>('[data-cal-cd-digits]')!.hidden = !next;
+      // the timeline's last row (developer mode): a new adventure, with the fields it will have
+      const add = document.createElement('li');
+      add.className = 'cal-tl__item cal-tl__add';
+      add.style.setProperty('--c', '#39d353');
+      add.style.setProperty('--i', '0');
+      const addHead = document.createElement('span');
+      addHead.className = 'cal-tl__head';
+      addHead.textContent = `＋ ${W.tlAdd}`;
+      const addHint = document.createElement('small');
+      addHint.textContent = W.tlSchema;
+      add.append(addHead, addHint);
+      add.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        openForm(null, todayIso);
+      });
+      list.append(add);
+      renderCountdown();
       const cur = nowEv();
       const nowBox = view!.querySelector<HTMLElement>('[data-cal-cd-now]')!;
       nowBox.hidden = !cur;
@@ -1364,14 +1506,69 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
         const left = Math.round((parse(cur.to).getTime() - parse(today).getTime()) / 864e5);
         nowBox.textContent = `🎉 ${W.now}: ${tr(cur, 'title')} · ${W.untilEnd.replace('{n}', String(left + 1))}`;
       }
-      tick();
+      // days abroad this year, up to today: every day of the trips (not in Hungary), each day once
+      const year = new Date().getFullYear();
+      const days = new Set<string>();
+      for (const e of data.events) {
+        if (e.country === 'HU') continue;
+        for (let d = parse(e.from); iso(d) <= e.to && iso(d) <= today; d.setDate(d.getDate() + 1)) if (d.getFullYear() === year) days.add(iso(d));
+      }
+      abroad = { days: days.size, of: Math.round((parse(today).getTime() - new Date(year, 0, 1).getTime()) / 864e5) + 1, year };
+      showAbroad();
       renderPlans();
     }
     const digits = Object.fromEntries(['d', 'h', 'm', 's'].map((u) => [u, view.querySelector<HTMLElement>(`[data-cd="${u}"]`)!]));
+    // the countdown: to the next adventure – or (a click) the time since the last one ended; both follow the calendar
+    let cdMode: 'to' | 'since' = 'to';
+    const lastEv = () => sorted().filter((e) => e.to < iso(new Date())).sort((a, b) => a.to.localeCompare(b.to)).pop();
+    /** the moment the last adventure ended: the day after its last day */
+    const endOf = (e: Ev) => {
+      const d = parse(e.to);
+      d.setDate(d.getDate() + 1);
+      return d.getTime();
+    };
+    let shownDay = '';
+    function renderCountdown() {
+      shownDay = iso(new Date());
+      const box = view!.querySelector<HTMLElement>('[data-cal-cd]')!;
+      box.classList.toggle('is-since', cdMode === 'since');
+      view!.querySelector('[data-cal-cd-title]')!.textContent = cdMode === 'to' ? `⏳ ${W.countdown}` : `⏱ ${W.since}`;
+      view!.querySelector('[data-cal-cd-hint]')!.textContent = cdMode === 'to' ? W.hintSince : W.hintTo;
+      const e = cdMode === 'to' ? nextEv() : lastEv();
+      const to = view!.querySelector<HTMLElement>('[data-cal-cd-to]')!;
+      to.replaceChildren();
+      if (e) {
+        const flag = flagImg(e.country);
+        if (flag) to.append(flag);
+        to.append(tr(e, 'place') && e.country ? regionNames.of(e.country) ?? tr(e, 'title') : tr(e, 'title'));
+        view!.querySelector('[data-cal-cd-date]')!.textContent = [...new Set([tr(e, 'title'), tr(e, 'place')].filter(Boolean))].concat(range(e)).join(' · ');
+      } else {
+        to.textContent = cdMode === 'to' ? W.noNext : W.noLast;
+        view!.querySelector('[data-cal-cd-date]')!.textContent = '';
+      }
+      view!.querySelector<HTMLElement>('[data-cal-cd-digits]')!.hidden = !e;
+      tick();
+    }
+    const cdToggle = view.querySelector<HTMLElement>('[data-cal-cd-toggle]')!;
+    const flipMode = () => {
+      cdMode = cdMode === 'to' ? 'since' : 'to';
+      renderCountdown();
+    };
+    cdToggle.addEventListener('click', flipMode);
+    cdToggle.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        flipMode();
+      }
+    });
     function tick() {
-      const next = nextEv();
-      if (!next) return;
-      let ms = Math.max(0, parse(next.from).getTime() - Date.now());
+      // a new day (or the next adventure has begun): everything moves on by itself
+      if (shownDay && shownDay !== iso(new Date())) return renderSides();
+      const e = cdMode === 'to' ? nextEv() : lastEv();
+      if (!e) return;
+      const diff = cdMode === 'to' ? parse(e.from).getTime() - Date.now() : Date.now() - endOf(e);
+      if (cdMode === 'to' && diff <= 0) return renderSides();
+      let ms = Math.max(0, diff);
       const parts: Record<string, number> = { d: Math.floor(ms / 864e5) };
       ms -= parts.d * 864e5;
       parts.h = Math.floor(ms / 36e5);
@@ -1391,6 +1588,22 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
     window.setInterval(() => {
       if (html.classList.contains('cal-mode')) tick();
     }, 1000);
+
+    // days abroad this year: the number, or (a click) the share of the year's days so far
+    let abroad = { days: 0, of: 1, year: new Date().getFullYear() };
+    let abroadPct = false;
+    const abroadBtn = view.querySelector<HTMLButtonElement>('[data-cal-abroad-toggle]')!;
+    function showAbroad() {
+      abroadBtn.classList.toggle('is-pct', abroadPct);
+      view!.querySelector('[data-cal-abroad]')!.textContent = abroadPct
+        ? `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format((abroad.days / abroad.of) * 100)}%`
+        : String(abroad.days);
+      view!.querySelector('[data-cal-abroad-label]')!.textContent = `🌍 ${(abroadPct ? W.abroadPct : W.abroad).replace('{year}', String(abroad.year))}`;
+    }
+    abroadBtn.addEventListener('click', () => {
+      abroadPct = !abroadPct;
+      showAbroad();
+    });
 
     // planned – join me (a click: the message window); developer mode: add / change / delete
     const planForm = view.querySelector<HTMLFormElement>('[data-cal-plan-form]')!;
@@ -1452,6 +1665,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       cp('text_en').value = p?.text_en ?? '';
       cp('when_en').value = p?.when_en ?? '';
       planForm.hidden = false;
+      planForm.scrollIntoView({ block: 'nearest' });
       cp('text').focus();
     }
     view.querySelector('[data-cal-plan-add]')!.addEventListener('click', () => openPlan(null));
@@ -1467,7 +1681,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
         ...(val('when_en') ? { when_en: val('when_en') } : {}),
       };
       const before = data.plans;
-      data.plans = planEditing ? (data.plans ?? []).map((x) => (x.id === item.id ? item : x)) : [...(data.plans ?? []), item];
+      data.plans = planEditing ? (data.plans ?? []).map((x) => (x.id === item.id ? item : x)) : [item, ...(data.plans ?? [])];
       try {
         await save(`💡 ${item.text}`);
         planForm.hidden = true;
@@ -1671,6 +1885,12 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
             const box = document.createElement('div');
             box.className = 'cal-day__music';
             box.hidden = true;
+            // its own playlist on the music page
+            const a = document.createElement('a');
+            a.className = 'cal-day__pl';
+            a.href = `${W.musicPage}?playlist=${encodeURIComponent(e.id)}`;
+            a.textContent = `🎧 ${W.playlist} ↗`;
+            box.append(a);
             for (const tr of music) {
               const label = document.createElement('span');
               label.textContent = `🎵 ${trackName(tr)}`;
@@ -1752,8 +1972,16 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       const sel = cf('country') as unknown as HTMLSelectElement;
       if (sel.options.length > 1) return;
       const names = new Intl.DisplayNames([locale], { type: 'region' });
+      const nameOf = (c: string) => {
+        try {
+          return names.of(c) ?? c;
+        } catch {
+          return c; // not a country code (e.g. GB-ENG): left out below
+        }
+      };
       flagCodes
-        .map((c) => [c, names.of(c) ?? c] as const)
+        .filter((c) => /^[A-Z]{2}$/.test(c))
+        .map((c) => [c, nameOf(c)] as const)
         .filter(([c, n]) => n !== c)
         .sort((a, b) => a[1].localeCompare(b[1], locale))
         .forEach(([c, n]) => sel.add(new Option(n, c)));

@@ -752,5 +752,19 @@
   "cal.photosUpload": "Upload photos / videos",
   "cal.noPhotos": "No photos yet.",
   "cal.seePhotos": "See the photos",
-  "cal.hearMusic": "Listen to the music"
+  "cal.hearMusic": "Listen to the music",
+  "cal.abroad": "days abroad this year ({year})",
+  "music.playlists": "Playlists of my trips",
+  "music.songs": "{n} songs",
+  "music.playAll": "Play all",
+  "cal.playlist": "Its playlist",
+  "cal.abroadPct": "of this year's days abroad ({year})",
+  "cal.since": "Since my last adventure",
+  "cal.noLast": "No adventure yet",
+  "cal.hintSince": "Click: the time since the last adventure",
+  "cal.hintTo": "Click: the countdown to the next one",
+  "cal.tlAdd": "New adventure",
+  "cal.tlSchema": "title · place · dates · flag · colour",
+  "cal.phTitle": "e.g. Greece – Erasmus+",
+  "cal.phPlace": "e.g. Elafonisos"
 }

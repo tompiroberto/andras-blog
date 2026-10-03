@@ -752,5 +752,19 @@
   "cal.photosUpload": "Ανέβασε φωτογραφίες / βίντεο",
   "cal.noPhotos": "Δεν υπάρχουν ακόμα φωτογραφίες.",
   "cal.seePhotos": "Δες τις φωτογραφίες",
-  "cal.hearMusic": "Άκου τη μουσική"
+  "cal.hearMusic": "Άκου τη μουσική",
+  "cal.abroad": "μέρες στο εξωτερικό φέτος ({year})",
+  "music.playlists": "Playlists των ταξιδιών μου",
+  "music.songs": "{n} τραγούδια",
+  "music.playAll": "Παίξε όλα",
+  "cal.playlist": "Η playlist του",
+  "cal.abroadPct": "των φετινών ημερών στο εξωτερικό ({year})",
+  "cal.since": "Από την τελευταία μου περιπέτεια",
+  "cal.noLast": "Καμία περιπέτεια ακόμα",
+  "cal.hintSince": "Κλικ: ο χρόνος από την τελευταία περιπέτεια",
+  "cal.hintTo": "Κλικ: η αντίστροφη μέτρηση για την επόμενη",
+  "cal.tlAdd": "Νέα περιπέτεια",
+  "cal.tlSchema": "τίτλος · τόπος · ημερομηνίες · σημαία · χρώμα",
+  "cal.phTitle": "π.χ. Ελλάδα – Erasmus+",
+  "cal.phPlace": "π.χ. Ελαφόνησος"
 }

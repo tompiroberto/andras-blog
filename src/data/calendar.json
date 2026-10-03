@@ -124,6 +124,13 @@
   ],
   "plans": [
     {
+      "id": "west-europe",
+      "text": "Utazás Nyugat-Európába",
+      "text_en": "A trip to Western Europe",
+      "when": "kb. tavasszal",
+      "when_en": "around spring"
+    },
+    {
       "id": "nordic",
       "text": "Skandináv körút – Norvégia, Svédország, Dánia, Finnország",
       "when": "",

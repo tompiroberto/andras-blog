@@ -752,5 +752,19 @@
   "cal.photosUpload": "Încarcă poze / video",
   "cal.noPhotos": "Încă nu sunt poze.",
   "cal.seePhotos": "Vezi pozele",
-  "cal.hearMusic": "Ascultă muzica"
+  "cal.hearMusic": "Ascultă muzica",
+  "cal.abroad": "zile în străinătate anul acesta ({year})",
+  "music.playlists": "Playlisturile călătoriilor mele",
+  "music.songs": "{n} melodii",
+  "music.playAll": "Redă tot",
+  "cal.playlist": "Playlistul ei",
+  "cal.abroadPct": "din zilele de anul acesta în străinătate ({year})",
+  "cal.since": "De la ultima mea aventură",
+  "cal.noLast": "Încă nicio aventură",
+  "cal.hintSince": "Apasă: timpul de la ultima aventură",
+  "cal.hintTo": "Apasă: numărătoarea până la următoarea",
+  "cal.tlAdd": "Aventură nouă",
+  "cal.tlSchema": "titlu · loc · date · steag · culoare",
+  "cal.phTitle": "ex. Grecia – Erasmus+",
+  "cal.phPlace": "ex. Elafonisos"
 }

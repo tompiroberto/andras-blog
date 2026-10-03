@@ -108,6 +108,12 @@
       "a2": "CN",
       "note": "Az iskolából.",
       "note_en": "From school."
+    },
+    {
+      "iso": "203",
+      "a2": "CZ",
+      "note": "Skyrunningról.",
+      "note_en": "From skyrunning."
     }
   ]
 }

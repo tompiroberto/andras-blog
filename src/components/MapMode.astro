@@ -70,6 +70,8 @@ interface Item {
   audio?: string;
   /** set for the pins added in developer mode (src/data/map-pins.json) */
   pinId?: string;
+  /** photo:… / music:… – a copy on another host matches its pins with the main site by it */
+  key?: string;
   id: string;
   lat: number;
   lon: number;
@@ -230,6 +232,7 @@ for (const [i, p] of (await getPhotos(lang)).entries()) {
   const img = p.video ? undefined : p.image ? (await getImage({ src: p.image, width: 480 })).src : p.src;
   items.push({
     id: `photo-${i}`,
+    key: `photo:${p.key}`,
     lat: p.lat,
     lon: p.lng,
     title: p.caption,
@@ -247,6 +250,7 @@ for (const m of await getCollection('music')) {
   if (m.data.lat === undefined || m.data.lng === undefined) continue;
   items.push({
     id: `music-${m.id}`,
+    key: `music:${m.id}`,
     lat: m.data.lat,
     lon: m.data.lng,
     title: m.data.artist ? `${m.data.artist} – ${m.data.title}` : m.data.title,
@@ -373,7 +377,7 @@ const LEGEND: { status: string; key: TKey }[] = [
   <div class="mm-items" data-mm-items>
     {
       items.map((it) => (
-        <article class:list={['mm-item', `mm-item--${it.tone}`, { 'mm-item--media': it.media }]} data-mm-item data-media={it.media} data-lat={it.lat} data-lon={it.lon} data-priority={it.priority} data-pin-id={it.pinId} id={`mm-${it.id}`}>
+        <article class:list={['mm-item', `mm-item--${it.tone}`, { 'mm-item--media': it.media }]} data-mm-item data-media={it.media} data-lat={it.lat} data-lon={it.lon} data-priority={it.priority} data-pin-id={it.pinId} data-key={it.key} id={`mm-${it.id}`}>
           <button type="button" class="mm-pin" data-mm-pin aria-label={it.title}>
             <Icon name={it.icon} size={16} />
           </button>
@@ -522,6 +526,11 @@ const LEGEND: { status: string; key: TKey }[] = [
   <!-- developer mode: the data files as they are, so edits can be saved back -->
   <script type="application/json" data-mm-countries-raw set:html={JSON.stringify(countriesData)} />
   <script type="application/json" data-mm-pins-raw set:html={JSON.stringify(mapPins)} />
+  <!-- icons for the pins that come from the main site (a copy on another host) -->
+  <template data-mm-icon="camera"><Icon name="camera" size={16} /></template>
+  <template data-mm-icon="video"><Icon name="video" size={16} /></template>
+  <template data-mm-icon="music"><Icon name="music" size={16} /></template>
+  <template data-mm-gallery-link>{JSON.stringify({ gallery: [localePath(lang, 'gallery'), t(lang, 'gallery.title')], music: [localePath(lang, 'music'), t(lang, 'music.title')] })}</template>
   <script type="application/json" data-mm-friends-data set:html={JSON.stringify({ friends, a2: A2, words: frWords })} />
   <script type="application/json" data-mm-ed-words set:html={JSON.stringify(edWords)} />
   <aside class="mm-ed" hidden data-mm-ed data-dev-ui aria-label="Edit">
@@ -2967,6 +2976,12 @@ const LEGEND: { status: string; key: TKey }[] = [
         else p.el.classList.add('is-data', `c-${st}`);
       }
     };
+    /** elements made here get the component's style scope (Astro's data-astro-cid-… attribute), like the built ones */
+    const scopeName = Array.from(view.attributes).find((a) => a.name.startsWith('data-astro-cid'))?.name;
+    const scoped = (el: Element) => {
+      if (!scopeName) return;
+      [el, ...Array.from(el.querySelectorAll('*'))].forEach((x) => x.setAttribute(scopeName, ''));
+    };
     /** put a pin's card on the map (new) or refresh it */
     const pinItem = (pin: RawPin) => {
       let el = view.querySelector<HTMLElement>(`[data-pin-id="${CSS.escape(pin.id)}"]`);
@@ -2979,6 +2994,7 @@ const LEGEND: { status: string; key: TKey }[] = [
         el.dataset.lon = String(pin.lon);
         el.dataset.priority = '6';
         el.innerHTML = '<button type="button" class="mm-pin" data-mm-pin>📍</button><span class="mm-label" data-mm-label></span><div class="mm-card"><h2 class="mm-card__title"></h2><p class="mm-card__text"></p></div>';
+        scoped(el);
         view.querySelector('[data-mm-items]')!.append(el);
         const it = { el, media: false, lat: pin.lat, lon: pin.lon, priority: 6 };
         items.push(it);
@@ -2992,6 +3008,7 @@ const LEGEND: { status: string; key: TKey }[] = [
       if (!text) {
         text = document.createElement('p');
         text.className = 'mm-card__text';
+        if (scopeName) text.setAttribute(scopeName, '');
         el.querySelector('.mm-card')!.append(text);
       }
       text.textContent = pin.text;
@@ -3000,6 +3017,7 @@ const LEGEND: { status: string; key: TKey }[] = [
         if (!img) {
           img = document.createElement('img');
           img.className = 'mm-card__img';
+          if (scopeName) img.setAttribute(scopeName, '');
           el.querySelector('.mm-card')!.prepend(img);
         }
         img.src = shownSrc(pin.image);
@@ -3095,6 +3113,127 @@ const LEGEND: { status: string; key: TKey }[] = [
         offerBar.hidden = true;
       }),
     );
+
+    // ---- a copy on another host: the main site's countries, pins, and the photos / music with a place ----
+    if (view.dataset.live) {
+      const site = view.dataset.live;
+      const abs = (u?: string) => (u && u.startsWith('/') ? site + u : u);
+      const getJson = <T,>(path: string) => fetch(site + path, { cache: 'no-cache' }).then((r) => (r.ok ? (r.json() as Promise<T>) : Promise.reject(new Error(String(r.status)))));
+      getJson<{ countries: { countries: RawCountry[] }; pins: RawPin[] }>('/map.json')
+        .then((d) => {
+          // countries: colours and texts as on the main site
+          const seen = new Set<string>();
+          for (const c of d.countries.countries) {
+            if (!c.isoNumeric) continue;
+            seen.add(c.isoNumeric);
+            const tr = c.i18n[lang] ?? c.i18n.en;
+            info[c.isoNumeric] = { status: c.status, name: tr?.name ?? '', text: tr?.text ?? '', when: c.when ?? '', details: tr?.details ?? '', image: abs(c.image) ?? '' };
+            paint(c.isoNumeric, c.status);
+          }
+          for (const iso of Object.keys(info)) if (!seen.has(iso) && iso !== '643') {
+            delete info[iso];
+            paint(iso, 'none');
+          }
+          raw.countries = d.countries.countries;
+          // pins: new / changed ones, and the removed ones go
+          const pinIds = new Set(d.pins.map((p) => p.id));
+          view.querySelectorAll<HTMLElement>('[data-pin-id]').forEach((el) => {
+            if (pinIds.has(el.dataset.pinId!)) return;
+            const k = items.findIndex((it) => it.el === el);
+            if (k >= 0) items.splice(k, 1);
+            el.remove();
+          });
+          pinsRaw.splice(0, pinsRaw.length, ...d.pins);
+          for (const p of d.pins) pinItem({ ...p, image: abs(p.image) });
+        })
+        .catch((err) => console.warn('[map mode] the main site could not be reached', err));
+      // photos / videos and music with a place
+      const iconTpl = (n: string) => view.querySelector<HTMLTemplateElement>(`[data-mm-icon="${n}"]`)?.innerHTML ?? '';
+      const links = JSON.parse(view.querySelector<HTMLTemplateElement>('[data-mm-gallery-link]')?.content.textContent || '{}') as Record<string, [string, string]>;
+      type Media = { key: string; lat: number; lon: number; title: string; text?: string; img?: string; video?: string; audio?: string; kind: 'photo' | 'video' | 'music' };
+      const mediaItem = (m: Media) => {
+        const el = document.createElement('article');
+        el.className = `mm-item mm-item--${m.kind === 'music' ? 'violet' : 'yellow'} mm-item--media`;
+        el.dataset.mmItem = '';
+        el.dataset.media = m.kind;
+        el.dataset.key = m.key;
+        el.dataset.lat = String(m.lat);
+        el.dataset.lon = String(m.lon);
+        el.dataset.priority = '4';
+        const pin = document.createElement('button');
+        pin.type = 'button';
+        pin.className = 'mm-pin';
+        pin.dataset.mmPin = '';
+        pin.innerHTML = iconTpl(m.kind === 'music' ? 'music' : m.kind === 'video' ? 'video' : 'camera');
+        pin.setAttribute('aria-label', m.title);
+        const label = document.createElement('span');
+        label.className = 'mm-label';
+        label.dataset.mmLabel = '';
+        label.textContent = m.title;
+        const card = document.createElement('div');
+        card.className = 'mm-card';
+        if (m.img) card.append(Object.assign(document.createElement('img'), { className: 'mm-card__img', src: m.img, alt: m.title, loading: 'lazy' }));
+        if (m.video) card.append(Object.assign(document.createElement('video'), { className: 'mm-card__img', src: m.video, controls: true, preload: 'metadata', playsInline: true }));
+        if (m.audio) card.append(Object.assign(document.createElement('audio'), { className: 'mm-card__audio', src: m.audio, controls: true, preload: 'none' }));
+        card.append(Object.assign(document.createElement('h2'), { className: 'mm-card__title', textContent: m.title }));
+        if (m.text) card.append(Object.assign(document.createElement('p'), { className: 'mm-card__text', textContent: m.text }));
+        const [href, text] = links[m.kind === 'music' ? 'music' : 'gallery'] ?? [];
+        if (href) {
+          const p = document.createElement('p');
+          p.className = 'mm-card__links';
+          p.append(Object.assign(document.createElement('a'), { href: site + href, textContent: text }));
+          card.append(p);
+        }
+        el.append(pin, label, card);
+        scoped(el);
+        view.querySelector('[data-mm-items]')!.append(el);
+        const it = { el, media: true, lat: m.lat, lon: m.lon, priority: 4 };
+        items.push(it);
+        const go = () => flyToPoint(it.lat, it.lon, Math.max(CARD_AT + 1.5, t.k));
+        pin.addEventListener('click', go);
+        label.addEventListener('click', go);
+      };
+      /** the main site's list of one kind (photo / music) replaces this copy's */
+      const syncMedia = (prefix: string, list: Media[]) => {
+        const keys = new Set(list.map((m) => m.key));
+        view.querySelectorAll<HTMLElement>(`[data-key^="${prefix}"]`).forEach((el) => {
+          if (keys.has(el.dataset.key!)) return;
+          const k = items.findIndex((it) => it.el === el);
+          if (k >= 0) items.splice(k, 1);
+          el.remove();
+        });
+        for (const m of list) if (!view.querySelector(`[data-key="${CSS.escape(m.key)}"]`)) mediaItem(m);
+        renderItems();
+      };
+      getJson<{ items: { key: string; caption: string; place?: string; video?: string; large?: string; thumb?: string; lat?: number; lng?: number }[] }>('/gallery.json')
+        .then((d) =>
+          syncMedia(
+            'photo:',
+            d.items
+              .filter((x) => x.lat !== undefined && x.lng !== undefined)
+              .map((x) => ({ key: `photo:${x.key}`, lat: x.lat!, lon: x.lng!, title: x.caption, text: x.place, img: x.video ? undefined : abs(x.thumb || x.large), video: abs(x.video || undefined), kind: x.video ? 'video' : 'photo' })),
+          ),
+        )
+        .catch(() => {});
+      getJson<{ items: { id: string; file: string; title: string; artist?: string; about?: string; place?: string; tags?: string[]; lat?: number; lng?: number }[] }>('/music.json')
+        .then((d) =>
+          syncMedia(
+            'music:',
+            d.items
+              .filter((x) => x.lat !== undefined && x.lng !== undefined)
+              .map((x) => ({
+                key: `music:${x.id}`,
+                lat: x.lat!,
+                lon: x.lng!,
+                title: x.artist ? `${x.artist} – ${x.title}` : x.title,
+                text: [x.place, x.about, (x.tags ?? []).map((tg) => `#${tg}`).join(' ')].filter(Boolean).join(' · '),
+                audio: abs(x.file),
+                kind: 'music' as const,
+              })),
+          ),
+        )
+        .catch(() => {});
+    }
 
     // ---- "Music & photos" switch ----
     const mediaBox = view.querySelector<HTMLInputElement>('[data-mm-media]')!;
