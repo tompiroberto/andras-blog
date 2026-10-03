@@ -1,0 +1,1003 @@
+---
+/**
+ * The calendar (header button, html.cal-mode): where András is going and when. It opens like a wall
+ * calendar flipping down under the header (the header stays), in the theme's colours. Month or year view;
+ * events are coloured bars. A click on a day shows its events and a "message me about this day" button
+ * (the place-message window). In developer mode events are added / changed / deleted here (dates,
+ * place, colour) and saved to src/data/calendar.json (GitHub; 🚀 Publish puts them online).
+ * A copy of the site on another host reads the main site's /calendar.json, so it stays up to date.
+ */
+import Icon from './Icon.astro';
+import calendar from '../data/calendar.json';
+import { HTML_LANG, t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
+const words = {
+  month: t(lang, 'cal.month'),
+  year: t(lang, 'cal.year'),
+  today: t(lang, 'cal.today'),
+  add: t(lang, 'cal.add'),
+  none: t(lang, 'cal.none'),
+  message: t(lang, 'cal.message'),
+  title: t(lang, 'cal.eventTitle'),
+  place: t(lang, 'cal.place'),
+  from: t(lang, 'cal.from'),
+  to: t(lang, 'cal.to'),
+  note: t(lang, 'cal.note'),
+  color: t(lang, 'cal.color'),
+  save: t(lang, 'gal.save'),
+  delete: t(lang, 'cal.delete'),
+  confirmDelete: t(lang, 'cal.confirmDelete'),
+  saved: t(lang, 'gal.saved'),
+  key: t(lang, 'dev.msgKey'),
+  edit: t(lang, 'cal.edit'),
+};
+---
+
+<section class="cal-view" data-cal data-lang={HTML_LANG[lang]} data-live={live || undefined} aria-label={t(lang, 'cal.toggle')}>
+  <div class="cal-sheet" data-cal-sheet>
+    <span class="cal-rings" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    <header class="cal-bar">
+      <div class="cal-nav">
+        <button type="button" class="cal-btn cal-btn--icon" data-cal-step="-1" aria-label="‹"><Icon name="chevron-left" size={20} /></button>
+        <h2 class="cal-title" data-cal-title></h2>
+        <button type="button" class="cal-btn cal-btn--icon" data-cal-step="1" aria-label="›"><Icon name="chevron-right" size={20} /></button>
+        <button type="button" class="cal-btn cal-btn--add" data-cal-add>＋ {words.add}</button>
+      </div>
+      <div class="cal-tools">
+        <button type="button" class="cal-btn" data-cal-today>{words.today}</button>
+        <div class="cal-switch" role="radiogroup">
+          <button type="button" role="radio" aria-checked="true" data-cal-view="month">{words.month}</button>
+          <button type="button" role="radio" aria-checked="false" data-cal-view="year">{words.year}</button>
+        </div>
+      </div>
+    </header>
+    <p class="cal-hint">{t(lang, 'cal.hint')}</p>
+    <div class="cal-body" data-cal-body></div>
+  </div>
+
+  <!-- a day: its events, a message about it; in developer mode: add / change events -->
+  <aside class="cal-day" hidden data-cal-day>
+    <button type="button" class="cal-day__x" aria-label="✕" data-cal-day-close>✕</button>
+    <h3 data-cal-day-title></h3>
+    <ul class="cal-day__list" data-cal-day-list></ul>
+    <p class="cal-day__none" data-cal-day-none>{words.none}</p>
+    <button type="button" class="btn btn--primary cal-day__msg" data-cal-day-msg><Icon name="message-circle" size={18} />{words.message}</button>
+    <button type="button" class="cal-btn cal-btn--add cal-day__add" data-cal-day-add>＋ {words.add}</button>
+  </aside>
+
+  <form class="cal-form" hidden data-cal-form>
+    <strong data-cal-form-title>＋ {words.add}</strong>
+    <label>{words.title}<input type="text" maxlength="80" required data-cf="title" /></label>
+    <label>{words.place}<input type="text" maxlength="80" data-cf="place" /></label>
+    <div class="cal-form__row">
+      <label>{words.from}<input type="date" required data-cf="from" /></label>
+      <label>{words.to}<input type="date" required data-cf="to" /></label>
+    </div>
+    <label>{words.note}<textarea rows="2" maxlength="300" data-cf="note"></textarea></label>
+    <fieldset class="cal-form__colors">
+      <legend>{words.color}</legend>
+      {['#7B2FF7', '#FFD60A', '#E63946', '#FF5FA2', '#FF8C1A', '#2DBE6C', '#2F86D6', '#1B1B24'].map((c, i) => (
+        <label class="cal-swatch" style={`--c:${c}`}>
+          <input type="radio" name="cal-color" value={c} checked={i === 0} />
+          <span></span>
+        </label>
+      ))}
+    </fieldset>
+    <small data-cf-note></small>
+    <div class="cal-form__actions">
+      <button type="button" class="cal-btn cal-form__del" hidden data-cf-delete>🗑 {words.delete}</button>
+      <button type="button" class="cal-btn" data-cf-cancel>✕</button>
+      <button type="submit" class="cal-btn cal-btn--add">{words.save}</button>
+    </div>
+  </form>
+  <script type="application/json" data-cal-data set:html={JSON.stringify(calendar)} />
+  <script type="application/json" data-cal-words set:html={JSON.stringify(words)} />
+</section>
+
+<style is:global>
+  .cal-view {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: calc(var(--header-h) * var(--tz, 1));
+    bottom: 0;
+    z-index: calc(var(--z-header) - 1);
+    display: none;
+    padding: clamp(10px, 2.4vw, 28px);
+    overflow: auto;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(6px);
+    perspective: 1600px;
+  }
+  :root.cal-mode .cal-view {
+    display: block;
+  }
+  :root.cal-mode {
+    overflow: hidden;
+  }
+  /* the scrollbar ribbon (and its switches) step aside while the calendar is open */
+  :root.cal-mode .chile,
+  :root.cal-mode [data-chile-ribbon],
+  :root.cal-mode .ribbon-switch--floating {
+    visibility: hidden;
+  }
+  /* developer mode on a wide screen: room for the developer panel on the right */
+  @media (min-width: 1000px) {
+    :root.cal-mode:has(.dev-panel:not([hidden])) .cal-view {
+      padding-right: calc(min(340px, 100vw - 32px) + 36px);
+    }
+  }
+  /* the sheet flips down from the top, like a wall calendar's page */
+  .cal-sheet {
+    position: relative;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 30px clamp(12px, 2.4vw, 28px) 22px;
+    border: var(--border, 3px solid var(--ink));
+    border-radius: 22px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    box-shadow: 8px 8px 0 var(--violet);
+    transform-origin: 50% 0;
+  }
+  :root.cal-mode .cal-sheet {
+    animation: cal-flip 750ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+  }
+  .cal-view.is-closing {
+    display: block;
+    animation: cal-fade 380ms ease forwards;
+  }
+  .cal-view.is-closing .cal-sheet {
+    animation: cal-flip-out 380ms ease-in forwards;
+  }
+  @keyframes cal-flip {
+    from {
+      transform: rotateX(-88deg);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes cal-flip-out {
+    to {
+      transform: rotateX(-80deg);
+      opacity: 0;
+    }
+  }
+  @keyframes cal-fade {
+    to {
+      opacity: 0;
+    }
+  }
+  .cal-rings {
+    position: absolute;
+    top: -14px;
+    left: 8%;
+    right: 8%;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+  .cal-rings i {
+    width: 14px;
+    height: 30px;
+    border: 3px solid var(--ink);
+    border-radius: 99px;
+    background: var(--yellow);
+  }
+  .cal-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .cal-nav,
+  .cal-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .cal-title {
+    min-width: 9ch;
+    margin: 0;
+    font: 800 clamp(20px, 3vw, 30px) / 1.1 var(--font-heading);
+    text-align: center;
+    text-transform: capitalize;
+  }
+  .cal-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    font: 700 14px var(--font-body);
+    cursor: pointer;
+  }
+  .cal-btn--icon {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  .cal-btn:hover {
+    background: var(--yellow);
+    color: #1b1b24;
+  }
+  .cal-btn--add {
+    display: none;
+    border-color: #39d353;
+    background: #0d1117;
+    color: #39d353;
+  }
+  :root.dev-mode:not(.dev-preview) .cal-btn--add {
+    display: inline-flex;
+  }
+  .cal-switch {
+    display: inline-flex;
+    padding: 3px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+  }
+  .cal-switch button {
+    padding: 6px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: none;
+    color: var(--ink);
+    font: 700 14px var(--font-body);
+    cursor: pointer;
+  }
+  .cal-switch button[aria-checked='true'] {
+    background: var(--violet);
+    color: #fff;
+  }
+  .cal-hint {
+    margin: -6px 0 12px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  /* month */
+  .cal-week-head,
+  .cal-week {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .cal-week-head span {
+    padding: 4px 6px 8px;
+    font: 700 12px var(--font-body);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .cal-day-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: clamp(70px, 11vh, 118px);
+    padding: 6px 0 6px;
+    border-top: 1.5px solid color-mix(in srgb, var(--ink) 16%, transparent);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 150ms ease;
+  }
+  .cal-day-cell:hover,
+  .cal-day-cell:focus-visible {
+    background: color-mix(in srgb, var(--violet) 9%, transparent);
+    outline: none;
+  }
+  .cal-day-cell.is-picked,
+  .cal-mini__grid button.is-picked {
+    background: color-mix(in srgb, var(--yellow) 45%, transparent);
+  }
+  .cal-day-cell,
+  .cal-mini__grid button {
+    touch-action: none;
+    user-select: none;
+  }
+  .cal-day-cell.is-other {
+    opacity: 0.38;
+  }
+  .cal-num {
+    align-self: flex-start;
+    display: grid;
+    place-items: center;
+    min-width: 28px;
+    height: 28px;
+    margin-left: 6px;
+    border-radius: 50%;
+    font: 700 14px var(--font-body);
+    font-variant-numeric: tabular-nums;
+  }
+  .cal-day-cell.is-today .cal-num {
+    background: var(--yellow);
+    color: #1b1b24;
+    box-shadow: 0 0 0 2px var(--ink);
+  }
+  .cal-ev {
+    display: block;
+    height: 22px;
+    padding: 0 8px;
+    overflow: hidden;
+    background: var(--c);
+    color: var(--on, #fff);
+    font: 700 12px/22px var(--font-body);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .cal-ev.is-start {
+    margin-left: 4px;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+  .cal-ev.is-end {
+    margin-right: 4px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+  .cal-ev.is-gap {
+    visibility: hidden;
+  }
+  .cal-view.is-fresh .cal-ev {
+    animation: cal-ev-in 500ms both cubic-bezier(0.3, 1.4, 0.5, 1);
+    animation-delay: calc(var(--i, 0) * 25ms + 300ms);
+  }
+  @keyframes cal-ev-in {
+    from {
+      transform: scaleX(0.2);
+      opacity: 0;
+    }
+  }
+  /* year */
+  .cal-year {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+  }
+  .cal-mini {
+    padding: 10px 12px 12px;
+    border: 2px solid color-mix(in srgb, var(--ink) 20%, transparent);
+    border-radius: 16px;
+  }
+  .cal-mini h3 {
+    margin: 0 0 8px;
+    font: 800 15px var(--font-heading);
+    text-transform: capitalize;
+    cursor: pointer;
+  }
+  .cal-mini h3:hover {
+    color: var(--violet);
+  }
+  .cal-mini__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-mini__grid button,
+  .cal-mini__grid span {
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+    background: none;
+    color: inherit;
+    font: 600 11px var(--font-body);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+  }
+  .cal-mini__grid button.has-ev {
+    background: var(--c);
+    color: var(--on, #fff);
+  }
+  .cal-mini__grid button.is-today {
+    box-shadow: 0 0 0 2px var(--ink);
+  }
+  .cal-mini__grid button:hover {
+    outline: 2px solid var(--violet);
+  }
+  .cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 14px;
+  }
+  .cal-legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cal-legend i {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: var(--c);
+  }
+  /* the day */
+  .cal-day,
+  .cal-form {
+    position: fixed;
+    z-index: 5;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    width: min(400px, calc(100% - 24px));
+    max-height: calc(100% - 40px);
+    overflow: auto;
+    padding: 20px;
+    border: var(--border, 3px solid var(--ink));
+    border-radius: 18px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    box-shadow: 6px 6px 0 var(--yellow);
+    animation: cal-pop 280ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .cal-day[hidden],
+  .cal-form[hidden] {
+    display: none;
+  }
+  @keyframes cal-pop {
+    from {
+      scale: 0.85;
+      opacity: 0;
+    }
+  }
+  .cal-day h3 {
+    margin: 0 30px 12px 0;
+    font: 800 20px var(--font-heading);
+  }
+  .cal-day__x {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: none;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .cal-day__list {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 0;
+    list-style: none;
+  }
+  .cal-day__list li {
+    display: grid;
+    gap: 2px;
+    padding: 10px 12px;
+    border-left: 6px solid var(--c);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--c) 12%, transparent);
+  }
+  .cal-day__list strong {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .cal-day__list small {
+    color: var(--muted);
+  }
+  .cal-day__list button {
+    display: none;
+    padding: 0 6px;
+    border: 0;
+    background: none;
+    color: #1f8a3a;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  :root.dev-mode:not(.dev-preview) .cal-day__list button {
+    display: inline;
+  }
+  .cal-day__none {
+    margin: 0 0 14px;
+    color: var(--muted);
+  }
+  .cal-day__none[hidden] {
+    display: none;
+  }
+  .cal-day__msg {
+    width: 100%;
+    justify-content: center;
+  }
+  .cal-day__add {
+    margin-top: 10px;
+  }
+  /* developer mode: the event form */
+  .cal-form {
+    display: grid;
+    gap: 10px;
+    border-color: #39d353;
+    background: #0d1117;
+    color: #d6f5d6;
+    box-shadow: 0 0 0 4px rgb(57 211 83 / 0.2);
+    font: 13px ui-monospace, Consolas, monospace;
+  }
+  .cal-form label {
+    display: grid;
+    gap: 4px;
+  }
+  .cal-form input,
+  .cal-form textarea {
+    padding: 8px 10px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: #010409;
+    color: #e6edf3;
+    font: inherit;
+    color-scheme: dark;
+  }
+  .cal-form__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .cal-form__colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 8px 0 0;
+    border: 0;
+  }
+  .cal-form__colors legend {
+    padding: 0;
+  }
+  .cal-swatch input {
+    position: absolute;
+    opacity: 0;
+  }
+  .cal-swatch span {
+    display: block;
+    width: 28px;
+    height: 28px;
+    border: 2px solid #30363d;
+    border-radius: 50%;
+    background: var(--c);
+    cursor: pointer;
+  }
+  .cal-swatch input:checked + span {
+    box-shadow: 0 0 0 3px #39d353;
+  }
+  .cal-swatch input:focus-visible + span {
+    outline: 2px solid #fff;
+  }
+  .cal-form__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .cal-form .cal-btn {
+    display: inline-flex;
+  }
+  .cal-form__del {
+    margin-right: auto;
+    border-color: #ff7b7b;
+    background: none;
+    color: #ff7b7b;
+  }
+  @media (max-width: 640px) {
+    .cal-week-head span {
+      font-size: 10px;
+      padding-inline: 2px;
+    }
+    .cal-ev {
+      height: 8px;
+      padding: 0;
+      font-size: 0;
+    }
+    .cal-day-cell {
+      min-height: 58px;
+    }
+    .cal-num {
+      margin-left: 2px;
+      font-size: 12px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root.cal-mode .cal-sheet,
+    .cal-view.is-fresh .cal-ev,
+    .cal-view.is-closing,
+    .cal-view.is-closing .cal-sheet {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  import { PLACE_MESSAGE_EVENT } from '../lib/constants';
+  import { commitFiles, getToken } from '../lib/githubCommit';
+
+  type Ev = { id: string; title: string; place?: string; from: string; to: string; color: string; note?: string };
+  const view = document.querySelector<HTMLElement>('[data-cal]');
+  if (view) {
+    const html = document.documentElement;
+    const W = JSON.parse(view.querySelector('[data-cal-words]')!.textContent || '{}') as Record<string, string>;
+    const data = JSON.parse(view.querySelector('[data-cal-data]')!.textContent || '{"events":[]}') as { events: Ev[] };
+    const locale = view.dataset.lang || 'hu';
+    const body = view.querySelector<HTMLElement>('[data-cal-body]')!;
+    const titleEl = view.querySelector<HTMLElement>('[data-cal-title]')!;
+    let mode: 'month' | 'year' = 'month';
+    const now = new Date();
+    let cursor = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const todayIso = iso(now);
+    const parse = (s: string) => {
+      const [y, m, d] = s.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    };
+    const on = (e: Ev, day: string) => e.from <= day && day <= e.to;
+    /** readable text on the event's colour */
+    const onColor = (hex: string) => {
+      const n = parseInt(hex.slice(1), 16);
+      const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+      return lum > 0.6 ? '#1b1b24' : '#fff';
+    };
+    const sorted = () => [...data.events].sort((a, b) => a.from.localeCompare(b.from) || b.to.localeCompare(a.to));
+    const fmtMonth = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' });
+    const fmtMonthOnly = new Intl.DateTimeFormat(locale, { month: 'long' });
+    const fmtDay = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    const fmtShort = new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' });
+    const weekdays = Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, 1 + i)));
+
+    function render(fresh = false) {
+      view!.classList.toggle('is-fresh', fresh);
+      body.replaceChildren();
+      if (mode === 'month') renderMonth();
+      else renderYear();
+      const legend = document.createElement('ul');
+      legend.className = 'cal-legend';
+      const inView = sorted().filter((e) => (mode === 'month' ? e.to >= iso(cursor) && e.from <= iso(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0)) : e.to >= `${cursor.getFullYear()}-01-01` && e.from <= `${cursor.getFullYear()}-12-31`));
+      for (const e of inView) {
+        const li = document.createElement('li');
+        li.style.setProperty('--c', e.color);
+        li.innerHTML = '<i></i>';
+        li.append(`${e.title}${e.place ? ` · ${e.place}` : ''} (${fmtShort.format(parse(e.from))} – ${fmtShort.format(parse(e.to))})`);
+        legend.append(li);
+      }
+      body.append(legend);
+    }
+
+    function renderMonth() {
+      titleEl.textContent = fmtMonth.format(cursor);
+      const head = document.createElement('div');
+      head.className = 'cal-week-head';
+      head.innerHTML = weekdays.map((w) => `<span>${w}</span>`).join('');
+      body.append(head);
+      // the weeks shown: from the Monday before the 1st to the Sunday after the last day
+      const first = new Date(cursor);
+      const start = new Date(first);
+      start.setDate(1 - ((first.getDay() + 6) % 7));
+      const last = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+      const end = new Date(last);
+      end.setDate(last.getDate() + (6 - ((last.getDay() + 6) % 7)));
+      // each event keeps one row ("lane"), so its bar runs straight across the days
+      const evs = sorted().filter((e) => e.to >= iso(start) && e.from <= iso(end));
+      const lanes: string[][] = [];
+      const laneOf = new Map<string, number>();
+      for (const e of evs) {
+        let l = lanes.findIndex((lane) => lane.every((id) => {
+          const o = evs.find((x) => x.id === id)!;
+          return o.to < e.from || o.from > e.to;
+        }));
+        if (l < 0) l = lanes.push([]) - 1;
+        lanes[l].push(e.id);
+        laneOf.set(e.id, l);
+      }
+      let i = 0;
+      for (const d = new Date(start); d <= end; ) {
+        const week = document.createElement('div');
+        week.className = 'cal-week';
+        for (let k = 0; k < 7; k++, d.setDate(d.getDate() + 1)) {
+          const day = iso(d);
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'cal-day-cell';
+          cell.classList.toggle('is-other', d.getMonth() !== cursor.getMonth());
+          cell.classList.toggle('is-today', day === todayIso);
+          cell.dataset.day = day;
+          cell.setAttribute('aria-label', fmtDay.format(d));
+          cell.innerHTML = `<span class="cal-num">${d.getDate()}</span>`;
+          for (let l = 0; l < lanes.length; l++) {
+            const e = evs.find((x) => laneOf.get(x.id) === l && on(x, day));
+            const bar = document.createElement('span');
+            bar.className = 'cal-ev';
+            if (!e) {
+              bar.classList.add('is-gap');
+            } else {
+              bar.style.setProperty('--c', e.color);
+              bar.style.setProperty('--on', onColor(e.color));
+              bar.style.setProperty('--i', String(i++));
+              const startsHere = e.from === day || k === 0;
+              bar.classList.toggle('is-start', e.from === day);
+              bar.classList.toggle('is-end', e.to === day);
+              bar.textContent = startsHere ? e.title : ' ';
+              bar.title = `${e.title}${e.place ? ` · ${e.place}` : ''}`;
+            }
+            cell.append(bar);
+          }
+          week.append(cell);
+        }
+        body.append(week);
+      }
+    }
+
+    function renderYear() {
+      titleEl.textContent = String(cursor.getFullYear());
+      const wrap = document.createElement('div');
+      wrap.className = 'cal-year';
+      const evs = sorted();
+      for (let m = 0; m < 12; m++) {
+        const month = new Date(cursor.getFullYear(), m, 1);
+        const box = document.createElement('div');
+        box.className = 'cal-mini';
+        const h = document.createElement('h3');
+        h.textContent = fmtMonthOnly.format(month);
+        h.addEventListener('click', () => {
+          cursor = month;
+          setMode('month');
+        });
+        const grid = document.createElement('div');
+        grid.className = 'cal-mini__grid';
+        for (let k = 0; k < (month.getDay() + 6) % 7; k++) grid.append(document.createElement('span'));
+        const days = new Date(cursor.getFullYear(), m + 1, 0).getDate();
+        for (let n = 1; n <= days; n++) {
+          const d = new Date(cursor.getFullYear(), m, n);
+          const day = iso(d);
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = String(n);
+          b.dataset.day = day;
+          b.setAttribute('aria-label', fmtDay.format(d));
+          const e = evs.find((x) => on(x, day));
+          if (e) {
+            b.classList.add('has-ev');
+            b.style.setProperty('--c', e.color);
+            b.style.setProperty('--on', onColor(e.color));
+            b.title = e.title;
+          }
+          b.classList.toggle('is-today', day === todayIso);
+          grid.append(b);
+        }
+        box.append(h, grid);
+        wrap.append(box);
+      }
+      body.append(wrap);
+    }
+
+    function setMode(m: 'month' | 'year') {
+      mode = m;
+      view!.querySelectorAll<HTMLButtonElement>('[data-cal-view]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.calView === m)));
+      render(true);
+    }
+    view.querySelectorAll<HTMLButtonElement>('[data-cal-view]').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.calView as 'month' | 'year')));
+    view.querySelectorAll<HTMLButtonElement>('[data-cal-step]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const s = Number(b.dataset.calStep);
+        cursor = mode === 'month' ? new Date(cursor.getFullYear(), cursor.getMonth() + s, 1) : new Date(cursor.getFullYear() + s, 0, 1);
+        render(true);
+      }),
+    );
+    view.querySelector('[data-cal-today]')!.addEventListener('click', () => {
+      cursor = new Date(now.getFullYear(), now.getMonth(), 1);
+      render(true);
+    });
+
+    // ---- a day ----
+    const dayBox = view.querySelector<HTMLElement>('[data-cal-day]')!;
+    const dayList = view.querySelector<HTMLElement>('[data-cal-day-list]')!;
+    let openDay = '';
+    let openTo = '';
+    /** a day, or a period (dragged across the days): its events and the message button */
+    function showDay(day: string, to = day) {
+      openDay = day;
+      openTo = to;
+      view!.querySelector('[data-cal-day-title]')!.textContent = to === day ? fmtDay.format(parse(day)) : `${fmtShort.format(parse(day))} – ${fmtShort.format(parse(to))}`;
+      const evs = sorted().filter((e) => e.from <= to && e.to >= day);
+      dayList.replaceChildren(
+        ...evs.map((e) => {
+          const li = document.createElement('li');
+          li.style.setProperty('--c', e.color);
+          const strong = document.createElement('strong');
+          strong.textContent = e.title;
+          const edit = document.createElement('button');
+          edit.type = 'button';
+          edit.textContent = '✎';
+          edit.title = W.edit;
+          edit.addEventListener('click', () => openForm(e));
+          strong.append(edit);
+          const when = document.createElement('small');
+          when.textContent = [e.place && `📍 ${e.place}`, `${fmtShort.format(parse(e.from))} – ${fmtShort.format(parse(e.to))}`].filter(Boolean).join(' · ');
+          li.append(strong, when);
+          if (e.note) {
+            const p = document.createElement('span');
+            p.textContent = e.note;
+            li.append(p);
+          }
+          return li;
+        }),
+      );
+      view!.querySelector<HTMLElement>('[data-cal-day-none]')!.hidden = evs.length > 0;
+      dayBox.hidden = false;
+    }
+    // press on a day and drag to another: a period is selected (a simple click: one day)
+    let dragFrom = '';
+    let dragTo = '';
+    const mark = () => {
+      const [a, b] = dragFrom <= dragTo ? [dragFrom, dragTo] : [dragTo, dragFrom];
+      body.querySelectorAll<HTMLElement>('[data-day]').forEach((c) => c.classList.toggle('is-picked', !!dragFrom && c.dataset.day! >= a && c.dataset.day! <= b));
+    };
+    body.addEventListener('pointerdown', (e) => {
+      const cell = (e.target as Element).closest<HTMLElement>('[data-day]');
+      if (!cell || e.button !== 0) return;
+      dragFrom = dragTo = cell.dataset.day!;
+      mark();
+      body.setPointerCapture(e.pointerId);
+    });
+    body.addEventListener('pointermove', (e) => {
+      if (!dragFrom) return;
+      const cell = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-day]');
+      if (cell && cell.dataset.day !== dragTo) {
+        dragTo = cell.dataset.day!;
+        mark();
+      }
+    });
+    const endDrag = () => {
+      if (!dragFrom) return;
+      const [a, b] = dragFrom <= dragTo ? [dragFrom, dragTo] : [dragTo, dragFrom];
+      dragFrom = '';
+      showDay(a, b);
+      window.setTimeout(mark, 0);
+    };
+    body.addEventListener('pointerup', endDrag);
+    body.addEventListener('pointercancel', () => {
+      dragFrom = '';
+      mark();
+    });
+    body.addEventListener('keydown', (e) => {
+      const cell = (e.target as Element).closest<HTMLElement>('[data-day]');
+      if (cell && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        showDay(cell.dataset.day!);
+      }
+    });
+    view.querySelector('[data-cal-day-close]')!.addEventListener('click', () => (dayBox.hidden = true));
+    // a message about that day (the place-message window: "I'd like to do something then")
+    view.querySelector('[data-cal-day-msg]')!.addEventListener('click', () => {
+      const when = openTo === openDay ? fmtDay.format(parse(openDay)) : `${fmtShort.format(parse(openDay))} – ${fmtShort.format(parse(openTo))}`;
+      window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail: { place: when, topic: 'buddy', kind: 'date' } }));
+    });
+
+    // ---- developer mode: add / change / delete an event ----
+    const form = view.querySelector<HTMLFormElement>('[data-cal-form]')!;
+    const cf = (n: string) => form.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-cf="${n}"]`)!;
+    const note = form.querySelector<HTMLElement>('[data-cf-note]')!;
+    const del = form.querySelector<HTMLButtonElement>('[data-cf-delete]')!;
+    let editing: Ev | null = null;
+    function openForm(e: Ev | null, day = openDay || todayIso) {
+      editing = e;
+      form.querySelector('[data-cal-form-title]')!.textContent = e ? `✎ ${W.edit}` : `＋ ${W.add}`;
+      cf('title').value = e?.title ?? '';
+      cf('place').value = e?.place ?? '';
+      cf('from').value = e?.from ?? day;
+      cf('to').value = e?.to ?? (day === openDay && openTo ? openTo : day);
+      cf('note').value = e?.note ?? '';
+      const color = e?.color ?? '#7B2FF7';
+      form.querySelectorAll<HTMLInputElement>('input[name="cal-color"]').forEach((r) => (r.checked = r.value.toLowerCase() === color.toLowerCase()));
+      del.hidden = !e;
+      note.textContent = '';
+      dayBox.hidden = true;
+      form.hidden = false;
+      cf('title').focus();
+    }
+    view.querySelector('[data-cal-add]')!.addEventListener('click', () => openForm(null, todayIso));
+    view.querySelector('[data-cal-day-add]')!.addEventListener('click', () => openForm(null));
+    form.querySelector('[data-cf-cancel]')!.addEventListener('click', () => (form.hidden = true));
+    const save = async (line: string) => {
+      let key = getToken();
+      if (!key) key = (window.prompt(W.key) ?? '').trim();
+      if (!key) throw new Error('—');
+      await commitFiles(key, [{ path: 'src/data/calendar.json', text: `${JSON.stringify(data, null, 2)}\n` }], 'Calendar: changed on the site', [line]);
+    };
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const from = cf('from').value;
+      const to = cf('to').value < from ? from : cf('to').value;
+      const item: Ev = {
+        id: editing?.id ?? `${from}-${Math.random().toString(36).slice(2, 6)}`,
+        title: cf('title').value.trim(),
+        ...(cf('place').value.trim() ? { place: cf('place').value.trim() } : {}),
+        from,
+        to,
+        color: form.querySelector<HTMLInputElement>('input[name="cal-color"]:checked')?.value ?? '#7B2FF7',
+        ...(cf('note').value.trim() ? { note: cf('note').value.trim() } : {}),
+      };
+      const before = data.events;
+      data.events = [...data.events.filter((x) => x.id !== item.id), item];
+      try {
+        await save(`📅 ${item.title} (${item.from} – ${item.to})`);
+        note.textContent = W.saved;
+        cursor = new Date(parse(from).getFullYear(), parse(from).getMonth(), 1);
+        render(true);
+        window.setTimeout(() => (form.hidden = true), 900);
+      } catch (err) {
+        data.events = before;
+        note.textContent = err instanceof Error ? err.message : String(err);
+      }
+    });
+    del.addEventListener('click', async () => {
+      if (!editing || !window.confirm(W.confirmDelete.replace('{title}', editing.title))) return;
+      const before = data.events;
+      data.events = data.events.filter((x) => x.id !== editing!.id);
+      try {
+        await save(`🗑 📅 ${editing.title}`);
+        form.hidden = true;
+        render();
+      } catch (err) {
+        data.events = before;
+        note.textContent = err instanceof Error ? err.message : String(err);
+      }
+    });
+
+    // ---- open / close (the header button toggles html.cal-mode) ----
+    let wasOn = html.classList.contains('cal-mode');
+    if (wasOn) render(true);
+    new MutationObserver(() => {
+      const isOn = html.classList.contains('cal-mode');
+      if (isOn === wasOn) return;
+      wasOn = isOn;
+      if (isOn) {
+        view.classList.remove('is-closing');
+        render(true);
+      } else {
+        dayBox.hidden = true;
+        form.hidden = true;
+        view.classList.add('is-closing');
+        window.setTimeout(() => view.classList.remove('is-closing'), 400);
+      }
+    }).observe(html, { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || !html.classList.contains('cal-mode')) return;
+      if (!form.hidden) form.hidden = true;
+      else if (!dayBox.hidden) dayBox.hidden = true;
+    });
+
+    // a copy on another host: the main site's calendar
+    if (view.dataset.live) {
+      fetch(`${view.dataset.live}/calendar.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((d: { events: Ev[] }) => {
+          data.events = d.events;
+          if (html.classList.contains('cal-mode')) render();
+        })
+        .catch((err) => console.warn('[calendar] the main site could not be reached', err));
+    }
+  }
+</script>

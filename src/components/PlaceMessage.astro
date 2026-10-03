@@ -28,7 +28,7 @@ const TOPICS = [
     <div class="place-msg__head">
       <span class="place-msg__icon" aria-hidden="true"><Icon name="map-pin" size={22} /></span>
       <div>
-        <p class="place-msg__kicker">{t(lang, 'pm.kicker')}</p>
+        <p class="place-msg__kicker" data-pm-kicker>{t(lang, 'pm.kicker')}</p>
         <h2 class="place-msg__title" id="place-msg-title" data-place-msg-title></h2>
       </div>
       <button type="button" class="place-msg__close" aria-label={t(lang, 'facts.close')} title={t(lang, 'facts.close')} data-place-msg-close>
@@ -52,7 +52,7 @@ const TOPICS = [
             <input type="radio" name="topic" value={tp.id} checked={i === 0} />
             <span>
               <Icon name={tp.icon} size={18} />
-              {t(lang, `pm.topic.${tp.id}`)}
+              <span data-pm-label={tp.id}>{t(lang, `pm.topic.${tp.id}`)}</span>
             </span>
           </label>
         ))
@@ -88,6 +88,11 @@ const TOPICS = [
   <template data-pm-success>{t(lang, 'msg.success')}</template>
   <template data-pm-error>{t(lang, 'msg.error')}</template>
   <template data-pm-required>{t(lang, 'msg.required')}</template>
+  <template data-pm-words>{JSON.stringify({
+    place: { kicker: t(lang, 'pm.kicker'), say: t(lang, 'pm.topic.say'), host: t(lang, 'pm.topic.host'), buddy: t(lang, 'pm.topic.buddy') },
+    date: { kicker: t(lang, 'pmd.kicker'), say: t(lang, 'pmd.topic.say'), host: t(lang, 'pmd.topic.host'), buddy: t(lang, 'pmd.topic.buddy') },
+    start: { say: t(lang, 'pmd.start.say'), host: t(lang, 'pmd.start.host'), buddy: t(lang, 'pmd.start.buddy') },
+  })}</template>
   <template data-pm-title>{t(lang, 'pm.title')}</template>
   <template data-pm-start-say>{t(lang, 'pm.start.say')}</template>
   <template data-pm-start-host>{t(lang, 'pm.start.host')}</template>
@@ -294,13 +299,27 @@ const TOPICS = [
     /** the start of the message follows the chosen topic until the visitor writes something */
     let starter = '';
 
+    // a place, or a day / period of the calendar (other questions, other starts)
+    const words = JSON.parse(tpl('words') || '{}') as { place: Record<string, string>; date: Record<string, string>; start: Record<string, string> };
+    let kind: 'place' | 'date' = 'place';
+    const setKind = (k: 'place' | 'date') => {
+      kind = k;
+      const w = words[k] ?? {};
+      const kick = dialog.querySelector('[data-pm-kicker]');
+      if (kick && w.kicker) kick.textContent = w.kicker;
+      dialog.querySelectorAll<HTMLElement>('[data-pm-label]').forEach((s) => {
+        const v = w[s.dataset.pmLabel!];
+        if (v) s.textContent = v;
+      });
+    };
     const setStarter = (topic: string) => {
-      const next = tpl(`start-${topic}`).replace('{place}', place.value);
+      const next = (kind === 'date' ? words.start[topic] ?? '' : tpl(`start-${topic}`)).replace('{place}', place.value);
       if (!text.value.trim() || text.value === starter) text.value = next;
       starter = next;
     };
 
     function open(detail: PlaceMessageDetail) {
+      setKind(detail.kind ?? 'place');
       place.value = detail.place;
       title.textContent = tpl('title').replace('{place}', detail.place);
       status.textContent = '';

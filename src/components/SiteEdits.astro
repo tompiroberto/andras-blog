@@ -17,11 +17,14 @@
  */
 import edits from '../data/edits.json';
 
+/** a copy on another host: the main site's current edits are applied after the page loads */
+const liveSite = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
+
 /** fonts offered in developer mode (EditMode's font menu) */
 const fonts = {"heading": "'Unbounded', system-ui, sans-serif", "body": "'DM Sans', system-ui, sans-serif", "serif": "Georgia, 'Times New Roman', serif", "mono": "ui-monospace, 'Cascadia Code', Consolas, monospace", "hand": "'Segoe Print', 'Comic Sans MS', 'Bradley Hand', cursive", "impact": "Impact, 'Arial Black', sans-serif"};
 ---
 
-<script is:inline define:vars={{ edits, fonts }}>
+<script is:inline define:vars={{ edits, fonts, liveSite }}>
   var SKIP = function (e) {
     return e.hasAttribute('data-dev-ui') || e.hasAttribute('data-ed-id') || e.hasAttribute('data-ed-mv');
   };
@@ -178,7 +181,7 @@ const fonts = {"heading": "'Unbounded', system-ui, sans-serif", "body": "'DM San
     }
     themeStyle.textContent = css ? ':root:not(.dev-mode):not([data-theme]){' + css + '}' : '';
   }
-  function apply() {
+  function apply(edits) {
     applyTheme(edits.theme);
     (edits.add[full] || []).forEach(function (a) {
       var ref = resolve(a.after);
@@ -191,7 +194,11 @@ const fonts = {"heading": "'Unbounded', system-ui, sans-serif", "body": "'DM San
     var texts = edits.text[full] || {};
     Object.keys(texts).forEach(function (k) {
       var el = resolve(JSON.parse(k));
-      if (el) el.textContent = texts[k];
+      if (el) {
+        // the original text is kept, so a later change can give it back
+        if (el.dataset.edOrig === undefined) el.dataset.edOrig = el.textContent || '';
+        el.textContent = texts[k];
+      }
     });
     var styles = edits.style[page] || {};
     Object.keys(styles).forEach(function (k) {
@@ -200,9 +207,63 @@ const fonts = {"heading": "'Unbounded', system-ui, sans-serif", "body": "'DM San
     });
   }
   window.__siteEdits = { data: edits, resolve: resolve, pathOf: pathOf, styleEl: styleEl, added: added, story: story, move: move, unmoveAll: unmoveAll, applyTheme: applyTheme, page: page, full: full };
+  /* a copy: what was undone on the main site goes back to the original, then its current edits apply */
+  function reapply(next) {
+    var old = window.__siteEdits.data;
+    unmoveAll();
+    document.querySelectorAll('[data-ed-id]').forEach(function (n) { n.remove(); });
+    Object.keys(old.text[full] || {}).forEach(function (k) {
+      if ((next.text[full] || {})[k] !== undefined) return;
+      var el = resolve(JSON.parse(k));
+      if (el && el.dataset.edOrig !== undefined) el.textContent = el.dataset.edOrig;
+    });
+    Object.keys(old.style[page] || {}).forEach(function (k) {
+      if ((next.style[page] || {})[k]) return;
+      var el = resolve(JSON.parse(k));
+      if (el) styleEl(el, {});
+    });
+    window.__siteEdits.data = next;
+    apply(next);
+    window.dispatchEvent(new CustomEvent('andras:edits-live', { detail: next }));
+  }
+  /* a copy: the home page's section order, hidden sections, widths and sizes from the main site */
+  var WIDTHS = { narrow: '860px', normal: 'var(--container)', wide: '1440px', full: '100%' };
+  function applyLayout(l) {
+    var main = document.querySelector('main');
+    if (!main || !main.querySelector(':scope > [data-lay]')) return;
+    (l.order || []).forEach(function (id) {
+      var s = main.querySelector(':scope > [data-lay="' + id + '"]');
+      if (s) main.append(s);
+    });
+    var css = '';
+    main.querySelectorAll(':scope > [data-lay]').forEach(function (s) {
+      var id = s.getAttribute('data-lay');
+      var hidden = (l.hidden || []).indexOf(id) !== -1;
+      if (!s.hasAttribute('data-lay-state') || s.getAttribute('data-lay-state') === 'shown') s.setAttribute('data-lay-state', hidden ? 'hidden' : 'shown');
+      var vars = [];
+      var sc = Number((l.scale || {})[id]);
+      if (sc && sc !== 1) vars.push('--lay-zoom:' + Math.min(1.6, Math.max(0.5, sc)));
+      var w = (l.width || {})[id];
+      if (w && WIDTHS[w] && w !== 'normal') vars.push('--lay-w:' + WIDTHS[w]);
+      if (vars.length) css += '[data-lay="' + id + '"]{' + vars.join(';') + '}';
+      if (hidden) css += ':root:not(.dev-mode) [data-lay="' + id + '"][data-lay-state="hidden"]{display:none!important}';
+    });
+    var st = document.querySelector('style[data-live-layout]') || document.head.appendChild(Object.assign(document.createElement('style'), {}));
+    st.setAttribute('data-live-layout', '');
+    st.textContent = css;
+  }
   try {
-    apply();
+    apply(edits);
   } catch (e) {
     console.warn('[site edits]', e);
+  }
+  if (liveSite) {
+    fetch(liveSite + '/edits.json', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error(String(r.status))); })
+      .then(function (d) {
+        if (d.edits && JSON.stringify(d.edits) !== JSON.stringify(window.__siteEdits.data)) reapply(d.edits);
+        if (d.layout) applyLayout(d.layout);
+      })
+      .catch(function (e) { console.warn('[site edits] the main site could not be reached', e); });
   }
 </script>

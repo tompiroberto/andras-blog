@@ -1,7 +1,8 @@
 ---
 import Globe from './Globe.astro';
+import { STEPS, stepAt } from '../lib/whereabouts';
 import Icon from './Icon.astro';
-import { t, type Lang } from '../i18n';
+import { type TKey, t, type Lang } from '../i18n';
 import site from '../data/site.json';
 
 interface Props {
@@ -18,6 +19,9 @@ const after = nameAt >= 0 ? title.slice(nameAt + site.owner.length) : '';
 
 // Only the lead-in is translated; the nicknames are always shown exactly as in site.json
 const nickLead = t(lang, 'hero.nicknames').split(':')[0].trim();
+// where he is: chosen when the page is built, and again in the visitor's browser (it moves on by itself)
+const whereSteps = STEPS.map((st) => ({ from: st.from, text: t(lang, `where.${st.key}` as TKey) }));
+const whereNow = stepAt() ? t(lang, `where.${stepAt()!.key}` as TKey) : t(lang, 'hero.status');
 ---
 
 <section class="hero section" data-lay="hero" aria-labelledby="hero-title">
@@ -42,11 +46,11 @@ const nickLead = t(lang, 'hero.nicknames').split(':')[0].trim();
 
   <div class="container hero__inner">
     <div class="hero__copy">
-      <p class="pill hero__status">
+      <p class="pill hero__status" data-where={JSON.stringify(whereSteps)}>
         <span class="hero__pin" aria-hidden="true">
           <Icon name="map-pin" size={14} />
         </span>
-        {t(lang, 'hero.status')}
+        <span data-where-text>{whereNow}</span>
       </p>
 
       <div class="hero__title-wrap" data-nick>
@@ -355,3 +359,14 @@ const nickLead = t(lang, 'hero.nicknames').split(':')[0].trim();
     window.addEventListener('resize', () => tip.classList.contains('is-open') && place());
   }
 </script>
+
+<script>
+  // the pill moves on by itself: the last step that has started, in the visitor's own time
+  document.querySelectorAll<HTMLElement>('[data-where]').forEach((pill) => {
+    const steps = JSON.parse(pill.dataset.where ?? '[]') as { from: string; text: string }[];
+    const now = Date.now();
+    const step = steps.filter((st) => Date.parse(st.from) <= now).pop();
+    if (step) pill.querySelector('[data-where-text]')!.textContent = step.text;
+  });
+</script>
+

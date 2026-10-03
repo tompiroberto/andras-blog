@@ -8,6 +8,10 @@ import { CATEGORIES, type Category } from '../../../lib/constants';
 import { categoryMeta } from '../../../lib/categories';
 import { getPosts } from '../../../lib/posts';
 
+/** a copy on another host: posts written on the main site get a card too (/posts.json) */
+const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : undefined;
+
+
 export function getStaticPaths() {
   return LOCALES.flatMap((lang) => CATEGORIES.map((category) => ({ params: { lang, category } })));
 }
@@ -16,6 +20,8 @@ const lang = Astro.params.lang as Lang;
 const category = Astro.params.category as Category;
 const meta = categoryMeta(category);
 const posts = await getPosts(category);
+// the card pattern for those: a post of this category if there is one (its colours and tag)
+const sample = posts[0] ?? (await getPosts())[0];
 const title = t(lang, meta.titleKey);
 const intro = t(lang, meta.textKey);
 ---
@@ -40,20 +46,30 @@ const intro = t(lang, meta.textKey);
       <Globe size="min(700px, 120vw)" left="-24%" top="10%" speed={70} direction="ccw" />
     </div>
     <div class="container">
+      <ul class="post-grid" data-post-grid data-live={live} data-category={category} data-lang={lang} data-cat-title={title} hidden={!posts.length && !live}>
+        {
+          posts.map((post, i) => (
+            <li class="reveal" data-post-id={post.id}>
+              <PostCard post={post} lang={lang} index={i} />
+            </li>
+          ))
+        }
+      </ul>
       {
-        posts.length ? (
-          <ul class="post-grid">
-            {posts.map((post, i) => (
-              <li class="reveal">
-                <PostCard post={post} lang={lang} index={i} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p class="empty">
+        !posts.length && (
+          <p class="empty" data-posts-empty>
             <IconCircle icon="sparkles" variant="yellow" size="sm" />
             {t(lang, 'posts.empty')}
           </p>
+        )
+      }
+      {
+        live && sample && (
+          <template data-card-tpl>
+            <li>
+              <PostCard post={sample} lang={lang} index={0} />
+            </li>
+          </template>
         )
       }
     </div>
@@ -114,3 +130,70 @@ const intro = t(lang, meta.textKey);
     font-weight: 700;
   }
 </style>
+
+<script>
+  /*
+   * A copy of the site on another host: posts written on the main site since the copy was made get a
+   * card here (opening on the main site); posts deleted there are left out. Read from /posts.json.
+   */
+  const grid = document.querySelector<HTMLElement>('[data-post-grid][data-live]');
+  const tpl = document.querySelector<HTMLTemplateElement>('[data-card-tpl]');
+  if (grid && tpl) {
+    const live = grid.dataset.live!;
+    const lang = grid.dataset.lang ?? 'hu';
+    type P = { id: string; title: string; excerpt: string; category: string; lang: string; date: string; month: boolean; cover: string };
+    fetch(`${live}/posts.json`, { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then(({ items }: { items: P[] }) => {
+        const mine = items.filter((x) => x.category === grid.dataset.category);
+        const ids = new Set(mine.map((x) => x.id));
+        grid.querySelectorAll<HTMLElement>('[data-post-id]').forEach((li) => {
+          if (!ids.has(li.dataset.postId!)) li.remove();
+        });
+        const have = new Set(Array.from(grid.querySelectorAll<HTMLElement>('[data-post-id]')).map((li) => li.dataset.postId));
+        const fmt = (d: string, month: boolean) =>
+          new Intl.DateTimeFormat(document.documentElement.lang || 'hu', month ? { year: 'numeric', month: 'long' } : { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(d));
+        for (const x of mine.filter((y) => !have.has(y.id)).reverse()) {
+          const li = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+          li.dataset.postId = x.id;
+          const href = `${live}/${lang}/posts/${x.id}/`;
+          const cover = li.querySelector<HTMLElement>('.post-card__cover');
+          if (cover && x.cover) {
+            cover.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = live + x.cover;
+            img.alt = '';
+            img.loading = 'lazy';
+            img.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover';
+            cover.append(img);
+          }
+          li.querySelectorAll('.post-card__draft, .post-card__lang').forEach((n) => n.remove());
+          // this page's category, and no icon borrowed from the pattern's post
+          const tag = li.querySelector('.post-card__tag');
+          if (tag) tag.textContent = grid.dataset.catTitle ?? '';
+          li.querySelector('.ph-circle')?.replaceChildren();
+          const h = li.querySelector('h3');
+          if (h) h.textContent = x.title;
+          const time = li.querySelector('time');
+          if (time) {
+            if (x.date) time.textContent = fmt(x.date, x.month);
+            else time.remove();
+          }
+          const ex = li.querySelector('.post-card__excerpt');
+          if (ex) ex.textContent = x.excerpt;
+          const a = li.querySelector<HTMLAnchorElement>('.post-card__link');
+          if (a) {
+            a.href = href;
+            const hidden = a.querySelector('.visually-hidden');
+            if (hidden) hidden.textContent = `: ${x.title}`;
+          }
+          grid.prepend(li);
+        }
+        grid.hidden = !grid.querySelector('[data-post-id]');
+        const empty = document.querySelector<HTMLElement>('[data-posts-empty]');
+        if (empty) empty.hidden = !grid.hidden;
+      })
+      .catch((err) => console.warn('[posts] the main site could not be reached', err));
+  }
+</script>
+

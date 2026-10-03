@@ -1,0 +1,36 @@
+{
+  "events": [
+    {
+      "id": "lt-2026",
+      "title": "Litvánia – Erasmus+",
+      "place": "Litvánia",
+      "from": "2026-08-14",
+      "to": "2026-08-21",
+      "color": "#2DBE6C"
+    },
+    {
+      "id": "cz-2026",
+      "title": "Csehország",
+      "place": "Prága",
+      "from": "2026-09-17",
+      "to": "2026-09-20",
+      "color": "#2F86D6"
+    },
+    {
+      "id": "gr-2026",
+      "title": "Görögország – Erasmus+",
+      "place": "Elafonisszosz",
+      "from": "2026-09-23",
+      "to": "2026-10-04",
+      "color": "#7B2FF7"
+    },
+    {
+      "id": "ge-2026",
+      "title": "Grúzia",
+      "place": "Grúzia",
+      "from": "2026-12-03",
+      "to": "2026-12-10",
+      "color": "#E63946"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import ZoomControl from './ZoomControl.astro';
 import ThemeSwitch from './ThemeSwitch.astro';
 import RibbonSwitch from './RibbonSwitch.astro';
 import { localePath, t, type Lang, type TKey } from '../i18n';
+import { CAL_EVENT, CAL_STORAGE_KEY } from '../lib/constants';
 import { BG_EVENT, BG_STORAGE_KEY, CITIES_EVENT, CITIES_STORAGE_KEY, GRID_EVENT, GRID_STORAGE_KEY, MAP_MODE_EVENT, MAP_MODE_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, CV_EVENT, CV_STORAGE_KEY, } from '../lib/constants';
 import site from '../data/site.json';
 
@@ -67,6 +68,14 @@ const mapModeToggle = {
   icon: 'map',
   label: t(lang, 'mapmode.toggle'),
 };
+const calToggle = {
+  htmlClass: 'cal-mode',
+  pressedWhen: 'present' as const,
+  storageKey: CAL_STORAGE_KEY,
+  eventName: CAL_EVENT,
+  icon: 'calendar-days',
+  label: t(lang, 'cal.toggle'),
+};
 const citiesToggle = {
   htmlClass: 'cities-off',
   pressedWhen: 'absent' as const,
@@ -97,6 +106,7 @@ const citiesToggle = {
 
     <div class="header-tools">
       <CitySearch lang={lang} />
+      <HtmlToggle {...calToggle} class="cal-tool" />
       <ZoomControl lang={lang} uid="header" />
       <ThemeSwitch lang={lang} uid="header" />
       <HtmlToggle {...gridToggle} class="desktop-tool" />

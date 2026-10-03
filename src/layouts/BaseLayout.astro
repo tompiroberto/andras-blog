@@ -15,6 +15,7 @@ import dmSans700Preload from '@fontsource/dm-sans/files/dm-sans-latin-700-normal
 
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import CalendarView from '../components/CalendarView.astro';
 import Landscape from '../components/Landscape.astro';
 import ViewSwitch from '../components/ViewSwitch.astro';
 import ChileScroll from '../components/ChileScroll.astro';
@@ -191,6 +192,7 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
     <a class="skip-link" href="#main">{t(lang, 'a11y.skip')}</a>
     <WorldLayer />
     <Header lang={lang} path={path} />
+    <CalendarView lang={lang} />
     <main id="main" tabindex="-1">
       <slot />
     </main>

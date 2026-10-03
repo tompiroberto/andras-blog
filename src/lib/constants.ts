@@ -54,6 +54,9 @@ export const RIBBON_TRUE_STORAGE_KEY = 'andras-ribbon-true';
 
 /** Map mode: the whole site as a pannable, zoomable world map ('1' in storage = on). */
 export const MAP_MODE_STORAGE_KEY = 'andras-map-mode';
+/** The calendar (html.cal-mode); it is not reopened by itself on the next page. */
+export const CAL_STORAGE_KEY = 'andras-cal';
+export const CAL_EVENT = 'andras:cal-change';
 export const MAP_MODE_EVENT = 'andras:map-mode-change';
 
 /** Horizontal page: sections side by side, scrolling left and right ('1' in storage = on). */
@@ -65,6 +68,8 @@ export const PLACE_MESSAGE_EVENT = 'andras:place-message';
 export interface PlaceMessageDetail {
   place: string;
   topic?: 'say' | 'host' | 'buddy';
+  /** 'date': about a day or a period of the calendar (come along / help / a suggestion) */
+  kind?: 'place' | 'date';
 }
 
 /** CV view: a separate, printable CV page ('1' in storage = on). */

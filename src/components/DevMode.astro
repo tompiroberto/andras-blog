@@ -1398,6 +1398,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       return [(e.message.startsWith('Post deleted') ? LL.postDel : LL.post).replace('{name}', slug)];
     }
     if (f.some((p) => p.startsWith('src/content/music/'))) return [`🎵 ${e.message}`];
+    if (f.includes('src/data/calendar.json')) return ['📅 ' + e.message];
     if (f.some((p) => p.startsWith('src/content/photos/'))) return [LL.photos.replace('{n}', String(f.filter((p) => p.endsWith('.yml')).length))];
     if (f.includes('src/data/site.json')) return [LL.setting.replace('{name}', e.message.replace(/^Setting: /, ''))];
     return [LL.edits];

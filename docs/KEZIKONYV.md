@@ -157,6 +157,24 @@ kereséssel és Naprendszerrel. „Vissza a weboldalra” gomb.
 
 ---
 
+## 11b. Naptár (📅 a fejlécben)
+
+- A fejléc naptár gombjára kattintva a naptár falinaptárként „lelapozódik”; a fejléc közben látszik,
+  a színek a választott témát követik. Újabb kattintás: bezárás.
+- **Hónap / Év** nézet, ‹ › lapozás, **Ma**. Az utak színes sávok (évnézetben színes napok).
+- **Egy napra kattintva** (vagy több napon végighúzva egy időszakot kijelölve) megjelenik, mi van
+  akkor, és egy **üzenet** gomb: *Szívesen jönnék veled / Tudok segíteni / Van egy javaslatom*.
+- **Fejlesztői módban:** *＋ Esemény hozzáadása* (cím, hely, kezdete, vége, pár szó, szín), egy esemény
+  ✎ gombjával szerkesztés vagy törlés. Mentés a GitHubra, kint a 🚀 Közzététel után.
+
+## 11c. „Jelenleg itt vagyok”
+
+A kezdőlap jelvénye magától vált a `src/data/whereabouts.json` időpontjai szerint (a látogató
+böngészőjében). A térképek „most itt” jelölését egy GitHub-automatizmus állítja át ugyanekkor
+(`.github/workflows/whereabouts.yml`).
+
+---
+
 ## 12. Adatvédelem röviden
 
 - Az üzeneteket a Formspree (tartaléknak a Netlify) továbbítja.

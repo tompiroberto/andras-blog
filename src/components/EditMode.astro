@@ -609,7 +609,7 @@ const L = {
 
     // developer UI, and the full-screen views that have their own editing (the world map) or none
     const isDevUi = (el: Element) =>
-      !!el.closest('[data-dev-ui], .dev-panel, .lay-bar, .dev-plus, .lay-save, .dev-gate, .dev-add-menu, .dev-toast, dialog, .site-header .brand, .map-mode-view, .chaos-view, .country-view, .route-view, .street-view');
+      !!el.closest('[data-dev-ui], .dev-panel, .lay-bar, .dev-plus, .lay-save, .dev-gate, .dev-add-menu, .dev-toast, dialog, .site-header .brand, .map-mode-view, .chaos-view, .country-view, .route-view, .street-view, .cal-view, .site-header .header-tools, .site-header .menu-toggle, .mobile-menu');
     const pickable = (t: EventTarget | null): HTMLElement | null => {
       let el = t instanceof Element ? t : null;
       while (el && !(el instanceof HTMLElement)) el = el.parentElement;
@@ -1064,6 +1064,25 @@ const L = {
 
     // ---- the change log (DevMode's panel shows it): what is changed on this page and not saved yet ----
     const original: Edits = JSON.parse(JSON.stringify(api.data));
+    // a copy on another host: the main site's newer edits arrived – nothing changed here yet, so they
+    // become the starting point (saving later must not overwrite them with the copy's older ones)
+    window.addEventListener('andras:edits-live', (e) => {
+      if (dirty) return;
+      const next: Edits = JSON.parse(JSON.stringify((e as CustomEvent<Edits>).detail));
+      for (const target of [draft, original]) {
+        target.style = JSON.parse(JSON.stringify(next.style ?? {}));
+        target.text = JSON.parse(JSON.stringify(next.text ?? {}));
+        target.add = JSON.parse(JSON.stringify(next.add ?? {}));
+        target.move = JSON.parse(JSON.stringify(next.move ?? {}));
+        target.theme = JSON.parse(JSON.stringify(next.theme ?? {}));
+      }
+      draft.style[api.page] ??= {};
+      draft.text[api.full] ??= {};
+      draft.add[api.full] ??= [];
+      draft.move![api.full] ??= [];
+      history = [JSON.stringify(draft)];
+      pos = 0;
+    });
     const short = (s: string | null | undefined) => {
       const t = (s ?? '').replace(/\s+/g, ' ').trim();
       return t.length > 42 ? `${t.slice(0, 40)}…` : t;
