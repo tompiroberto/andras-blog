@@ -689,5 +689,6 @@
   "med.addPost": "Poszt",
   "med.addMusic": "Zene",
   "dev.postPhoto": "Fotó / videó ehhez a poszthoz",
-  "dev.postMusic": "Zene ehhez a poszthoz"
+  "dev.postMusic": "Zene ehhez a poszthoz",
+  "dev.copyNote": "Ez az oldal másolata. A 🚀 Közzététel a fő oldalt (Netlify) rögtön frissíti; ez a másolat a következő feltöltése után mutatja a változásokat (automatikusan, ha be van állítva az FTP-feltöltés, különben új zippel)."
 }

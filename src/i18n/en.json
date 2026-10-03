@@ -689,5 +689,6 @@
   "med.addPost": "Post",
   "med.addMusic": "Music",
   "dev.postPhoto": "Photo / video for this post",
-  "dev.postMusic": "Music for this post"
+  "dev.postMusic": "Music for this post",
+  "dev.copyNote": "This is a copy of the site. 🚀 Publish updates the main site (Netlify) at once; this copy shows the changes after its next upload (automatic if the FTP upload is set up, otherwise with a new zip)."
 }

@@ -1,0 +1,43 @@
+# Keeps a copy of the site on another host (e.g. Papaki) up to date: after every 🚀 Publish (and every
+# push that is not a "[skip netlify]" save) it builds the static export and uploads it by FTP.
+#
+# Off until it is set up – GitHub → the repository → Settings → Secrets and variables → Actions:
+#   Variables:  FTP_ENABLED = true
+#               SITE_URL    = https://the-copy's-address   (optional)
+#               FTP_DIR     = public_html/                 (optional; the folder on the server, ending in /)
+#   Secrets:    FTP_SERVER, FTP_USERNAME, FTP_PASSWORD     (from the hosting's control panel → FTP accounts)
+name: Deploy the copy by FTP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ftp
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: vars.FTP_ENABLED == 'true' && !contains(github.event.head_commit.message, '[skip netlify]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: node scripts/export.mjs ${{ vars.SITE_URL }}
+      - name: Upload (only the changed files)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: ${{ vars.FTP_DIR || 'public_html/' }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            __forms.html

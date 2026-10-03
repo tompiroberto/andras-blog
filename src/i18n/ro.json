@@ -689,5 +689,6 @@
   "med.addPost": "Articol",
   "med.addMusic": "Muzică",
   "dev.postPhoto": "Foto / video pentru acest articol",
-  "dev.postMusic": "Muzică pentru acest articol"
+  "dev.postMusic": "Muzică pentru acest articol",
+  "dev.copyNote": "Aceasta este o copie a site-ului. 🚀 Publicare actualizează imediat site-ul principal (Netlify); copia arată modificările după următoarea încărcare (automat dacă e configurată încărcarea FTP, altfel cu un zip nou)."
 }

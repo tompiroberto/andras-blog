@@ -34,6 +34,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     <button type="button" class="dev-panel__close" aria-label={t(lang, 'dev.off')} title={t(lang, 'dev.off')} data-dev-off><Icon name="x" size={16} /></button>
   </div>
   <p class="dev-panel__text">{t(lang, 'dev.text')}</p>
+  {import.meta.env.PUBLIC_STATIC_EXPORT === '1' && <p class="dev-panel__copy">{t(lang, 'dev.copyNote')}</p>}
   <button type="button" class="dev-publish" data-dev-publish>
     🚀 <span>{t(lang, 'pub.button')}</span> <b class="dev-publish__n" data-dev-pending>0</b>
   </button>
@@ -265,6 +266,15 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
     background: transparent;
     color: #d6f5d6;
     cursor: pointer;
+  }
+  .dev-panel__copy {
+    margin: 8px 0 0;
+    padding: 8px 10px;
+    border: 1px dashed #ffd60a;
+    border-radius: 10px;
+    color: #ffd60a;
+    font-size: 12px;
+    line-height: 1.45;
   }
   .dev-panel__text,
   .dev-panel__note {
