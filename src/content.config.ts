@@ -55,6 +55,8 @@ const photos = defineCollection({
       video: z.string().optional(),
       /** the post it belongs to (slug): shown at the end of that post */
       post: z.string().optional(),
+      /** the calendar event it belongs to (id in src/data/calendar.json) */
+      event: z.string().optional(),
       caption: z.string(),
       place: z.string().optional(),
       date: z.coerce.date().optional(),

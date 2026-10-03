@@ -6,6 +6,7 @@
  * on the "Where I've been" map. The map data and d3 are only loaded when map mode is switched on.
  */
 import Icon from './Icon.astro';
+import IconCircle from './IconCircle.astro';
 import { HTML_LANG, localePath, t, type Lang, type TKey } from '../i18n';
 import worldCities from '../data/world-cities.json';
 import geoMetas from '../data/geo-metas.json';
@@ -401,6 +402,8 @@ const LEGEND: { status: string; key: TKey }[] = [
 
   <!-- top bar -->
   <div class="mm-bar mm-bar--left">
+    <!-- the header's planet, here too: the door to developer mode (5 quick clicks) -->
+    <button type="button" class="mm-dev-globe" data-mm-dev-globe aria-label="🌐"><IconCircle icon="globe" size="nav" variant="violet" /></button>
     <button type="button" class="mm-btn mm-btn--exit" data-mm-exit-mode>
       <Icon name="arrow-left" size={18} />
       <span>{t(lang, 'mapmode.exit')}</span>
@@ -451,6 +454,7 @@ const LEGEND: { status: string; key: TKey }[] = [
   </ul>
   <!-- friends: their markers on the globe, and the list of the countries -->
   <div class="mm-fr-marks" data-mm-fr-marks></div>
+  <p class="mm-fr-hover" hidden data-mm-fr-hover><strong></strong><span></span></p>
   <aside class="mm-fr-list" data-mm-fr-list>
     <strong data-mm-fr-count></strong>
     <ul data-mm-fr-items></ul>
@@ -463,7 +467,8 @@ const LEGEND: { status: string; key: TKey }[] = [
       <button type="button" class="mm-ed__x" data-mm-fr-ed-close aria-label="✕">✕</button>
     </div>
     <label class="mm-fr-ed__has"><input type="checkbox" data-mm-fr-ed-has /> {frWords.has}</label>
-    <label class="mm-ed__field"><span>{frWords.where}</span><textarea rows="3" maxlength="400" data-mm-fr-ed-note></textarea></label>
+    <label class="mm-ed__field"><span>{frWords.where} 🇭🇺</span><textarea rows="2" maxlength="400" data-mm-fr-ed-note></textarea></label>
+    <label class="mm-ed__field"><span>English 🇬🇧</span><textarea rows="2" maxlength="400" data-mm-fr-ed-note-en></textarea></label>
     <div class="mm-ed__actions">
       <button type="button" class="mm-ed__done" data-mm-fr-ed-done>✓ {edWords.done}</button>
     </div>
@@ -928,6 +933,18 @@ const LEGEND: { status: string; key: TKey }[] = [
   .map-mode-view.is-media .mm-route-stops {
     display: none !important;
   }
+  .mm-dev-globe {
+    flex: none;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+  }
+  .mm-dev-globe:focus-visible {
+    outline: 3px solid var(--yellow);
+    outline-offset: 2px;
+  }
   .mm-media-switch {
     display: inline-flex;
     align-items: center;
@@ -1007,6 +1024,29 @@ const LEGEND: { status: string; key: TKey }[] = [
     from {
       scale: 0;
     }
+  }
+  .mm-fr-hover {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 9;
+    display: grid;
+    gap: 2px;
+    max-width: 260px;
+    margin: 0;
+    padding: 8px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    box-shadow: 3px 3px 0 #ff5fa2;
+    font-size: 13px;
+    pointer-events: none;
+    translate: var(--hx) var(--hy);
+  }
+  .mm-fr-hover[hidden],
+  .map-mode-view:not(.is-friends) .mm-fr-hover {
+    display: none;
   }
   .map-mode-view.is-friends .mm-fr-list {
     position: absolute;
@@ -2117,6 +2157,12 @@ const LEGEND: { status: string; key: TKey }[] = [
     };
     view.querySelectorAll('[data-mm-exit]').forEach((a) => a.addEventListener('click', leave));
     view.querySelector('[data-mm-exit-mode]')!.addEventListener('click', leave);
+    // the planet: counted like the header's (DevMode.astro), it spins a little
+    view.querySelector('[data-mm-dev-globe]')?.addEventListener('click', (e) => {
+      const me = (e.currentTarget as HTMLElement).querySelector('.icon-circle');
+      me?.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: 500, easing: 'ease-out' });
+      document.querySelector<HTMLElement>('.site-header .brand .icon-circle')?.click();
+    });
 
     const start = () => {
       if (!isOn() || started) return;
@@ -3063,7 +3109,10 @@ const LEGEND: { status: string; key: TKey }[] = [
     });
 
     // ---- friends: the countries where András has friends (👥 switch; everything else hides) ----
-    type Friend = { iso: string; a2?: string; name?: string; note: string };
+    type Friend = { iso: string; a2?: string; name?: string; note: string; note_en?: string };
+    // the Hungarian page shows the Hungarian note, every other language the English one
+    const isHu = (document.documentElement.lang || '').startsWith('hu');
+    const noteOf = (f: Friend) => (isHu ? f.note : f.note_en || f.note);
     const frData = JSON.parse(view.querySelector('[data-mm-friends-data]')!.textContent || '{}') as {
       friends: { _comment?: string; countries: Friend[] };
       a2: Record<string, string>;
@@ -3096,7 +3145,7 @@ const LEGEND: { status: string; key: TKey }[] = [
     };
     const frTip = (e: MouseEvent, f: Friend) => {
       const at = centroid(f.iso);
-      showTip(e, `👥 ${frName(f)}`, f.note || FW.noNote, frName(f), FW.kicker, at ?? undefined);
+      showTip(e, `👥 ${frName(f)}`, noteOf(f) || FW.noNote, frName(f), FW.kicker, at ?? undefined);
     };
     function renderFriends() {
       const on = view.classList.contains('is-friends');
@@ -3130,7 +3179,7 @@ const LEGEND: { status: string; key: TKey }[] = [
             const go = document.createElement('button');
             go.type = 'button';
             go.textContent = frName(f);
-            if (f.note) go.title = f.note;
+            if (noteOf(f)) go.title = noteOf(f);
             go.addEventListener('click', () => {
               const at = centroid(f.iso);
               if (at) flyToPoint(at[0], at[1], Math.max(t.k, 2.2));
@@ -3181,6 +3230,7 @@ const LEGEND: { status: string; key: TKey }[] = [
     const frEd = view.querySelector<HTMLElement>('[data-mm-fr-ed]')!;
     const frHas = frEd.querySelector<HTMLInputElement>('[data-mm-fr-ed-has]')!;
     const frNote = frEd.querySelector<HTMLTextAreaElement>('[data-mm-fr-ed-note]')!;
+    const frNoteEn = frEd.querySelector<HTMLTextAreaElement>('[data-mm-fr-ed-note-en]')!;
     let frIso = '';
     function openFriendEditor(iso: string) {
       frIso = iso;
@@ -3189,6 +3239,7 @@ const LEGEND: { status: string; key: TKey }[] = [
       frEd.querySelector('[data-mm-fr-ed-title]')!.textContent = f ? frName(f) : frName({ iso, name, note: '' });
       frHas.checked = true;
       frNote.value = f?.note ?? '';
+      frNoteEn.value = f?.note_en ?? '';
       tip.hidden = true;
       ed.hidden = true;
       frEd.hidden = false;
@@ -3202,14 +3253,30 @@ const LEGEND: { status: string; key: TKey }[] = [
       } else {
         const a2 = frData.a2[frIso];
         const name = paths.find((p) => p.el.dataset.iso === frIso)?.el.dataset.name;
-        const item: Friend = { iso: frIso, ...(a2 ? { a2 } : name ? { name } : {}), note: frNote.value.trim() };
-        if (i >= 0) fr.countries[i] = { ...fr.countries[i], note: item.note };
+        const item: Friend = { iso: frIso, ...(a2 ? { a2 } : name ? { name } : {}), note: frNote.value.trim(), note_en: frNoteEn.value.trim() };
+        if (i >= 0) fr.countries[i] = { ...fr.countries[i], note: item.note, note_en: item.note_en };
         else fr.countries.push(item);
       }
       dirty();
       frEd.hidden = true;
       renderFriends();
     });
+    const hover = view.querySelector<HTMLElement>('[data-mm-fr-hover]')!;
+    svg.addEventListener('pointermove', (e) => {
+      if (!view.classList.contains('is-friends') || e.pointerType === 'touch') return void (hover.hidden = true);
+      const p = (e.target as Element).closest<SVGPathElement>('path.mm-land.is-friend');
+      const f = p && fr.countries.find((o) => o.iso === p.dataset.iso);
+      if (!f) return void (hover.hidden = true);
+      hover.querySelector('strong')!.textContent = `👥 ${frName(f)}`;
+      hover.querySelector('span')!.textContent = noteOf(f) || FW.noNote;
+      hover.hidden = false;
+      const r = view.getBoundingClientRect();
+      const x = Math.min(e.clientX - r.left + 16, W - hover.offsetWidth - 10);
+      const y = Math.min(e.clientY - r.top + 16, H - hover.offsetHeight - 10);
+      hover.style.setProperty('--hx', `${x}px`);
+      hover.style.setProperty('--hy', `${y}px`);
+    });
+    svg.addEventListener('pointerleave', () => (hover.hidden = true));
     friendsClick = (e: MouseEvent, iso: string) => {
       if (isDev()) return openFriendEditor(iso);
       const f = fr.countries.find((o) => o.iso === iso);

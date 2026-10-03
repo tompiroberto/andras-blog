@@ -1,12 +1,92 @@
 {
   "events": [
     {
+      "id": "pl-2025",
+      "title": "Lengyelország – református ifi",
+      "title_en": "Poland – Reformed youth meeting",
+      "place": "Krakkó",
+      "place_en": "Kraków",
+      "country": "PL",
+      "from": "2025-11-14",
+      "to": "2025-11-16",
+      "color": "#E63946"
+    },
+    {
+      "id": "hr-split-2026",
+      "title": "Horvátország – Split 10k",
+      "title_en": "Croatia – Split 10K",
+      "place": "Split",
+      "place_en": "Split",
+      "country": "HR",
+      "from": "2026-02-13",
+      "to": "2026-02-15",
+      "color": "#2F86D6"
+    },
+    {
+      "id": "si-2026",
+      "title": "Szlovénia – EPAS",
+      "title_en": "Slovenia – EPAS",
+      "place": "Portorož",
+      "place_en": "Portorož",
+      "country": "SI",
+      "from": "2026-04-17",
+      "to": "2026-04-20",
+      "color": "#FF8C1A"
+    },
+    {
+      "id": "hr-sky-2026",
+      "title": "Horvátország – Skyrunning ifjúsági vb",
+      "title_en": "Croatia – Youth Skyrunning World Championships",
+      "place": "Makarska",
+      "place_en": "Makarska",
+      "country": "HR",
+      "from": "2026-05-01",
+      "to": "2026-05-10",
+      "color": "#FF5FA2"
+    },
+    {
+      "id": "sk-ba-2026",
+      "title": "Szlovákia – biciklivel Pozsonyig",
+      "title_en": "Slovakia – cycling to Bratislava",
+      "place": "Pozsony",
+      "place_en": "Bratislava",
+      "country": "SK",
+      "from": "2026-06-06",
+      "to": "2026-06-07",
+      "color": "#2DBE6C"
+    },
+    {
+      "id": "sk-lv-2026",
+      "title": "Szlovákia – biciklivel Léváig",
+      "title_en": "Slovakia – cycling to Levice",
+      "place": "Léva",
+      "place_en": "Levice",
+      "country": "SK",
+      "from": "2026-06-26",
+      "to": "2026-06-27",
+      "color": "#FFD60A"
+    },
+    {
+      "id": "at-2026",
+      "title": "Ausztria – kirándulás a családdal",
+      "title_en": "Austria – family trip",
+      "place": "Salzburg",
+      "place_en": "Salzburg",
+      "country": "AT",
+      "from": "2026-08-01",
+      "to": "2026-08-12",
+      "color": "#E63946"
+    },
+    {
       "id": "lt-2026",
       "title": "Litvánia – Erasmus+",
       "place": "Litvánia",
       "from": "2026-08-14",
       "to": "2026-08-21",
-      "color": "#2DBE6C"
+      "color": "#2DBE6C",
+      "country": "LT",
+      "title_en": "Lithuania – Erasmus+",
+      "place_en": "Lithuania"
     },
     {
       "id": "cz-2026",
@@ -14,7 +94,10 @@
       "place": "Prága",
       "from": "2026-09-17",
       "to": "2026-09-20",
-      "color": "#2F86D6"
+      "color": "#2F86D6",
+      "country": "CZ",
+      "title_en": "Czechia",
+      "place_en": "Prague"
     },
     {
       "id": "gr-2026",
@@ -22,7 +105,10 @@
       "place": "Elafonisszosz",
       "from": "2026-09-23",
       "to": "2026-10-04",
-      "color": "#7B2FF7"
+      "color": "#7B2FF7",
+      "country": "GR",
+      "title_en": "Greece – Erasmus+",
+      "place_en": "Elafonisos"
     },
     {
       "id": "ge-2026",
@@ -30,15 +116,18 @@
       "place": "Grúzia",
       "from": "2026-12-03",
       "to": "2026-12-10",
-      "color": "#E63946"
-    },
+      "color": "#E63946",
+      "country": "GE",
+      "title_en": "Georgia",
+      "place_en": "Georgia"
+    }
+  ],
+  "plans": [
     {
-      "id": "2026-08-01-v459",
-      "title": "Nyaralás",
-      "place": "Ausztria",
-      "from": "2026-08-01",
-      "to": "2026-08-12",
-      "color": "#E63946"
+      "id": "nordic",
+      "text": "Skandináv körút – Norvégia, Svédország, Dánia, Finnország",
+      "when": "",
+      "text_en": "A Nordic trip – Norway, Sweden, Denmark, Finland"
     }
   ]
 }

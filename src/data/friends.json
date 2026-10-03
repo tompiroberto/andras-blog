@@ -1,85 +1,113 @@
 {
-  "_comment": "Countries where András has friends (the world map's 👥 switch). iso: ISO numeric id (as on the map), a2: ISO alpha-2 (for the country's name in every language), note: where / how he met them. Edited in developer mode on the world map.",
+  "_comment": "Countries where András has friends (the world map's 👥 switch). iso: ISO numeric id (as on the map), a2: ISO alpha-2 (for the country's name in every language), note: where / how he met them (Hungarian), note_en: the same in English (shown on the other languages' pages). Edited in developer mode on the world map.",
   "countries": [
     {
       "iso": "604",
       "a2": "PE",
-      "note": ""
+      "note": "A varsói reptéren ismertem meg, félig olasz.",
+      "note_en": "Met at Warsaw airport – half Italian."
     },
     {
       "iso": "152",
       "a2": "CL",
-      "note": ""
+      "note": "Egy prágai osztálykiránduláson találkoztam vele, Temucóban lakik.",
+      "note_en": "Met on a school trip to Prague; lives in Temuco."
     },
     {
       "iso": "840",
       "a2": "US",
-      "note": ""
+      "note": "Sokan vannak, például a skyrunning-vb-ről.",
+      "note_en": "Lots of them – e.g. from the Skyrunning World Championships."
     },
     {
       "iso": "484",
       "a2": "MX",
-      "note": ""
+      "note": "Az osztálytársam.",
+      "note_en": "My classmate."
     },
     {
       "iso": "076",
       "a2": "BR",
-      "note": ""
+      "note": "Skyrunningról és Erasmus+-ról.",
+      "note_en": "From skyrunning and Erasmus+."
     },
     {
       "iso": "724",
       "a2": "ES",
-      "note": ""
+      "note": "",
+      "note_en": ""
     },
     {
       "iso": "620",
       "a2": "PT",
-      "note": ""
+      "note": "Erasmus+-ról.",
+      "note_en": "From Erasmus+."
     },
     {
       "iso": "380",
       "a2": "IT",
-      "note": ""
+      "note": "Erasmus+-ról.",
+      "note_en": "From Erasmus+."
     },
     {
       "iso": "276",
       "a2": "DE",
-      "note": ""
+      "note": "Skyrunningról.",
+      "note_en": "From skyrunning."
     },
     {
       "iso": "040",
       "a2": "AT",
-      "note": ""
+      "note": "Az EPAS-ról (a portoroži találkozóról).",
+      "note_en": "From EPAS (the meeting in Portorož)."
     },
     {
       "iso": "348",
       "a2": "HU",
-      "note": ""
+      "note": "",
+      "note_en": ""
     },
     {
       "iso": "268",
       "a2": "GE",
-      "note": ""
+      "note": "Erasmus+-ról.",
+      "note_en": "From Erasmus+."
     },
     {
       "iso": "300",
       "a2": "GR",
-      "note": ""
+      "note": "Erasmus+-ról.",
+      "note_en": "From Erasmus+."
     },
     {
       "iso": "440",
       "a2": "LT",
-      "note": ""
+      "note": "Erasmus+-ról.",
+      "note_en": "From Erasmus+."
     },
     {
       "iso": "703",
       "a2": "SK",
-      "note": ""
+      "note": "Az iskolából.",
+      "note_en": "From school."
     },
     {
       "iso": "642",
       "a2": "RO",
-      "note": ""
+      "note": "",
+      "note_en": ""
+    },
+    {
+      "iso": "050",
+      "a2": "BD",
+      "note": "Egy alkalmi munkán ismertem meg.",
+      "note_en": "Met at a casual job."
+    },
+    {
+      "iso": "156",
+      "a2": "CN",
+      "note": "Az iskolából.",
+      "note_en": "From school."
     }
   ]
 }

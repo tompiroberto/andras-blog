@@ -34,7 +34,8 @@
     "@types/d3-zoom": "^3.0.8",
     "@types/geojson": "^7946.0.16",
     "@types/topojson-client": "^3.1.5",
-    "@types/topojson-specification": "^1.0.5"
+    "@types/topojson-specification": "^1.0.5",
+    "country-flag-icons": "^1.6.20"
   },
   "allowScripts": {
     "esbuild@0.28.2": true

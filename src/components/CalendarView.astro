@@ -10,6 +10,9 @@
 import Icon from './Icon.astro';
 import calendar from '../data/calendar.json';
 import { getCollection } from 'astro:content';
+import { countries as FLAG_CODES } from 'country-flag-icons';
+import { getImage } from 'astro:assets';
+import { getPhotos } from '../lib/photos';
 import { HTML_LANG, t, type Lang } from '../i18n';
 
 interface Props {
@@ -38,14 +41,45 @@ const words = {
   key: t(lang, 'dev.msgKey'),
   edit: t(lang, 'cal.edit'),
   musicNone: t(lang, 'cal.musicNone'),
+  seePhotos: t(lang, 'cal.seePhotos'),
+  hearMusic: t(lang, 'cal.hearMusic'),
+  noPhotos: t(lang, 'cal.noPhotos'),
+  now: t(lang, 'cal.now'),
+  untilEnd: t(lang, 'cal.untilEnd'),
+  noNext: t(lang, 'cal.noNext'),
+  join: t(lang, 'cal.join'),
+  planText: t(lang, 'cal.planText'),
+  planWhen: t(lang, 'cal.planWhen'),
+  planAdd: t(lang, 'cal.planAdd'),
+  confirmPlan: t(lang, 'cal.confirmPlan'),
+  d: t(lang, 'cal.cd.d'),
+  h: t(lang, 'cal.cd.h'),
+  m: t(lang, 'cal.cd.m'),
+  s: t(lang, 'cal.cd.s'),
 };
 // the music library: tracks can be linked to an event (its "music" list of track ids)
 const tracks = (await getCollection('music'))
   .map((e) => ({ id: e.id, file: e.data.file, title: e.data.title, ...(e.data.artist ? { artist: e.data.artist } : {}) }))
   .sort((a, b) => a.title.localeCompare(b.title));
+// the photos / videos uploaded to an event (their yml says event: <id>)
+type Pic = { large: string; thumb: string; caption: string; video?: string };
+const eventPhotos: Record<string, Pic[]> = {};
+for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
+  const pic: Pic = p.image
+    ? { large: (await getImage({ src: p.image, width: Math.min(1800, p.image.width) })).src, thumb: (await getImage({ src: p.image, width: 360 })).src, caption: p.caption }
+    : { large: '', thumb: '', caption: p.caption, video: p.video };
+  (eventPhotos[p.event!] ??= []).push(pic);
+}
 ---
 
 <section class="cal-view" data-cal data-lang={HTML_LANG[lang]} data-live={live || undefined} aria-label={t(lang, 'cal.toggle')}>
+  <div class="cal-layout">
+  <!-- left: the last adventures and the next one (faded), on a vertical timeline -->
+  <aside class="cal-side cal-side--left cal-tl" aria-label={t(lang, 'cal.timeline')}>
+    <h3 class="cal-side__title">🧭 {t(lang, 'cal.timeline')}</h3>
+    <ol class="cal-tl__list" data-cal-tl></ol>
+  </aside>
+  <div class="cal-main">
   <div class="cal-sheet" data-cal-sheet>
     <span class="cal-rings" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
     <header class="cal-bar">
@@ -66,6 +100,37 @@ const tracks = (await getCollection('music'))
     <p class="cal-hint">{t(lang, 'cal.hint')}</p>
     <div class="cal-body" data-cal-body></div>
   </div>
+  </div>
+  <!-- right: the countdown to the next adventure; below: planned – join me -->
+  <aside class="cal-side cal-side--right">
+    <div class="cal-cd" data-cal-cd>
+      <p class="cal-side__title">⏳ {t(lang, 'cal.countdown')}</p>
+      <p class="cal-cd__to" data-cal-cd-to></p>
+      <div class="cal-cd__digits" data-cal-cd-digits>
+        {['d', 'h', 'm', 's'].map((u) => (
+          <span class="cal-cd__unit"><b data-cd={u}>0</b><small>{words[u as 'd']}</small></span>
+        ))}
+      </div>
+      <p class="cal-cd__date" data-cal-cd-date></p>
+      <p class="cal-cd__now" hidden data-cal-cd-now></p>
+    </div>
+    <div class="cal-plans">
+      <p class="cal-side__title">💡 {t(lang, 'cal.plans')}</p>
+      <ul class="cal-plans__list" data-cal-plans></ul>
+      <form class="cal-plans__form" hidden data-cal-plan-form>
+        <input type="text" maxlength="120" required data-cp="text" placeholder={`🇭🇺 ${words.planText}`} />
+        <input type="text" maxlength="120" data-cp="text_en" placeholder="🇬🇧 English" />
+        <input type="text" maxlength="40" data-cp="when" placeholder={`🇭🇺 ${words.planWhen}`} />
+        <input type="text" maxlength="40" data-cp="when_en" placeholder="🇬🇧 When? (English)" />
+        <div class="cal-form__actions">
+          <button type="button" class="cal-btn" data-cp-cancel>✕</button>
+          <button type="submit" class="cal-btn cal-btn--add">{words.save}</button>
+        </div>
+      </form>
+      <button type="button" class="cal-btn cal-btn--add cal-plans__add" data-cal-plan-add>＋ {words.planAdd}</button>
+    </div>
+  </aside>
+  </div>
 
   <!-- a day: its events, a message about it; in developer mode: add / change events -->
   <aside class="cal-day" hidden data-cal-day>
@@ -79,17 +144,30 @@ const tracks = (await getCollection('music'))
 
   <form class="cal-form" hidden data-cal-form>
     <strong data-cal-form-title>＋ {words.add}</strong>
-    <label>{words.title}<input type="text" maxlength="80" required data-cf="title" /></label>
-    <label>{words.place}<input type="text" maxlength="80" data-cf="place" /></label>
+    <div class="cal-form__row">
+      <label>{words.title} 🇭🇺<input type="text" maxlength="80" required data-cf="title" /></label>
+      <label>English 🇬🇧<input type="text" maxlength="80" data-cf="title_en" /></label>
+    </div>
+    <div class="cal-form__row">
+      <label>{words.place} 🇭🇺<input type="text" maxlength="80" data-cf="place" /></label>
+      <label>English 🇬🇧<input type="text" maxlength="80" data-cf="place_en" /></label>
+    </div>
+    <label>{t(lang, 'cal.country')}<select data-cf="country"><option value="">—</option></select></label>
     <div class="cal-form__row">
       <label>{words.from}<input type="date" required data-cf="from" /></label>
       <label>{words.to}<input type="date" required data-cf="to" /></label>
     </div>
-    <label>{words.note}<textarea rows="2" maxlength="300" data-cf="note"></textarea></label>
+    <label>{words.note} 🇭🇺<textarea rows="2" maxlength="300" data-cf="note"></textarea></label>
+    <label>English 🇬🇧<textarea rows="2" maxlength="300" data-cf="note_en"></textarea></label>
     <fieldset class="cal-form__music">
       <legend>🎵 {t(lang, 'cal.music')}</legend>
       <ul data-cf-music></ul>
       <button type="button" class="cal-btn" data-cf-upload>⬆ {t(lang, 'cal.musicUpload')}</button>
+    </fieldset>
+    <fieldset class="cal-form__music">
+      <legend>📷 {t(lang, 'cal.photos')}</legend>
+      <div class="cal-form__pics" data-cf-pics></div>
+      <button type="button" class="cal-btn" data-cf-photo-upload>⬆ {t(lang, 'cal.photosUpload')}</button>
     </fieldset>
     <fieldset class="cal-form__colors">
       <legend>{words.color}</legend>
@@ -110,6 +188,18 @@ const tracks = (await getCollection('music'))
   <script type="application/json" data-cal-data set:html={JSON.stringify(calendar)} />
   <script type="application/json" data-cal-words set:html={JSON.stringify(words)} />
   <script type="application/json" data-cal-tracks set:html={JSON.stringify(tracks)} />
+  <script type="application/json" data-cal-flags set:html={JSON.stringify(FLAG_CODES)} />
+  <script type="application/json" data-cal-photos set:html={JSON.stringify(eventPhotos)} />
+  <!-- an event's photos, one by one -->
+  <div class="cal-lb" hidden data-cal-lb>
+    <button type="button" class="cal-lb__x" aria-label="✕" data-cal-lb-close>✕</button>
+    <button type="button" class="cal-lb__nav cal-lb__nav--prev" aria-label="‹" data-cal-lb-step="-1">‹</button>
+    <figure>
+      <div class="cal-lb__media" data-cal-lb-media></div>
+      <figcaption data-cal-lb-cap></figcaption>
+    </figure>
+    <button type="button" class="cal-lb__nav cal-lb__nav--next" aria-label="›" data-cal-lb-step="1">›</button>
+  </div>
 </section>
 
 <style is:global>
@@ -123,6 +213,7 @@ const tracks = (await getCollection('music'))
     display: none;
     padding: clamp(10px, 2.4vw, 28px);
     overflow: auto;
+    container-type: size;
     background: color-mix(in srgb, var(--bg) 82%, transparent);
     backdrop-filter: blur(6px);
     perspective: 1600px;
@@ -144,6 +235,344 @@ const tracks = (await getCollection('music'))
     :root.cal-mode:has(.dev-panel:not([hidden])) .cal-view {
       padding-right: calc(min(340px, 100vw - 32px) + 36px);
     }
+  }
+  /* timeline | calendar | countdown + plans. On a wide screen the sides stand still and fill the height,
+     only the calendar scrolls; on a narrow one everything is under each other (the whole view scrolls). */
+  .cal-layout {
+    display: grid;
+    grid-template-areas: 'main' 'right' 'left';
+    gap: 18px;
+    max-width: 1720px;
+    margin: 0 auto;
+  }
+  .cal-main {
+    grid-area: main;
+    min-width: 0;
+    padding: 16px 10px 10px 0;
+  }
+  .cal-side--left {
+    grid-area: left;
+  }
+  .cal-side--right {
+    grid-area: right;
+    display: grid;
+    gap: 18px;
+    align-content: space-between;
+  }
+  @container (min-width: 1080px) and (min-height: 480px) {
+    .cal-layout {
+      grid-template-areas: 'left main right';
+      grid-template-columns: minmax(200px, 250px) minmax(0, 1fr) minmax(240px, 290px);
+      height: 100%;
+    }
+    .cal-main {
+      overflow: auto;
+      overscroll-behavior: contain;
+    }
+    .cal-side {
+      min-height: 0;
+      overflow: hidden;
+      padding-top: 16px;
+    }
+    /* the timeline scrolls on its own (the latest adventures at the bottom are in view) */
+    .cal-side--left {
+      overflow: auto;
+      overscroll-behavior: contain;
+      margin-top: 16px;
+      padding-top: 0;
+    }
+    .cal-side--right {
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+    .cal-plans {
+      align-self: end;
+      max-height: 100%;
+      overflow: hidden;
+    }
+  }
+  .cal-side--right > *,
+  .cal-tl {
+    border: var(--border, 3px solid var(--ink));
+    border-radius: 18px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    box-shadow: 5px 5px 0 var(--violet);
+  }
+  .cal-side--left.cal-tl {
+    padding: 0 16px 10px;
+  }
+  /* the timeline's title stays on top while it scrolls */
+  .cal-tl .cal-side__title {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: 0 -16px 12px;
+    padding: 14px 16px 8px;
+    background: var(--surface, #fff);
+  }
+  :root.cal-mode .cal-side--left {
+    animation: cal-in-left 700ms 150ms cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+  }
+  :root.cal-mode .cal-side--right {
+    animation: cal-in-right 700ms 150ms cubic-bezier(0.2, 0.9, 0.25, 1.1) both;
+  }
+  @keyframes cal-in-left {
+    from {
+      transform: translateX(-40px);
+      opacity: 0;
+    }
+  }
+  @keyframes cal-in-right {
+    from {
+      transform: translateX(40px);
+      opacity: 0;
+    }
+  }
+  .cal-side__title {
+    margin: 0 0 12px;
+    font: 800 17px / 1.2 var(--font-heading);
+  }
+  /* the timeline */
+  .cal-tl__list {
+    position: relative;
+    display: grid;
+    gap: 16px;
+    margin: 0;
+    padding: 0 0 0 26px;
+    list-style: none;
+  }
+  .cal-tl__list::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 6px;
+    bottom: 6px;
+    width: 4px;
+    border-radius: 4px;
+    background: linear-gradient(var(--violet), var(--yellow));
+    transform-origin: top;
+    animation: cal-line 900ms 300ms ease both;
+  }
+  @keyframes cal-line {
+    from {
+      transform: scaleY(0);
+    }
+  }
+  .cal-tl__item {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    animation: cal-tl-in 500ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+    animation-delay: calc(400ms + var(--i) * 140ms);
+  }
+  .cal-tl__item:hover {
+    border-color: var(--c);
+  }
+  @keyframes cal-tl-in {
+    from {
+      transform: translateX(-16px);
+      opacity: 0;
+    }
+  }
+  .cal-tl__item::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 12px;
+    width: 14px;
+    height: 14px;
+    border: 3px solid var(--ink);
+    border-radius: 50%;
+    background: var(--c);
+  }
+  .cal-tl__item.is-now::before {
+    box-shadow: 0 0 0 0 var(--c);
+    animation: cal-pulse 1.6s ease-out infinite;
+  }
+  @keyframes cal-pulse {
+    to {
+      box-shadow: 0 0 0 12px transparent;
+    }
+  }
+  .cal-tl__item.is-next {
+    opacity: 0.45;
+    border-style: dashed;
+    border-color: var(--muted, #888);
+  }
+  .cal-tl__item.is-next::before {
+    background: var(--surface, #fff);
+    border-style: dashed;
+  }
+  .cal-tl__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  .cal-flag {
+    flex: none;
+    width: 27px;
+    height: 18px;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    object-fit: cover;
+  }
+  .cal-tl__item small {
+    color: var(--muted);
+  }
+  .cal-tl__badge {
+    justify-self: start;
+    padding: 1px 8px;
+    border-radius: 99px;
+    background: var(--violet);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .cal-tl__item.is-next .cal-tl__badge {
+    background: var(--muted, #888);
+  }
+  /* the countdown */
+  .cal-cd {
+    padding: 16px;
+    text-align: center;
+  }
+  .cal-cd__to {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 0 12px;
+    font: 900 clamp(20px, 2vw, 26px) / 1.1 var(--font-heading);
+  }
+  .cal-cd__to .cal-flag {
+    width: 36px;
+    height: 24px;
+  }
+  .cal-cd__digits {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .cal-cd__unit {
+    display: grid;
+    gap: 2px;
+    padding: 8px 2px 6px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--yellow);
+    color: var(--ink);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .cal-cd__unit b {
+    display: block;
+    font: 900 clamp(20px, 2vw, 28px) / 1 var(--font-heading);
+    font-variant-numeric: tabular-nums;
+  }
+  .cal-cd__unit b.is-tick {
+    animation: cal-tick 380ms ease;
+  }
+  @keyframes cal-tick {
+    from {
+      transform: rotateX(90deg);
+    }
+  }
+  .cal-cd__unit small {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .cal-cd__date {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .cal-cd__now {
+    margin: 10px 0 0;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--violet) 14%, transparent);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .cal-cd__now[hidden],
+  .cal-cd__digits[hidden],
+  .cal-plans__form[hidden] {
+    display: none;
+  }
+  /* planned – join me */
+  .cal-plans {
+    padding: 16px;
+    box-shadow: 5px 5px 0 var(--yellow);
+  }
+  .cal-plans__list {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cal-plans__list li {
+    display: grid;
+    gap: 6px;
+    padding: 10px;
+    border: 2px dashed var(--ink);
+    border-radius: 12px;
+    animation: cal-tl-in 500ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+    animation-delay: calc(500ms + var(--i) * 120ms);
+  }
+  .cal-plans__list strong {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    line-height: 1.25;
+  }
+  .cal-plans__list small {
+    color: var(--muted);
+  }
+  .cal-plans__join {
+    justify-self: start;
+    font-size: 13px;
+  }
+  .cal-plans__dev {
+    display: none;
+    flex: none;
+    gap: 2px;
+  }
+  .cal-plans__dev button {
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: #1f8a3a;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  :root.dev-mode:not(.dev-preview) .cal-plans__dev {
+    display: inline-flex;
+  }
+  .cal-plans__add {
+    display: none;
+    margin-top: 10px;
+  }
+  :root.dev-mode:not(.dev-preview) .cal-plans__add {
+    display: inline-flex;
+  }
+  .cal-plans__form {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .cal-plans__form input {
+    padding: 8px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    font: inherit;
   }
   /* the sheet flips down from the top, like a wall calendar's page */
   .cal-sheet {
@@ -514,7 +943,7 @@ const tracks = (await getCollection('music'))
   .cal-day__list small {
     color: var(--muted);
   }
-  .cal-day__list button {
+  .cal-day__list strong > button {
     display: none;
     padding: 0 6px;
     border: 0;
@@ -523,8 +952,98 @@ const tracks = (await getCollection('music'))
     font-size: 16px;
     cursor: pointer;
   }
-  :root.dev-mode:not(.dev-preview) .cal-day__list button {
+  :root.dev-mode:not(.dev-preview) .cal-day__list strong > button {
     display: inline;
+  }
+  .cal-day__media {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .cal-day__media .cal-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .cal-day__media .cal-btn[aria-expanded='true'] {
+    background: var(--yellow);
+  }
+  .cal-day__music[hidden] {
+    display: none;
+  }
+  .cal-form__pics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .cal-form__pics img {
+    width: 54px;
+    height: 54px;
+    border-radius: 6px;
+    object-fit: cover;
+  }
+  .cal-form__pics em {
+    color: #8b949e;
+  }
+  .cal-lb {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    background: rgb(10 10 20 / 0.88);
+    animation: cal-fade-in 250ms ease;
+  }
+  .cal-lb[hidden] {
+    display: none;
+  }
+  @keyframes cal-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  .cal-lb figure {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    min-width: 0;
+    margin: 0;
+  }
+  .cal-lb__media img,
+  .cal-lb__media video {
+    display: block;
+    max-width: 100%;
+    max-height: calc(100vh - 140px);
+    border-radius: 12px;
+    animation: cal-pop 280ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .cal-lb figcaption {
+    color: #fff;
+    font-weight: 700;
+    text-align: center;
+  }
+  .cal-lb__nav,
+  .cal-lb__x {
+    width: 46px;
+    height: 46px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+    font-size: 26px;
+    cursor: pointer;
+  }
+  .cal-lb__nav[hidden] {
+    visibility: hidden;
+  }
+  .cal-lb__x {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-size: 18px;
   }
   .cal-day__music {
     display: grid;
@@ -568,6 +1087,7 @@ const tracks = (await getCollection('music'))
     gap: 4px;
   }
   .cal-form input,
+  .cal-form select,
   .cal-form textarea {
     padding: 8px 10px;
     border: 1px solid #30363d;
@@ -692,15 +1212,26 @@ const tracks = (await getCollection('music'))
   import { PLACE_MESSAGE_EVENT } from '../lib/constants';
   import { commitFiles, getToken } from '../lib/githubCommit';
 
-  type Ev = { id: string; title: string; place?: string; from: string; to: string; color: string; note?: string; music?: string[] };
+  type Ev = { id: string; title: string; title_en?: string; place?: string; place_en?: string; country?: string; from: string; to: string; color: string; note?: string; note_en?: string; music?: string[] };
+  type Plan = { id: string; text: string; text_en?: string; when?: string; when_en?: string };
   type Track = { id: string; file: string; title: string; artist?: string };
   const view = document.querySelector<HTMLElement>('[data-cal]');
   if (view) {
     const html = document.documentElement;
     const W = JSON.parse(view.querySelector('[data-cal-words]')!.textContent || '{}') as Record<string, string>;
-    const data = JSON.parse(view.querySelector('[data-cal-data]')!.textContent || '{"events":[]}') as { events: Ev[] };
+    const data = JSON.parse(view.querySelector('[data-cal-data]')!.textContent || '{"events":[]}') as { events: Ev[]; plans?: Plan[] };
     const locale = view.dataset.lang || 'hu';
+    const isHu = locale.startsWith('hu');
+    /** a field in the page's language: Hungarian on the Hungarian page, English (when written) elsewhere */
+    const tr = <T extends object>(o: T, k: keyof T & string) => {
+      const hu = (o as Record<string, unknown>)[k] as string | undefined;
+      const en = (o as Record<string, unknown>)[`${k}_en`] as string | undefined;
+      return (isHu ? hu : en || hu) ?? '';
+    };
     let tracks = JSON.parse(view.querySelector('[data-cal-tracks]')!.textContent || '[]') as Track[];
+    type Pic = { large: string; thumb: string; caption: string; video?: string };
+    let photos = JSON.parse(view.querySelector('[data-cal-photos]')!.textContent || '{}') as Record<string, Pic[]>;
+    const picsOf = (id: string) => photos[id] ?? [];
     /** a copy on another host plays the main site's files (music uploaded later is only there) */
     const audioSrc = (tr: Track) => (view.dataset.live ? view.dataset.live + tr.file : tr.file);
     const trackName = (tr: Track) => (tr.artist ? `${tr.artist} – ${tr.title}` : tr.title);
@@ -743,11 +1274,209 @@ const tracks = (await getCollection('music'))
         const li = document.createElement('li');
         li.style.setProperty('--c', e.color);
         li.innerHTML = '<i></i>';
-        li.append(`${e.title}${e.place ? ` · ${e.place}` : ''} (${fmtShort.format(parse(e.from))} – ${fmtShort.format(parse(e.to))})`);
+        li.append(`${tr(e, 'title')}${tr(e, 'place') ? ` · ${tr(e, 'place')}` : ''} (${fmtShort.format(parse(e.from))} – ${fmtShort.format(parse(e.to))})`);
         legend.append(li);
       }
       body.append(legend);
+      renderSides();
     }
+
+    // ---- the sides: timeline, countdown, plans ----
+    const flagCodes = JSON.parse(view.querySelector('[data-cal-flags]')!.textContent || '[]') as string[];
+    const regionNames = new Intl.DisplayNames([locale], { type: 'region' });
+    const flagImg = (cc?: string) => {
+      if (!cc || !flagCodes.includes(cc)) return null;
+      const img = document.createElement('img');
+      img.className = 'cal-flag';
+      img.src = `/flags/${cc.toLowerCase()}.svg`;
+      img.alt = regionNames.of(cc) ?? cc;
+      img.width = 27;
+      img.height = 18;
+      return img;
+    };
+    const range = (e: Ev) => (e.from === e.to ? fmtShort.format(parse(e.from)) : `${fmtShort.format(parse(e.from))} – ${fmtShort.format(parse(e.to))}`);
+    /** the next adventure (starts after today) and the one going on now */
+    const nextEv = () => sorted().find((e) => e.from > iso(new Date()));
+    const nowEv = () => sorted().filter((e) => on(e, iso(new Date()))).pop();
+    function renderSides() {
+      // timeline: every adventure up to now (scrolled to the latest ones), and the next one faded
+      const today = iso(new Date());
+      const done = sorted().filter((e) => e.from <= today);
+      const next = nextEv();
+      const list = view!.querySelector<HTMLElement>('[data-cal-tl]')!;
+      const first = !list.childElementCount;
+      const shown = [...done, ...(next ? [next] : [])];
+      list.replaceChildren(
+        ...shown.map((e, i) => {
+          const li = document.createElement('li');
+          li.className = 'cal-tl__item';
+          const isNow = on(e, today);
+          li.classList.toggle('is-now', isNow);
+          li.classList.toggle('is-next', e === next);
+          li.style.setProperty('--c', e.color);
+          // the latest ones pop in first
+          li.style.setProperty('--i', String(Math.min(6, shown.length - 1 - i)));
+          if (isNow || e === next) {
+            const badge = document.createElement('span');
+            badge.className = 'cal-tl__badge';
+            badge.textContent = isNow ? W.now : '⏳';
+            li.append(badge);
+          }
+          const head = document.createElement('span');
+          head.className = 'cal-tl__head';
+          const flag = flagImg(e.country);
+          if (flag) head.append(flag);
+          head.append(tr(e, 'title'));
+          const when = document.createElement('small');
+          when.textContent = [tr(e, 'place'), range(e)].filter(Boolean).join(' · ');
+          li.append(head, when);
+          // a click: that month in the calendar
+          li.addEventListener('click', () => {
+            cursor = new Date(parse(e.from).getFullYear(), parse(e.from).getMonth(), 1);
+            if (mode !== 'month') setMode('month');
+            else render(true);
+          });
+          return li;
+        }),
+      );
+      // the first time: the timeline shows its end (the latest adventures and the next one)
+      if (first) {
+        const side = list.closest<HTMLElement>('.cal-side')!;
+        requestAnimationFrame(() => (side.scrollTop = side.scrollHeight));
+      }
+      // countdown
+      const to = view!.querySelector<HTMLElement>('[data-cal-cd-to]')!;
+      to.replaceChildren();
+      if (next) {
+        const flag = flagImg(next.country);
+        if (flag) to.append(flag);
+        to.append(tr(next, 'place') && next.country ? regionNames.of(next.country) ?? tr(next, 'title') : tr(next, 'title'));
+        view!.querySelector('[data-cal-cd-date]')!.textContent = [...new Set([tr(next, 'title'), tr(next, 'place')].filter(Boolean))].concat(range(next)).join(' · ');
+      } else {
+        to.textContent = W.noNext;
+        view!.querySelector('[data-cal-cd-date]')!.textContent = '';
+      }
+      view!.querySelector<HTMLElement>('[data-cal-cd-digits]')!.hidden = !next;
+      const cur = nowEv();
+      const nowBox = view!.querySelector<HTMLElement>('[data-cal-cd-now]')!;
+      nowBox.hidden = !cur;
+      if (cur) {
+        const left = Math.round((parse(cur.to).getTime() - parse(today).getTime()) / 864e5);
+        nowBox.textContent = `🎉 ${W.now}: ${tr(cur, 'title')} · ${W.untilEnd.replace('{n}', String(left + 1))}`;
+      }
+      tick();
+      renderPlans();
+    }
+    const digits = Object.fromEntries(['d', 'h', 'm', 's'].map((u) => [u, view.querySelector<HTMLElement>(`[data-cd="${u}"]`)!]));
+    function tick() {
+      const next = nextEv();
+      if (!next) return;
+      let ms = Math.max(0, parse(next.from).getTime() - Date.now());
+      const parts: Record<string, number> = { d: Math.floor(ms / 864e5) };
+      ms -= parts.d * 864e5;
+      parts.h = Math.floor(ms / 36e5);
+      ms -= parts.h * 36e5;
+      parts.m = Math.floor(ms / 6e4);
+      parts.s = Math.floor((ms - parts.m * 6e4) / 1000);
+      for (const [u, el] of Object.entries(digits)) {
+        const v = u === 'd' ? String(parts[u]) : String(parts[u]).padStart(2, '0');
+        if (el.textContent !== v) {
+          el.textContent = v;
+          el.classList.remove('is-tick');
+          void el.offsetWidth;
+          el.classList.add('is-tick');
+        }
+      }
+    }
+    window.setInterval(() => {
+      if (html.classList.contains('cal-mode')) tick();
+    }, 1000);
+
+    // planned – join me (a click: the message window); developer mode: add / change / delete
+    const planForm = view.querySelector<HTMLFormElement>('[data-cal-plan-form]')!;
+    const cp = (n: string) => planForm.querySelector<HTMLInputElement>(`[data-cp="${n}"]`)!;
+    let planEditing: Plan | null = null;
+    function renderPlans() {
+      const ul = view!.querySelector<HTMLElement>('[data-cal-plans]')!;
+      ul.replaceChildren(
+        ...(data.plans ?? []).map((p, i) => {
+          const li = document.createElement('li');
+          li.style.setProperty('--i', String(i));
+          const strong = document.createElement('strong');
+          strong.append(tr(p, 'text'));
+          const dev = document.createElement('span');
+          dev.className = 'cal-plans__dev';
+          const ed = document.createElement('button');
+          ed.type = 'button';
+          ed.textContent = '✎';
+          ed.addEventListener('click', () => openPlan(p));
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.textContent = '🗑';
+          del.addEventListener('click', async () => {
+            if (!window.confirm(W.confirmPlan.replace('{title}', tr(p, 'text')))) return;
+            const before = data.plans;
+            data.plans = (data.plans ?? []).filter((x) => x !== p);
+            try {
+              await save(`🗑 💡 ${tr(p, 'text')}`);
+              renderPlans();
+            } catch (err) {
+              data.plans = before;
+              window.alert(err instanceof Error ? err.message : String(err));
+            }
+          });
+          dev.append(ed, del);
+          strong.append(dev);
+          li.append(strong);
+          if (tr(p, 'when')) {
+            const s = document.createElement('small');
+            s.textContent = `🗓 ${tr(p, 'when')}`;
+            li.append(s);
+          }
+          const join = document.createElement('button');
+          join.type = 'button';
+          join.className = 'cal-btn cal-plans__join';
+          join.textContent = `✋ ${W.join}`;
+          join.addEventListener('click', () =>
+            window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail: { place: tr(p, 'when') ? `${tr(p, 'text')} (${tr(p, 'when')})` : tr(p, 'text'), topic: 'buddy', kind: 'date' } })),
+          );
+          li.append(join);
+          return li;
+        }),
+      );
+    }
+    function openPlan(p: Plan | null) {
+      planEditing = p;
+      cp('text').value = p?.text ?? '';
+      cp('when').value = p?.when ?? '';
+      cp('text_en').value = p?.text_en ?? '';
+      cp('when_en').value = p?.when_en ?? '';
+      planForm.hidden = false;
+      cp('text').focus();
+    }
+    view.querySelector('[data-cal-plan-add]')!.addEventListener('click', () => openPlan(null));
+    planForm.querySelector('[data-cp-cancel]')!.addEventListener('click', () => (planForm.hidden = true));
+    planForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const val = (k: string) => cp(k).value.trim();
+      const item: Plan = {
+        id: planEditing?.id ?? Math.random().toString(36).slice(2, 8),
+        text: val('text'),
+        ...(val('text_en') ? { text_en: val('text_en') } : {}),
+        ...(val('when') ? { when: val('when') } : {}),
+        ...(val('when_en') ? { when_en: val('when_en') } : {}),
+      };
+      const before = data.plans;
+      data.plans = planEditing ? (data.plans ?? []).map((x) => (x.id === item.id ? item : x)) : [...(data.plans ?? []), item];
+      try {
+        await save(`💡 ${item.text}`);
+        planForm.hidden = true;
+        renderPlans();
+      } catch (err) {
+        data.plans = before;
+        window.alert(err instanceof Error ? err.message : String(err));
+      }
+    });
 
     function renderMonth() {
       titleEl.textContent = fmtMonth.format(cursor);
@@ -802,9 +1531,10 @@ const tracks = (await getCollection('music'))
               const startsHere = e.from === day || k === 0;
               bar.classList.toggle('is-start', e.from === day);
               bar.classList.toggle('is-end', e.to === day);
-              bar.textContent = startsHere ? e.title : ' ';
-              bar.title = `${e.title}${e.place ? ` · ${e.place}` : ''}${e.music?.length ? ' · 🎵' : ''}`;
-              if (startsHere && e.music?.length) bar.textContent = `♪ ${e.title}`;
+              bar.textContent = startsHere ? tr(e, 'title') : ' ';
+              const marks = `${e.music?.length ? '♪' : ''}${picsOf(e.id).length ? '📷' : ''}`;
+              bar.title = `${tr(e, 'title')}${tr(e, 'place') ? ` · ${tr(e, 'place')}` : ''}${marks ? ` · ${marks}` : ''}`;
+              if (startsHere && marks) bar.textContent = `${marks} ${tr(e, 'title')}`;
             }
             cell.append(bar);
           }
@@ -846,7 +1576,7 @@ const tracks = (await getCollection('music'))
             b.classList.add('has-ev');
             b.style.setProperty('--c', e.color);
             b.style.setProperty('--on', onColor(e.color));
-            b.title = e.title;
+            b.title = tr(e, 'title');
           }
           b.classList.toggle('is-today', day === todayIso);
           grid.append(b);
@@ -891,7 +1621,7 @@ const tracks = (await getCollection('music'))
           const li = document.createElement('li');
           li.style.setProperty('--c', e.color);
           const strong = document.createElement('strong');
-          strong.textContent = e.title;
+          strong.textContent = tr(e, 'title');
           const edit = document.createElement('button');
           edit.type = 'button';
           edit.textContent = '✎';
@@ -899,18 +1629,48 @@ const tracks = (await getCollection('music'))
           edit.addEventListener('click', () => openForm(e));
           strong.append(edit);
           const when = document.createElement('small');
-          when.textContent = [e.place && `📍 ${e.place}`, `${fmtShort.format(parse(e.from))} – ${fmtShort.format(parse(e.to))}`].filter(Boolean).join(' · ');
+          when.textContent = [tr(e, 'place') && `📍 ${tr(e, 'place')}`, `${fmtShort.format(parse(e.from))} – ${fmtShort.format(parse(e.to))}`].filter(Boolean).join(' · ');
           li.append(strong, when);
-          if (e.note) {
+          if (tr(e, 'note')) {
             const p = document.createElement('span');
-            p.textContent = e.note;
+            p.textContent = tr(e, 'note');
             li.append(p);
           }
-          // the event's music: small players
+          // photos and music: a button for each (only when there are some)
           const music = (e.music ?? []).map((id) => tracks.find((x) => x.id === id)).filter((x): x is Track => !!x);
+          const pics = picsOf(e.id);
+          if (pics.length || music.length) {
+            const row = document.createElement('div');
+            row.className = 'cal-day__media';
+            if (pics.length) {
+              const b = document.createElement('button');
+              b.type = 'button';
+              b.className = 'cal-btn';
+              b.textContent = `📷 ${W.seePhotos} (${pics.length})`;
+              b.addEventListener('click', () => openLb(pics, 0));
+              row.append(b);
+            }
+            li.append(row);
+            if (music.length) {
+              const b = document.createElement('button');
+              b.type = 'button';
+              b.className = 'cal-btn';
+              b.textContent = `🎵 ${W.hearMusic} (${music.length})`;
+              b.setAttribute('aria-expanded', 'false');
+              row.append(b);
+              b.addEventListener('click', () => {
+                const box = li.querySelector<HTMLElement>('.cal-day__music')!;
+                box.hidden = !box.hidden;
+                b.setAttribute('aria-expanded', String(!box.hidden));
+                if (box.hidden) box.querySelectorAll('audio').forEach((a) => a.pause());
+                else box.querySelector('audio')?.play().catch(() => {});
+              });
+            }
+          }
           if (music.length) {
             const box = document.createElement('div');
             box.className = 'cal-day__music';
+            box.hidden = true;
             for (const tr of music) {
               const label = document.createElement('span');
               label.textContent = `🎵 ${trackName(tr)}`;
@@ -983,10 +1743,21 @@ const tracks = (await getCollection('music'))
 
     // ---- developer mode: add / change / delete an event ----
     const form = view.querySelector<HTMLFormElement>('[data-cal-form]')!;
-    const cf = (n: string) => form.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-cf="${n}"]`)!;
+    const cf = (n: string) => form.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`[data-cf="${n}"]`)! as HTMLInputElement;
     const note = form.querySelector<HTMLElement>('[data-cf-note]')!;
     const del = form.querySelector<HTMLButtonElement>('[data-cf-delete]')!;
     let editing: Ev | null = null;
+    /** the country list (for the flag), in the page's language, filled the first time */
+    function fillCountries() {
+      const sel = cf('country') as unknown as HTMLSelectElement;
+      if (sel.options.length > 1) return;
+      const names = new Intl.DisplayNames([locale], { type: 'region' });
+      flagCodes
+        .map((c) => [c, names.of(c) ?? c] as const)
+        .filter(([c, n]) => n !== c)
+        .sort((a, b) => a[1].localeCompare(b[1], locale))
+        .forEach(([c, n]) => sel.add(new Option(n, c)));
+    }
     // the music library as ticks; the ticked ones belong to the event
     const musicList = form.querySelector<HTMLElement>('[data-cf-music]')!;
     function renderMusic(chosen: string[]) {
@@ -1011,7 +1782,92 @@ const tracks = (await getCollection('music'))
     }
     const chosenMusic = () => Array.from(musicList.querySelectorAll<HTMLInputElement>('input:checked')).map((b) => b.value);
     // upload new music right here: it is ticked for this event when the upload is done
-    const formKey = () => editing?.id ?? 'new';
+    // the event's id is chosen when the form opens, so uploads can belong to a new event too
+    let draftId = '';
+    const formKey = () => editing?.id ?? draftId;
+    const picBox = form.querySelector<HTMLElement>('[data-cf-pics]')!;
+    function renderFormPics() {
+      const pics = picsOf(formKey());
+      picBox.replaceChildren();
+      if (!pics.length) {
+        const em = document.createElement('em');
+        em.textContent = W.noPhotos;
+        picBox.append(em);
+      }
+      for (const p of pics) {
+        if (p.video) {
+          const span = document.createElement('span');
+          span.textContent = `🎬 ${p.caption}`;
+          picBox.append(span);
+          continue;
+        }
+        const img = document.createElement('img');
+        img.src = p.thumb || p.large;
+        img.alt = p.caption;
+        picBox.append(img);
+      }
+    }
+    form.querySelector('[data-cf-photo-upload]')!.addEventListener('click', () =>
+      window.dispatchEvent(new CustomEvent('andras:upload-photos', { detail: { event: formKey(), ...(cf('place').value.trim() ? { place: cf('place').value.trim() } : {}) } })),
+    );
+    window.addEventListener('andras:photos-uploaded', (ev) => {
+      const d = (ev as CustomEvent<{ for: string; items: Pic[] }>).detail;
+      if (!d.for) return;
+      photos[d.for] = [...picsOf(d.for), ...d.items];
+      renderFormPics();
+      if (html.classList.contains('cal-mode')) render();
+    });
+    // the lightbox
+    const lb = view.querySelector<HTMLElement>('[data-cal-lb]')!;
+    let lbPics: Pic[] = [];
+    let lbAt = 0;
+    function showLb() {
+      const p = lbPics[lbAt];
+      const media = lb.querySelector<HTMLElement>('[data-cal-lb-media]')!;
+      media.replaceChildren();
+      if (p.video) {
+        const v = document.createElement('video');
+        v.src = p.video;
+        v.controls = true;
+        v.autoplay = true;
+        v.playsInline = true;
+        media.append(v);
+      } else {
+        const img = document.createElement('img');
+        img.src = p.large || p.thumb;
+        img.alt = p.caption;
+        media.append(img);
+      }
+      lb.querySelector('[data-cal-lb-cap]')!.textContent = `${p.caption}${lbPics.length > 1 ? `  ·  ${lbAt + 1} / ${lbPics.length}` : ''}`;
+      lb.querySelectorAll<HTMLElement>('[data-cal-lb-step]').forEach((b) => (b.hidden = lbPics.length < 2));
+    }
+    function openLb(pics: Pic[], at: number) {
+      lbPics = pics;
+      lbAt = at;
+      showLb();
+      lb.hidden = false;
+    }
+    const closeLb = () => {
+      lb.querySelector('video')?.pause();
+      lb.hidden = true;
+    };
+    lb.querySelector('[data-cal-lb-close]')!.addEventListener('click', closeLb);
+    lb.addEventListener('click', (e) => {
+      if (e.target === lb) closeLb();
+    });
+    lb.querySelectorAll<HTMLElement>('[data-cal-lb-step]').forEach((b) =>
+      b.addEventListener('click', () => {
+        lbAt = (lbAt + Number(b.dataset.calLbStep) + lbPics.length) % lbPics.length;
+        showLb();
+      }),
+    );
+    window.addEventListener('keydown', (e) => {
+      if (lb.hidden) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        lbAt = (lbAt + (e.key === 'ArrowRight' ? 1 : -1) + lbPics.length) % lbPics.length;
+        showLb();
+      }
+    });
     form.querySelector('[data-cf-upload]')!.addEventListener('click', () =>
       window.dispatchEvent(new CustomEvent('andras:upload-music', { detail: { event: formKey(), ...(cf('place').value.trim() ? { place: cf('place').value.trim() } : {}) } })),
     );
@@ -1025,11 +1881,18 @@ const tracks = (await getCollection('music'))
       editing = e;
       form.querySelector('[data-cal-form-title]')!.textContent = e ? `✎ ${W.edit}` : `＋ ${W.add}`;
       cf('title').value = e?.title ?? '';
+      cf('title_en').value = e?.title_en ?? '';
+      cf('place_en').value = e?.place_en ?? '';
+      cf('note_en').value = e?.note_en ?? '';
       cf('place').value = e?.place ?? '';
+      fillCountries();
+      cf('country').value = e?.country ?? '';
       cf('from').value = e?.from ?? day;
       cf('to').value = e?.to ?? (day === openDay && openTo ? openTo : day);
       cf('note').value = e?.note ?? '';
       renderMusic(e?.music ?? []);
+      draftId = e?.id ?? `${day}-${Math.random().toString(36).slice(2, 6)}`;
+      renderFormPics();
       const color = e?.color ?? '#7B2FF7';
       form.querySelectorAll<HTMLInputElement>('input[name="cal-color"]').forEach((r) => (r.checked = r.value.toLowerCase() === color.toLowerCase()));
       del.hidden = !e;
@@ -1053,13 +1916,17 @@ const tracks = (await getCollection('music'))
       const from = cf('from').value;
       const to = cf('to').value < from ? from : cf('to').value;
       const item: Ev = {
-        id: editing?.id ?? `${from}-${Math.random().toString(36).slice(2, 6)}`,
+        id: formKey(),
         title: cf('title').value.trim(),
+        ...(cf('title_en').value.trim() ? { title_en: cf('title_en').value.trim() } : {}),
         ...(cf('place').value.trim() ? { place: cf('place').value.trim() } : {}),
+        ...(cf('place_en').value.trim() ? { place_en: cf('place_en').value.trim() } : {}),
+        ...(cf('country').value ? { country: cf('country').value } : {}),
         from,
         to,
         color: form.querySelector<HTMLInputElement>('input[name="cal-color"]:checked')?.value ?? '#7B2FF7',
         ...(cf('note').value.trim() ? { note: cf('note').value.trim() } : {}),
+        ...(cf('note_en').value.trim() ? { note_en: cf('note_en').value.trim() } : {}),
         ...(chosenMusic().length ? { music: chosenMusic() } : {}),
       };
       const before = data.events;
@@ -1109,7 +1976,8 @@ const tracks = (await getCollection('music'))
     }).observe(html, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape' || !html.classList.contains('cal-mode')) return;
-      if (!form.hidden) form.hidden = true;
+      if (!lb.hidden) closeLb();
+      else if (!form.hidden) form.hidden = true;
       else if (!dayBox.hidden) {
         stopMusic();
         dayBox.hidden = true;
@@ -1120,11 +1988,23 @@ const tracks = (await getCollection('music'))
     if (view.dataset.live) {
       fetch(`${view.dataset.live}/calendar.json`, { cache: 'no-cache' })
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-        .then((d: { events: Ev[] }) => {
+        .then((d: { events: Ev[]; plans?: Plan[] }) => {
           data.events = d.events;
+          data.plans = d.plans ?? [];
+          renderSides();
           if (html.classList.contains('cal-mode')) render();
         })
         .catch((err) => console.warn('[calendar] the main site could not be reached', err));
+      fetch(`${view.dataset.live}/gallery.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((d: { items: { event?: string; large: string; thumb: string; caption: string; video?: string }[] }) => {
+          const abs = (u: string) => (u && u.startsWith('/') ? view.dataset.live + u : u);
+          const next: Record<string, Pic[]> = {};
+          for (const x of d.items.filter((i) => i.event)) (next[x.event!] ??= []).push({ large: abs(x.large), thumb: abs(x.thumb), caption: x.caption, ...(x.video ? { video: abs(x.video) } : {}) });
+          photos = next;
+          if (html.classList.contains('cal-mode')) render();
+        })
+        .catch(() => {});
       fetch(`${view.dataset.live}/music.json`, { cache: 'no-cache' })
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
         .then((d: { items: Track[] }) => {

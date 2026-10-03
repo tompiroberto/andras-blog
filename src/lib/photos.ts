@@ -30,6 +30,8 @@ export interface Photo {
   lng?: number;
   /** slug of the post the picture belongs to */
   post?: string;
+  /** id of the calendar event it belongs to */
+  event?: string;
   /** repository files of an upload: deleting the picture deletes these */
   files?: string[];
 }
@@ -105,6 +107,7 @@ export async function getPhotos(lang = 'en'): Promise<Photo[]> {
       lat: p.data.lat,
       lng: p.data.lng,
       post: p.data.post,
+      event: p.data.event,
       files: own,
     };
   });

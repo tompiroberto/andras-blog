@@ -359,7 +359,7 @@ const { lang } = Astro.props;
     };
 
     // opened from the world map (a city / a search): the new photos belong to that place
-    let preset: { place?: string; lat?: number; lng?: number; post?: string } | null = null;
+    let preset: { place?: string; lat?: number; lng?: number; post?: string; event?: string } | null = null;
     // videos go up as they are (GitHub takes up to 100 MB; small ones spare Netlify's traffic)
     const VIDEO_MAX = 40 * 1024 * 1024;
     const toBase64 = (file: File) =>
@@ -370,7 +370,7 @@ const { lang } = Astro.props;
         r.readAsDataURL(file);
       });
     const open = (e?: Event) => {
-      preset = (e as CustomEvent<{ place?: string; lat?: number; lng?: number; post?: string }> | undefined)?.detail ?? null;
+      preset = (e as CustomEvent<{ place?: string; lat?: number; lng?: number; post?: string; event?: string }> | undefined)?.detail ?? null;
       if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
       token.refresh();
       say('');
@@ -464,6 +464,7 @@ const { lang } = Astro.props;
           const yml = [
             media,
             preset?.post && `post: ${preset.post}`,
+            preset?.event && `event: ${preset.event}`,
             `caption: ${JSON.stringify(caption)}`,
             place && `place: ${JSON.stringify(place)}`,
             `date: ${date}`,
@@ -475,6 +476,8 @@ const { lang } = Astro.props;
         }
         await commitFiles(key, files, `Photos: ${rows.length} new (uploaded from the site)`);
         token.saved();
+        // the calendar shows them at once (until the site is rebuilt)
+        if (preset?.event) window.dispatchEvent(new CustomEvent('andras:photos-uploaded', { detail: { for: preset.event, items: previews.map(([src, caption]) => ({ large: src, thumb: src, caption })) } }));
         previews.reverse().forEach(([src, caption, place]) => preview(src, caption, place));
         rows.forEach((r) => {
           URL.revokeObjectURL(r.querySelector<HTMLImageElement>('.upl__thumb')!.src);
