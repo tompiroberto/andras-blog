@@ -1,6 +1,17 @@
 {
-  "style": {},
-  "text": {},
-  "add": {},
-  "theme": {}
+  "style": {
+    "/": {}
+  },
+  "text": {
+    "/hu/": {
+      "[\"lay:about\",\"div:1\",\"div:0\",\"p:0\"]": "Végzős gimnáziumi diák vagyok. Szabadidőmben intenzíven futok és versenyzek. Emellett sokat tudok enni is. Amikor tehetem, útra kelek: kedvelem a stoppolást, a spontán utazásokat és az új kultúrák felfedezését, és nagyon támogatom az igazán low-budget utazást. Kifejezetten érdekel az országok infrastruktúrája, a közlekedési hálózatok működése és a térképek..."
+    }
+  },
+  "add": {
+    "/hu/": []
+  },
+  "theme": {},
+  "move": {
+    "/hu/": []
+  }
 }
