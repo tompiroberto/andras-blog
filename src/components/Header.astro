@@ -244,6 +244,16 @@ const citiesToggle = {
       opacity: 0;
     }
   }
+  /* narrow phones: no room next to the name – the stamp sits on the header's lower edge, on the right */
+  @media (max-width: 559px) {
+    .pum.pum {
+      top: auto;
+      bottom: -14px;
+      right: 14px;
+      font-size: 18px;
+      translate: none;
+    }
+  }
   @media (max-width: 899px) {
     .pum {
       position: absolute;
