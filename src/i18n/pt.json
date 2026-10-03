@@ -722,5 +722,14 @@
   "cal.hint": "Clica num dia – ou arrasta por vários dias – para me escrever sobre isso.",
   "cal.music": "Música para este evento",
   "cal.musicUpload": "Carregar música nova",
-  "cal.musicNone": "Ainda não há música na biblioteca – carrega abaixo."
+  "cal.musicNone": "Ainda não há música na biblioteca – carrega abaixo.",
+  "mapmode.friends": "Os meus amigos",
+  "mapmode.friendsKicker": "Tenho amigos daqui",
+  "mapmode.friendsNoNote": "Tenho amigos daqui.",
+  "mapmode.friendsCount": "Amigos de {n} países",
+  "mapmode.friendsDevHint": "Modo de programador: clica num país para o adicionar ou escrever onde os conheceste.",
+  "mapmode.friendsHas": "Tenho amigos daqui",
+  "mapmode.friendsWhere": "Onde / como os conheceste? (opcional)",
+  "visits.visitors": "visitantes até agora",
+  "visits.today": "hoje:"
 }

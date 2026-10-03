@@ -722,5 +722,14 @@
   "cal.hint": "Apasă pe o zi – sau trage peste mai multe zile – ca să-mi scrii despre ea.",
   "cal.music": "Muzică pentru eveniment",
   "cal.musicUpload": "Încarcă muzică nouă",
-  "cal.musicNone": "Încă nu e muzică în bibliotecă – încarcă mai jos."
+  "cal.musicNone": "Încă nu e muzică în bibliotecă – încarcă mai jos.",
+  "mapmode.friends": "Prietenii mei",
+  "mapmode.friendsKicker": "Am prieteni de aici",
+  "mapmode.friendsNoNote": "Am prieteni și de aici.",
+  "mapmode.friendsCount": "Prieteni din {n} țări",
+  "mapmode.friendsDevHint": "Mod dezvoltator: apasă pe o țară ca s-o adaugi sau să scrii unde i-ai cunoscut.",
+  "mapmode.friendsHas": "Am prieteni de aici",
+  "mapmode.friendsWhere": "Unde / cum i-ai cunoscut? (opțional)",
+  "visits.visitors": "vizitatori până acum",
+  "visits.today": "azi:"
 }

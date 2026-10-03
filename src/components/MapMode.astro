@@ -15,6 +15,7 @@ import { categoryMeta } from '../lib/categories';
 import site from '../data/site.json';
 import countriesData from '../data/countries.json';
 import mapPins from '../data/map-pins.json';
+import friends from '../data/friends.json';
 import nutella from '../data/nutella-factories.json';
 import { SPACE_ART } from '../lib/spaceArt';
 import { getImage } from 'astro:assets';
@@ -297,6 +298,24 @@ const metas = Object.fromEntries(
     ]),
 );
 const cities = worldCities.cities.map((c) => [c.name, c.lat, c.lon, c.rank]);
+// friends: the countries' alpha-2 codes (for their names in every language) by map id
+const A2: Record<string, string> = Object.fromEntries(
+  Object.entries(geoMetas as unknown as Record<string, { a2?: string } | string>)
+    .filter((e): e is [string, { a2: string }] => typeof e[1] === 'object' && !!e[1].a2)
+    .map(([id, m]) => [id, m.a2]),
+);
+for (const c of countriesData.countries as { isoNumeric?: string; id: string }[]) if (c.isoNumeric && /^[A-Z]{2}$/.test(c.id)) A2[c.isoNumeric] ??= c.id;
+for (const f of friends.countries) A2[f.iso] ??= f.a2;
+const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
+const frWords = {
+  kicker: t(lang, 'mapmode.friendsKicker'),
+  noNote: t(lang, 'mapmode.friendsNoNote'),
+  count: t(lang, 'mapmode.friendsCount'),
+  devHint: t(lang, 'mapmode.friendsDevHint'),
+  has: t(lang, 'mapmode.friendsHas'),
+  where: t(lang, 'mapmode.friendsWhere'),
+  remove: t(lang, 'med.remove'),
+};
 const factories = nutella.factories.map((f) => ({ ...f, countryName: regionName.of(f.country) ?? f.country }));
 const text = {
   write: t(lang, 'pm.kicker'),
@@ -329,7 +348,7 @@ const LEGEND: { status: string; key: TKey }[] = [
 ];
 ---
 
-<div class="map-mode-view" data-map-mode-view data-lang={lang} aria-label={t(lang, 'mapmode.toggle')} role="region">
+<div class="map-mode-view" data-map-mode-view data-lang={lang} data-live={live || undefined} aria-label={t(lang, 'mapmode.toggle')} role="region">
   <!-- outer space around the globe: things float there – click them -->
   <div class="mm-space" data-mm-space>
     {Object.entries(SPACE_ART).map(([kind, svg]) => <template data-mm-space-kind={kind} data-say={t(lang, `mmspace.${kind}` as TKey)} set:html={svg} />)}
@@ -398,6 +417,11 @@ const LEGEND: { status: string; key: TKey }[] = [
       <input type="checkbox" data-mm-media />
       <span>🎵📷 {t(lang, 'mapmode.media')}</span>
     </label>
+    <!-- the countries where András has friends (everything else hides) -->
+    <label class="mm-media-switch mm-friends-switch">
+      <input type="checkbox" data-mm-friends />
+      <span>👥 {t(lang, 'mapmode.friends')}</span>
+    </label>
   </div>
   <div class="mm-bar mm-bar--right">
     <button type="button" class="mm-btn mm-btn--icon" data-mm-zoom="in" aria-label={t(lang, 'map.zoomIn')} title={t(lang, 'map.zoomIn')}><Icon name="plus" size={18} /></button>
@@ -425,6 +449,27 @@ const LEGEND: { status: string; key: TKey }[] = [
       ))
     }
   </ul>
+  <!-- friends: their markers on the globe, and the list of the countries -->
+  <div class="mm-fr-marks" data-mm-fr-marks></div>
+  <aside class="mm-fr-list" data-mm-fr-list>
+    <strong data-mm-fr-count></strong>
+    <ul data-mm-fr-items></ul>
+    <small class="mm-fr-list__dev">{frWords.devHint}</small>
+  </aside>
+  <aside class="mm-fr-ed" hidden data-mm-fr-ed data-dev-ui>
+    <div class="mm-ed__head">
+      <span class="mm-ed__kind">👥 {t(lang, 'mapmode.friends')}</span>
+      <strong class="mm-ed__title" data-mm-fr-ed-title></strong>
+      <button type="button" class="mm-ed__x" data-mm-fr-ed-close aria-label="✕">✕</button>
+    </div>
+    <label class="mm-fr-ed__has"><input type="checkbox" data-mm-fr-ed-has /> {frWords.has}</label>
+    <label class="mm-ed__field"><span>{frWords.where}</span><textarea rows="3" maxlength="400" data-mm-fr-ed-note></textarea></label>
+    <div class="mm-ed__actions">
+      <button type="button" class="mm-ed__done" data-mm-fr-ed-done>✓ {edWords.done}</button>
+    </div>
+    <p class="mm-ed__note">{edWords.note}</p>
+  </aside>
+  <p class="mm-say-layer" aria-live="polite" data-mm-say-layer></p>
   <p class="mm-hint" role="status" aria-live="polite" data-mm-status>{t(lang, 'mapmode.hint')}</p>
 
   <aside class="mm-tip" hidden data-mm-tip aria-live="polite">
@@ -472,6 +517,7 @@ const LEGEND: { status: string; key: TKey }[] = [
   <!-- developer mode: the data files as they are, so edits can be saved back -->
   <script type="application/json" data-mm-countries-raw set:html={JSON.stringify(countriesData)} />
   <script type="application/json" data-mm-pins-raw set:html={JSON.stringify(mapPins)} />
+  <script type="application/json" data-mm-friends-data set:html={JSON.stringify({ friends, a2: A2, words: frWords })} />
   <script type="application/json" data-mm-ed-words set:html={JSON.stringify(edWords)} />
   <aside class="mm-ed" hidden data-mm-ed data-dev-ui aria-label="Edit">
     <div class="mm-ed__head">
@@ -896,6 +942,165 @@ const LEGEND: { status: string; key: TKey }[] = [
     box-shadow: 3px 3px 0 var(--ink);
     cursor: pointer;
     white-space: nowrap;
+  }
+  /* friends on: only the friends' countries and their markers */
+  .mm-fr-marks,
+  .mm-fr-list,
+  .mm-fr-list__dev {
+    display: none;
+  }
+  .map-mode-view.is-friends .mm-items,
+  .map-mode-view.is-friends .mm-cities,
+  .map-mode-view.is-friends .mm-jars,
+  .map-mode-view.is-friends .mm-intro,
+  .map-mode-view.is-friends .mm-geo-labels,
+  .map-mode-view.is-friends .mm-route-stops,
+  .map-mode-view.is-friends .mm-space,
+  .map-mode-view.is-friends .mm-legend--travel {
+    display: none !important;
+  }
+  .map-mode-view.is-friends .mm-canvas :global(.mm-land) {
+    fill: var(--land, #e9ecf5);
+  }
+  .map-mode-view.is-friends .mm-canvas :global(.mm-land.is-friend) {
+    fill: #ff5fa2;
+    stroke: var(--ink);
+    stroke-width: 1.2;
+  }
+  .map-mode-view.is-friends .mm-canvas :global(.mm-land.is-friend:hover) {
+    fill: #ff8cc0;
+  }
+  .map-mode-view.is-friends .mm-fr-marks {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+  }
+  .mm-fr-marks :global(.mm-fr-mark) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--surface, #fff);
+    box-shadow: 2px 2px 0 #ff5fa2;
+    font-size: 17px;
+    translate: calc(var(--x) - 17px) calc(var(--y) - 17px);
+    pointer-events: auto;
+    cursor: pointer;
+    animation: mm-fr-pop 400ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+    animation-delay: var(--d, 0ms);
+  }
+  .mm-fr-marks :global(.mm-fr-mark[hidden]) {
+    display: none;
+  }
+  .mm-fr-marks :global(.mm-fr-mark:hover) {
+    background: #ff5fa2;
+  }
+  @keyframes mm-fr-pop {
+    from {
+      scale: 0;
+    }
+  }
+  .map-mode-view.is-friends .mm-fr-list {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    z-index: 5;
+    display: grid;
+    gap: 6px;
+    max-width: min(560px, calc(100% - 28px));
+    max-height: 40%;
+    overflow: auto;
+    padding: 10px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 16px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    font-size: 13px;
+  }
+  .mm-fr-list ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .mm-fr-list :global(li) {
+    display: inline-flex;
+    align-items: center;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: color-mix(in srgb, #ff5fa2 22%, var(--surface, #fff));
+    overflow: hidden;
+  }
+  .mm-fr-list :global(li button) {
+    padding: 3px 10px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mm-fr-list :global(li .mm-fr-x) {
+    display: none;
+    padding: 3px 8px 3px 2px;
+    color: #c0392b;
+  }
+  :global(:root.dev-mode:not(.dev-preview)) .mm-fr-list :global(li .mm-fr-x) {
+    display: inline;
+  }
+  :global(:root.dev-mode:not(.dev-preview)) .map-mode-view.is-friends .mm-fr-list__dev {
+    display: block;
+    color: #1f8a3a;
+    font-weight: 700;
+  }
+  .mm-fr-ed {
+    position: absolute;
+    right: 14px;
+    top: 70px;
+    z-index: 12;
+    display: grid;
+    gap: 10px;
+    width: min(320px, calc(100% - 28px));
+    padding: 14px;
+    border: 2px solid #39d353;
+    border-radius: 14px;
+    background: #0d1117;
+    color: #d6f5d6;
+    box-shadow: 0 0 0 4px rgb(57 211 83 / 0.2);
+    font: 13px ui-monospace, Consolas, monospace;
+  }
+  .mm-fr-ed[hidden] {
+    display: none;
+  }
+  .mm-fr-ed textarea {
+    padding: 8px 10px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: #010409;
+    color: #e6edf3;
+    font: inherit;
+  }
+  .mm-fr-ed__has {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mm-fr-ed__has input {
+    width: 18px;
+    height: 18px;
+    accent-color: #39d353;
   }
   .mm-media-switch input {
     width: 18px;
@@ -1629,12 +1834,25 @@ const LEGEND: { status: string; key: TKey }[] = [
   .mm-space :global(.mm-floater.is-poked svg) {
     animation: mm-spin 800ms cubic-bezier(0.3, 1.5, 0.5, 1);
   }
-  .mm-space :global(.mm-say) {
+  .mm-space :global(.mm-floater.is-talking) {
+    z-index: 2;
+  }
+  .mm-say-layer {
     position: absolute;
-    left: 50%;
-    bottom: 100%;
+    inset: 0;
+    z-index: 11;
+    margin: 0;
+    pointer-events: none;
+  }
+  .map-mode-view.is-friends .mm-say-layer {
+    display: none;
+  }
+  .mm-say-layer :global(.mm-say) {
+    position: absolute;
+    left: 0;
+    top: 0;
     width: max-content;
-    max-width: 220px;
+    max-width: min(240px, calc(100% - 16px));
     padding: 6px 10px;
     border-radius: 12px;
     background: #fff;
@@ -1643,8 +1861,8 @@ const LEGEND: { status: string; key: TKey }[] = [
     font-weight: 700;
     line-height: 1.3;
     box-shadow: 3px 3px 0 var(--yellow);
-    transform: translateX(-50%);
-    animation: mm-say 2.6s ease forwards;
+    transform: translate(var(--sx), var(--sy));
+    animation: mm-say var(--life, 2.6s) ease forwards;
   }
   @keyframes mm-float {
     from {
@@ -1662,12 +1880,12 @@ const LEGEND: { status: string; key: TKey }[] = [
   @keyframes mm-say {
     0% {
       opacity: 0;
-      transform: translate(-50%, 8px);
+      translate: 0 8px;
     }
     10%,
     85% {
       opacity: 1;
-      transform: translate(-50%, 0);
+      translate: 0 0;
     }
     100% {
       opacity: 0;
@@ -2075,7 +2293,10 @@ const LEGEND: { status: string; key: TKey }[] = [
       }
       renderItems();
       renderSpace();
+      friendsMarks();
     }
+    let friendsMarks = () => {};
+    let friendsClick: (e: MouseEvent, iso: string) => void = () => {};
     drawCountries();
     window.setTimeout(applySeen, 0);
 
@@ -2595,6 +2816,7 @@ const LEGEND: { status: string; key: TKey }[] = [
         ? [
             { path: 'src/data/countries.json', text: `${JSON.stringify(raw, null, 2)}\n` },
             { path: 'src/data/map-pins.json', text: `${JSON.stringify(pinsRaw, null, 2)}\n` },
+            { path: 'src/data/friends.json', text: `${JSON.stringify(fr, null, 2)}\n` },
             ...[...pendingPics].map(([path, base64]) => ({ path, base64 })),
           ]
         : [];
@@ -2829,10 +3051,182 @@ const LEGEND: { status: string; key: TKey }[] = [
     );
 
     // ---- "Music & photos" switch ----
-    view.querySelector<HTMLInputElement>('[data-mm-media]')!.addEventListener('change', (e) => {
-      view.classList.toggle('is-media', (e.target as HTMLInputElement).checked);
+    const mediaBox = view.querySelector<HTMLInputElement>('[data-mm-media]')!;
+    const friendsBox = view.querySelector<HTMLInputElement>('[data-mm-friends]')!;
+    mediaBox.addEventListener('change', () => {
+      view.classList.toggle('is-media', mediaBox.checked);
+      if (mediaBox.checked && friendsBox.checked) {
+        friendsBox.checked = false;
+        setFriends(false);
+      }
       renderItems();
     });
+
+    // ---- friends: the countries where András has friends (👥 switch; everything else hides) ----
+    type Friend = { iso: string; a2?: string; name?: string; note: string };
+    const frData = JSON.parse(view.querySelector('[data-mm-friends-data]')!.textContent || '{}') as {
+      friends: { _comment?: string; countries: Friend[] };
+      a2: Record<string, string>;
+      words: Record<string, string>;
+    };
+    const fr = frData.friends;
+    const FW = frData.words;
+    const frNames = new Intl.DisplayNames([document.documentElement.lang || 'en'], { type: 'region' });
+    const frName = (f: Friend) => {
+      const a2 = f.a2 ?? frData.a2[f.iso];
+      try {
+        if (a2) return frNames.of(a2) ?? f.name ?? f.iso;
+      } catch {
+        /* an unknown code: the stored name */
+      }
+      return f.name ?? paths.find((p) => p.el.dataset.iso === f.iso)?.el.dataset.name ?? f.iso;
+    };
+    const frMarks = view.querySelector<HTMLElement>('[data-mm-fr-marks]')!;
+    const frList = view.querySelector<HTMLElement>('[data-mm-fr-items]')!;
+    let marks: { el: HTMLButtonElement; lat: number; lon: number }[] = [];
+    const centroid = (iso: string): [number, number] | null => {
+      const f = paths.find((p) => p.el.dataset.iso === iso)?.f;
+      if (!f) return null;
+      // the biggest piece of the country (the USA: not between Alaska and Hawaii)
+      const g = f.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon;
+      const polys = g.type === 'MultiPolygon' ? g.coordinates.map((c) => ({ type: 'Polygon', coordinates: c }) as GeoJSON.Polygon) : [g];
+      const big = polys.reduce((a, b) => (geo.geoArea(b) > geo.geoArea(a) ? b : a));
+      const [lon, lat] = geo.geoCentroid(big);
+      return [lat, lon];
+    };
+    const frTip = (e: MouseEvent, f: Friend) => {
+      const at = centroid(f.iso);
+      showTip(e, `👥 ${frName(f)}`, f.note || FW.noNote, frName(f), FW.kicker, at ?? undefined);
+    };
+    function renderFriends() {
+      const on = view.classList.contains('is-friends');
+      for (const p of paths) p.el.classList.toggle('is-friend', fr.countries.some((f) => f.iso === p.el.dataset.iso));
+      frMarks.replaceChildren();
+      marks = [];
+      fr.countries.forEach((f, i) => {
+        const at = centroid(f.iso);
+        if (!at) return;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'mm-fr-mark';
+        b.textContent = '👥';
+        b.title = frName(f);
+        b.setAttribute('aria-label', frName(f));
+        b.style.setProperty('--d', `${i * 40}ms`);
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (isDev()) openFriendEditor(f.iso);
+          else frTip(e, f);
+        });
+        frMarks.append(b);
+        marks.push({ el: b, lat: at[0], lon: at[1] });
+      });
+      // the list: every country, a click flies there
+      frList.replaceChildren(
+        ...[...fr.countries]
+          .sort((a, b) => frName(a).localeCompare(frName(b)))
+          .map((f) => {
+            const li = document.createElement('li');
+            const go = document.createElement('button');
+            go.type = 'button';
+            go.textContent = frName(f);
+            if (f.note) go.title = f.note;
+            go.addEventListener('click', () => {
+              const at = centroid(f.iso);
+              if (at) flyToPoint(at[0], at[1], Math.max(t.k, 2.2));
+              if (isDev()) openFriendEditor(f.iso);
+            });
+            const x = document.createElement('button');
+            x.type = 'button';
+            x.className = 'mm-fr-x';
+            x.textContent = '✕';
+            x.title = FW.remove;
+            x.addEventListener('click', () => {
+              fr.countries = fr.countries.filter((o) => o !== f);
+              dirty();
+              renderFriends();
+            });
+            li.append(go, x);
+            return li;
+          }),
+      );
+      view.querySelector('[data-mm-fr-count]')!.textContent = `👥 ${FW.count.replace('{n}', String(fr.countries.length))}`;
+      if (on) placeMarks();
+    }
+    function placeMarks() {
+      for (const m of marks) {
+        const [x, y] = screenP([m.lon, m.lat]);
+        m.el.hidden = x < -50 || x > W + 50 || y < -50 || y > H + 50;
+        m.el.style.setProperty('--x', `${x.toFixed(1)}px`);
+        m.el.style.setProperty('--y', `${y.toFixed(1)}px`);
+      }
+    }
+    friendsMarks = placeMarks;
+    function setFriends(on: boolean) {
+      view.classList.toggle('is-friends', on);
+      tip.hidden = true;
+      if (!on) frEd.hidden = true;
+      if (on) renderFriends();
+    }
+    friendsBox.addEventListener('change', () => {
+      if (friendsBox.checked && mediaBox.checked) {
+        mediaBox.checked = false;
+        view.classList.remove('is-media');
+      }
+      setFriends(friendsBox.checked);
+      renderItems();
+    });
+    // developer mode: a click on a country (with the 👥 switch on) ticks it and asks where he met them
+    const isDev = () => document.documentElement.classList.contains('dev-mode') && !document.documentElement.classList.contains('dev-preview');
+    const frEd = view.querySelector<HTMLElement>('[data-mm-fr-ed]')!;
+    const frHas = frEd.querySelector<HTMLInputElement>('[data-mm-fr-ed-has]')!;
+    const frNote = frEd.querySelector<HTMLTextAreaElement>('[data-mm-fr-ed-note]')!;
+    let frIso = '';
+    function openFriendEditor(iso: string) {
+      frIso = iso;
+      const f = fr.countries.find((o) => o.iso === iso);
+      const name = paths.find((p) => p.el.dataset.iso === iso)?.el.dataset.name ?? iso;
+      frEd.querySelector('[data-mm-fr-ed-title]')!.textContent = f ? frName(f) : frName({ iso, name, note: '' });
+      frHas.checked = true;
+      frNote.value = f?.note ?? '';
+      tip.hidden = true;
+      ed.hidden = true;
+      frEd.hidden = false;
+      frNote.focus();
+    }
+    frEd.querySelector('[data-mm-fr-ed-close]')!.addEventListener('click', () => (frEd.hidden = true));
+    frEd.querySelector('[data-mm-fr-ed-done]')!.addEventListener('click', () => {
+      const i = fr.countries.findIndex((o) => o.iso === frIso);
+      if (!frHas.checked) {
+        if (i >= 0) fr.countries.splice(i, 1);
+      } else {
+        const a2 = frData.a2[frIso];
+        const name = paths.find((p) => p.el.dataset.iso === frIso)?.el.dataset.name;
+        const item: Friend = { iso: frIso, ...(a2 ? { a2 } : name ? { name } : {}), note: frNote.value.trim() };
+        if (i >= 0) fr.countries[i] = { ...fr.countries[i], note: item.note };
+        else fr.countries.push(item);
+      }
+      dirty();
+      frEd.hidden = true;
+      renderFriends();
+    });
+    friendsClick = (e: MouseEvent, iso: string) => {
+      if (isDev()) return openFriendEditor(iso);
+      const f = fr.countries.find((o) => o.iso === iso);
+      if (f) frTip(e, f);
+      else tip.hidden = true;
+    };
+    // a copy on another host: the main site's list
+    if (view.dataset.live) {
+      fetch(`${view.dataset.live}/friends.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((d: { countries: Friend[] }) => {
+          fr.countries = d.countries;
+          renderFriends();
+        })
+        .catch((err) => console.warn('[map mode] friends: the main site could not be reached', err));
+    }
+    renderFriends();
 
     // ---- a photo at its real size (pins' and countries' photos) ----
     const lightbox = view.querySelector<HTMLElement>('[data-mm-lightbox]')!;
@@ -2893,6 +3287,7 @@ const LEGEND: { status: string; key: TKey }[] = [
       const p = (e.target as Element).closest<SVGPathElement>('path.mm-land');
       if (!p) return (tip.hidden = true);
       geoPanel.hidden = true;
+      if (view.classList.contains('is-friends')) return friendsClick(e, p.dataset.iso!);
       const id = p.dataset.iso!;
       const c = info[id];
       const m = metas[id];
@@ -2995,9 +3390,26 @@ const LEGEND: { status: string; key: TKey }[] = [
     const spaceBox = view.querySelector<HTMLElement>('[data-mm-space]')!;
     const spaceKinds = Array.from(spaceBox.querySelectorAll<HTMLTemplateElement>('[data-mm-space-kind]'));
     // each floater orbits the Earth slowly: its own distance, speed and starting angle
-    let floaters: { el: HTMLElement; x: number; y: number; size: number; a: number; d: number; v: number }[] = [];
+    let floaters: { el: HTMLElement; x: number; y: number; size: number; a: number; d: number; v: number; say?: HTMLElement }[] = [];
+    // the speech bubbles: a layer above every floater, so no other floater covers what one says
+    const sayLayer = view.querySelector<HTMLElement>('[data-mm-say-layer]')!;
+    function placeSay(f: (typeof floaters)[number]) {
+      const b = f.say;
+      if (!b) return;
+      const bw = b.offsetWidth;
+      const bh = b.offsetHeight;
+      const x = Math.min(Math.max(f.x - bw / 2, 8), W - bw - 8);
+      // above the floater; below it when there is no room above
+      let y = f.y - f.size / 2 - bh - 8;
+      if (y < 60) y = Math.min(f.y + f.size / 2 + 8, H - bh - 8);
+      b.style.setProperty('--sx', `${x.toFixed(1)}px`);
+      b.style.setProperty('--sy', `${y.toFixed(1)}px`);
+    }
     function buildSpace() {
-      floaters.forEach((f) => f.el.remove());
+      floaters.forEach((f) => {
+        f.el.remove();
+        f.say?.remove();
+      });
       floaters = [];
       const n = 22;
       for (let i = 0; i < n; i++) {
@@ -3021,20 +3433,37 @@ const LEGEND: { status: string; key: TKey }[] = [
         // its lines in a shuffled order: every one is said before any comes again
         const lines = (k.dataset.say ?? '').split('||').map((x) => x.trim()).filter(Boolean).sort(() => Math.random() - 0.5);
         let next = 0;
+        const me = { el, x: x + size / 2, y: y + size / 2, size, ...orbit } as (typeof floaters)[number];
         el.addEventListener('click', () => {
           el.classList.remove('is-poked');
           void el.offsetWidth;
           el.classList.add('is-poked');
-          el.querySelector('.mm-say')?.remove();
+          // one bubble at a time: the others' close
+          for (const o of floaters) {
+            o.say?.remove();
+            o.say = undefined;
+            o.el.classList.remove('is-talking');
+          }
           const say = document.createElement('span');
           say.className = 'mm-say';
           say.textContent = lines[next % lines.length] ?? '';
           next++;
-          el.append(say);
-          window.setTimeout(() => say.remove(), 2700);
+          sayLayer.append(say);
+          me.say = say;
+          el.classList.add('is-talking');
+          placeSay(me);
+          // longer lines stay longer
+          const life = Math.min(6000, 2600 + say.textContent.length * 40);
+          say.style.setProperty('--life', `${life}ms`);
+          window.setTimeout(() => {
+            if (me.say !== say) return;
+            say.remove();
+            me.say = undefined;
+            el.classList.remove('is-talking');
+          }, life + 100);
         });
         spaceBox.append(el);
-        floaters.push({ el, x: x + size / 2, y: y + size / 2, size, ...orbit });
+        floaters.push(me);
       }
       renderSpace();
     }
@@ -3052,6 +3481,7 @@ const LEGEND: { status: string; key: TKey }[] = [
         f.y = H / 2 + Math.sin(f.a) * ry;
         f.el.style.setProperty('--x', `${(f.x - f.size / 2).toFixed(1)}px`);
         f.el.style.setProperty('--y', `${(f.y - f.size / 2).toFixed(1)}px`);
+        placeSay(f);
       }
     }
     let lastOrbit = 0;
@@ -3061,7 +3491,7 @@ const LEGEND: { status: string; key: TKey }[] = [
       // only while the world map is on the screen
       if (isOnMap() && !document.hidden) {
         const slow = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.25 : 1;
-        for (const f of floaters) f.a += f.v * dt * slow;
+        for (const f of floaters) if (!f.say) f.a += f.v * dt * slow;
         renderSpace();
       }
       requestAnimationFrame(orbitStep);

@@ -1,0 +1,85 @@
+{
+  "_comment": "Countries where András has friends (the world map's 👥 switch). iso: ISO numeric id (as on the map), a2: ISO alpha-2 (for the country's name in every language), note: where / how he met them. Edited in developer mode on the world map.",
+  "countries": [
+    {
+      "iso": "604",
+      "a2": "PE",
+      "note": ""
+    },
+    {
+      "iso": "152",
+      "a2": "CL",
+      "note": ""
+    },
+    {
+      "iso": "840",
+      "a2": "US",
+      "note": ""
+    },
+    {
+      "iso": "484",
+      "a2": "MX",
+      "note": ""
+    },
+    {
+      "iso": "076",
+      "a2": "BR",
+      "note": ""
+    },
+    {
+      "iso": "724",
+      "a2": "ES",
+      "note": ""
+    },
+    {
+      "iso": "620",
+      "a2": "PT",
+      "note": ""
+    },
+    {
+      "iso": "380",
+      "a2": "IT",
+      "note": ""
+    },
+    {
+      "iso": "276",
+      "a2": "DE",
+      "note": ""
+    },
+    {
+      "iso": "040",
+      "a2": "AT",
+      "note": ""
+    },
+    {
+      "iso": "348",
+      "a2": "HU",
+      "note": ""
+    },
+    {
+      "iso": "268",
+      "a2": "GE",
+      "note": ""
+    },
+    {
+      "iso": "300",
+      "a2": "GR",
+      "note": ""
+    },
+    {
+      "iso": "440",
+      "a2": "LT",
+      "note": ""
+    },
+    {
+      "iso": "703",
+      "a2": "SK",
+      "note": ""
+    },
+    {
+      "iso": "642",
+      "a2": "RO",
+      "note": ""
+    }
+  ]
+}

@@ -722,5 +722,14 @@
   "cal.hint": "Click a day – or drag across several days – to message me about it.",
   "cal.music": "Music for this event",
   "cal.musicUpload": "Upload new music",
-  "cal.musicNone": "No music in the library yet – upload some below."
+  "cal.musicNone": "No music in the library yet – upload some below.",
+  "mapmode.friends": "My friends",
+  "mapmode.friendsKicker": "I have friends here",
+  "mapmode.friendsNoNote": "I have friends from here.",
+  "mapmode.friendsCount": "Friends from {n} countries",
+  "mapmode.friendsDevHint": "Developer mode: click a country to add it or write where you met them.",
+  "mapmode.friendsHas": "I have friends from here",
+  "mapmode.friendsWhere": "Where / how did you meet them? (optional)",
+  "visits.visitors": "visitors so far",
+  "visits.today": "visits today:"
 }

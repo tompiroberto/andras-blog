@@ -14,6 +14,8 @@ interface Props {
 
 const { lang } = Astro.props;
 const year = new Date().getFullYear();
+// the visitor counter: the main site's /api/visits (netlify/functions/visits.mjs); a copy on another host asks the main site
+const visitsApi = `${import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : ''}/api/visits`;
 
 const contacts = [
   { href: `mailto:${site.email}`, icon: 'mail', label: 'E-mail', external: false },
@@ -65,6 +67,15 @@ const contacts = [
     <p class="bread-count" data-bread-count data-template={t(lang, 'bread.count')}>
       <span class="bread-count__icons" data-bread-icons aria-hidden="true"></span>
       <span data-bread-text>{t(lang, 'bread.count').replace('{n}', '0')}</span>
+    </p>
+    <!-- the visitor counter (numbers only, nothing personal); hidden when the counter cannot be reached -->
+    <p class="visit-count" hidden data-visits={visitsApi}>
+      <span class="visit-count__eye" aria-hidden="true">👀</span>
+      <span class="visit-count__num" data-visits-total>0</span>
+      <span>{t(lang, 'visits.visitors')}</span>
+      <span class="visit-count__dot" aria-hidden="true">·</span>
+      <span>{t(lang, 'visits.today')}</span>
+      <span class="visit-count__num visit-count__num--small" data-visits-today>0</span>
     </p>
   </div>
   <Landscape lang={lang} />
@@ -185,6 +196,59 @@ const contacts = [
       transform: scale(0) rotate(-40deg);
     }
   }
+  .visit-count {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px 8px;
+    margin: 12px 0 0;
+    font-size: var(--fs-small);
+    font-weight: 700;
+  }
+  .visit-count[hidden] {
+    display: none;
+  }
+  .visit-count__eye {
+    font-size: 20px;
+    animation: visit-look 4s ease-in-out infinite;
+  }
+  .visit-count__num {
+    min-width: 2ch;
+    padding: 2px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--yellow);
+    color: var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    font-family: var(--font-heading);
+    font-size: 18px;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+  .visit-count__num--small {
+    background: #fff;
+    font-size: 15px;
+  }
+  .visit-count__dot {
+    opacity: 0.6;
+  }
+  @keyframes visit-look {
+    0%, 40%, 100% {
+      transform: none;
+    }
+    50%, 70% {
+      transform: translateX(3px);
+    }
+    80%, 90% {
+      transform: translateX(-3px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .visit-count__eye {
+      animation: none;
+    }
+  }
   .legend {
     display: inline-flex;
     align-items: center;
@@ -226,3 +290,67 @@ const contacts = [
 </style>
 
 <StarChart lang={lang} />
+
+<script>
+  import { TOKEN_KEY } from '../lib/githubCommit';
+
+  // a visit is counted once a day per browser (not András's own: developer mode on, or his GitHub key saved here)
+  const box = document.querySelector<HTMLElement>('[data-visits]');
+  if (box) {
+    const api = box.dataset.visits!;
+    const store = {
+      get: (k: string) => {
+        try {
+          return localStorage.getItem(k);
+        } catch {
+          return null;
+        }
+      },
+      set: (k: string, v: string) => {
+        try {
+          localStorage.setItem(k, v);
+        } catch {
+          /* private window: counted again next time, that is fine */
+        }
+      },
+    };
+    const today = new Date().toISOString().slice(0, 10);
+    const me = store.get('andras-dev-mode') === '1' || !!store.get(TOKEN_KEY);
+    const count = !me && store.get('andras-visit-day') !== today;
+    const fresh = !store.get('andras-visitor');
+    const fmt = new Intl.NumberFormat(document.documentElement.lang || 'hu');
+    /** the numbers roll up to their value */
+    const roll = (el: HTMLElement, to: number) => {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return void (el.textContent = fmt.format(to));
+      const t0 = performance.now();
+      const step = (now: number) => {
+        const k = Math.min(1, (now - t0) / 1400);
+        el.textContent = fmt.format(Math.round(to * (1 - Math.pow(1 - k, 3))));
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+    fetch(api, count ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new: fresh }) } : { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: { visitors: number; today: number }) => {
+        if (typeof d.visitors !== 'number') return;
+        if (count) {
+          store.set('andras-visit-day', today);
+          store.set('andras-visitor', '1');
+        }
+        box.hidden = false;
+        // rolls when it comes into view
+        const total = box.querySelector<HTMLElement>('[data-visits-total]')!;
+        const day = box.querySelector<HTMLElement>('[data-visits-today]')!;
+        new IntersectionObserver((entries, io) => {
+          if (!entries.some((e) => e.isIntersecting)) return;
+          io.disconnect();
+          roll(total, Math.max(d.visitors, 1));
+          roll(day, Math.max(d.today, 1));
+        }).observe(box);
+      })
+      .catch(() => {
+        /* no counter here (e.g. the local preview): it stays hidden */
+      });
+  }
+</script>

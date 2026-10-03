@@ -722,5 +722,14 @@
   "cal.hint": "Kattints egy napra – vagy húzd végig több napon –, és üzenhetsz rá.",
   "cal.music": "Zene az eseményhez",
   "cal.musicUpload": "Új zene feltöltése",
-  "cal.musicNone": "Még nincs zene a zenekönyvtárban – tölts fel lent."
+  "cal.musicNone": "Még nincs zene a zenekönyvtárban – tölts fel lent.",
+  "mapmode.friends": "Ismerőseim",
+  "mapmode.friendsKicker": "Innen vannak ismerőseim",
+  "mapmode.friendsNoNote": "Innen is vannak ismerőseim.",
+  "mapmode.friendsCount": "Ismerőseim {n} országból",
+  "mapmode.friendsDevHint": "Fejlesztői mód: kattints egy országra, hogy hozzáadd, vagy leírd, hol ismerted meg őket.",
+  "mapmode.friendsHas": "Vannak innen ismerőseim",
+  "mapmode.friendsWhere": "Hol / hogyan ismerted meg őket? (nem kötelező)",
+  "visits.visitors": "látogató eddig",
+  "visits.today": "ma:"
 }
