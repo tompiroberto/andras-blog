@@ -287,7 +287,7 @@
     {
       "id": "GR",
       "isoNumeric": "300",
-      "status": "now",
+      "status": "visited",
       "i18n": {
         "en": {
           "name": "Greece",
