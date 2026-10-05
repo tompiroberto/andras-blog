@@ -9,7 +9,6 @@ import ZoomControl from './ZoomControl.astro';
 import ThemeSwitch from './ThemeSwitch.astro';
 import RibbonSwitch from './RibbonSwitch.astro';
 import { localePath, t, type Lang, type TKey } from '../i18n';
-import { CAL_EVENT, CAL_STORAGE_KEY } from '../lib/constants';
 import { BG_EVENT, BG_STORAGE_KEY, CITIES_EVENT, CITIES_STORAGE_KEY, GRID_EVENT, GRID_STORAGE_KEY, MAP_MODE_EVENT, MAP_MODE_STORAGE_KEY, HORIZONTAL_EVENT, HORIZONTAL_STORAGE_KEY, CV_EVENT, CV_STORAGE_KEY, } from '../lib/constants';
 import site from '../data/site.json';
 
@@ -25,6 +24,7 @@ const links: { key: TKey; hash?: string; href?: string }[] = [
   { key: 'nav.about', hash: 'about' },
   { key: 'nav.explore', hash: 'explore' },
   { key: 'nav.plans', hash: 'plans' },
+  { key: 'nav.calendar', href: localePath(lang, 'calendar') },
   { key: 'nav.counters', href: localePath(lang, 'counters') },
   { key: 'nav.message', hash: 'message' },
 ];
@@ -70,14 +70,8 @@ const mapModeToggle = {
   icon: 'map',
   label: t(lang, 'mapmode.toggle'),
 };
-const calToggle = {
-  htmlClass: 'cal-mode',
-  pressedWhen: 'present' as const,
-  storageKey: CAL_STORAGE_KEY,
-  eventName: CAL_EVENT,
-  icon: 'calendar-days',
-  label: t(lang, 'cal.toggle'),
-};
+const calendarHref = localePath(lang, 'calendar');
+const onCalendar = path.replace(/\/+$/, '').endsWith('/calendar');
 const citiesToggle = {
   htmlClass: 'cities-off',
   pressedWhen: 'absent' as const,
@@ -108,7 +102,9 @@ const citiesToggle = {
 
     <div class="header-tools">
       <CitySearch lang={lang} />
-      <HtmlToggle {...calToggle} class="cal-tool" />
+      <a class="cal-link" href={calendarHref} aria-label={t(lang, 'cal.toggle')} title={t(lang, 'cal.toggle')} aria-current={onCalendar ? 'page' : undefined} data-cal-link>
+        <Icon name="calendar-days" size={20} />
+      </a>
       <ZoomControl lang={lang} uid="header" />
       <ThemeSwitch lang={lang} uid="header" />
       <HtmlToggle {...gridToggle} class="desktop-tool" />
@@ -170,6 +166,36 @@ const citiesToggle = {
 </header>
 
 <style>
+  .cal-link {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--touch);
+    height: var(--touch);
+    border: var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .cal-link:hover,
+  .cal-link[aria-current='page'] {
+    background: var(--violet);
+    color: #fff;
+  }
+  :global(.cal-go) {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    pointer-events: none;
+    background: var(--violet);
+    clip-path: circle(0 at var(--gx) var(--gy));
+    animation: cal-go 440ms cubic-bezier(0.5, 0, 0.75, 0) forwards;
+  }
+  @keyframes cal-go {
+    to {
+      clip-path: circle(150% at var(--gx) var(--gy));
+    }
+  }
   .site-header {
     position: sticky;
     top: 0;
@@ -470,6 +496,37 @@ const citiesToggle = {
 </style>
 
 <script>
+  // to the calendar page: a circle of the main colour grows from the click, then the page opens (and its reveal goes on)
+  document.addEventListener('click', (e) => {
+    const a = (e.target as Element).closest<HTMLAnchorElement>('a[href]');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin || !/\/calendar\/?$/.test(url.pathname) || url.pathname === location.pathname) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    e.preventDefault();
+    const c = document.createElement('div');
+    c.className = 'cal-go';
+    c.style.setProperty('--gx', `${e.clientX}px`);
+    c.style.setProperty('--gy', `${e.clientY}px`);
+    document.body.append(c);
+    try {
+      sessionStorage.setItem('andras-cal-x', String(Math.round((e.clientX / window.innerWidth) * 100)));
+    } catch {
+      /* storage unavailable */
+    }
+    window.setTimeout(() => (location.href = url.href), 420);
+  });
+  // the calendar page's reveal starts where the click was
+  try {
+    const x = sessionStorage.getItem('andras-cal-x');
+    if (x) {
+      document.documentElement.style.setProperty('--cal-x', `${x}%`);
+      sessionStorage.removeItem('andras-cal-x');
+    }
+  } catch {
+    /* storage unavailable */
+  }
+
   const header = document.querySelector<HTMLElement>('[data-header]');
   const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
   const menu = document.querySelector<HTMLElement>('[data-mobile-menu]');

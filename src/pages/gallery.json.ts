@@ -18,6 +18,7 @@ export const GET: APIRoute = async () => {
       post: p.post ?? '',
       event: p.event ?? '',
       tags: p.tags ?? [],
+      counter: p.counter ?? '',
       ...(p.lat !== undefined && p.lng !== undefined ? { lat: p.lat, lng: p.lng } : {}),
       video: p.video ?? '',
       large: p.image ? (await getImage({ src: p.image, width: Math.min(1800, p.image.width) })).src : p.video ? '' : p.src,

@@ -13,7 +13,13 @@ interface Props {
 }
 
 const { lang } = Astro.props;
+// a copy on another host searches the main site's (newer) index
+const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
 const text = {
+  site: t(lang, 'search.site'),
+  cities: t(lang, 'search.cities'),
+  sitePh: t(lang, 'search.sitePh'),
+  noHits: t(lang, 'search.noHits'),
   label: t(lang, 'search.label'),
   placeholder: t(lang, 'search.placeholder'),
   go: t(lang, 'search.go'),
@@ -31,12 +37,17 @@ const text = {
 </button>
 
 <template data-search-panel-template>
-  <div class="city-search" id="city-search" hidden data-city-search data-lang={lang}>
+  <div class="city-search" id="city-search" hidden data-city-search data-lang={lang} data-live={live || undefined}>
     <div class="container city-search__inner">
+      <!-- first the site (keywords), then – a switch – cities -->
+      <div class="city-search__modes" role="radiogroup" data-search-modes>
+        <button type="button" role="radio" aria-checked="true" data-mode="site">🔎 {text.site}</button>
+        <button type="button" role="radio" aria-checked="false" data-mode="city">🏙️ {text.cities}</button>
+      </div>
       <form class="city-search__form" role="search" data-search-form>
         <label class="visually-hidden" for="city-search-input">{text.label}</label>
         <span class="city-search__icon" aria-hidden="true"><Icon name="map-pin" size={20} /></span>
-        <input id="city-search-input" type="search" name="q" autocomplete="off" required maxlength="80" placeholder={text.placeholder} data-search-input />
+        <input id="city-search-input" type="search" name="q" autocomplete="off" required maxlength="80" placeholder={text.sitePh} data-search-input data-ph-site={text.sitePh} data-ph-city={text.placeholder} />
         <button type="submit" class="btn btn--primary city-search__go" data-search-go>{text.go}</button>
         <button type="button" class="city-search__close" aria-label={text.close} title={text.close} data-search-close>
           <Icon name="x" size={20} />
@@ -44,12 +55,13 @@ const text = {
       </form>
       <div class="city-search__status" role="status" aria-live="polite" data-search-status></div>
       <ul class="city-search__results" data-search-results></ul>
+      <ul class="city-search__hits" data-search-hits></ul>
       <div class="city-search__foot">
         <button type="button" class="pill city-search__home" hidden data-search-home>
           <Icon name="house" size={16} />
           {text.home}
         </button>
-        <span class="city-search__credit">
+        <span class="city-search__credit" data-city-only>
           {text.credit}: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
         </span>
@@ -57,6 +69,7 @@ const text = {
       <template data-msg-searching>{text.searching}</template>
       <template data-msg-none>{text.none}</template>
       <template data-msg-error>{text.error}</template>
+      <template data-msg-nohits>{text.noHits}</template>
     </div>
   </div>
 </template>
@@ -121,6 +134,80 @@ const text = {
     border: var(--border);
     border-radius: 50%;
     background: var(--surface);
+  }
+  :global(.city-search__modes) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  :global(.city-search__modes button) {
+    padding: 6px 14px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  :global(.city-search__modes button[aria-checked='true']) {
+    background: var(--yellow);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  :global(.city-search__hits) {
+    display: grid;
+    gap: 6px;
+    max-height: min(60vh, 460px);
+    overflow: auto;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  :global(.city-search__hits:empty) {
+    display: none;
+  }
+  :global(.city-search__hits a) {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    align-items: center;
+    gap: 2px 10px;
+    padding: 8px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  :global(.city-search__hits a:hover),
+  :global(.city-search__hits a:focus-visible) {
+    background: var(--yellow-tint, #fff6c2);
+  }
+  :global(.city-search__hits .hit-icon) {
+    grid-row: span 2;
+    font-size: 22px;
+    text-align: center;
+  }
+  :global(.city-search__hits strong) {
+    line-height: 1.25;
+  }
+  :global(.city-search__hits small) {
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :global(.city-search__hits mark) {
+    padding: 0 2px;
+    border-radius: 3px;
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  :global(.city-search[data-mode='site'] [data-city-only]),
+  :global(.city-search[data-mode='site'] .city-search__results),
+  :global(.city-search[data-mode='site'] .city-search__home),
+  :global(.city-search[data-mode='city'] .city-search__hits) {
+    display: none;
   }
   :global(.city-search__status:not(:empty)) {
     margin-top: 10px;
@@ -206,6 +293,97 @@ const text = {
     const msg = (name: string) => panel.querySelector<HTMLTemplateElement>(`[data-msg-${name}]`)!.content.textContent ?? '';
     const lang = panel.dataset.lang ?? 'en';
 
+    // ---- keywords (first) or cities ----
+    const hits = panel.querySelector<HTMLUListElement>('[data-search-hits]')!;
+    let mode: 'site' | 'city' = 'site';
+    const setMode = (m: 'site' | 'city') => {
+      mode = m;
+      panel.dataset.mode = m;
+      panel.querySelectorAll<HTMLElement>('[data-mode]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mode === m)));
+      input.placeholder = (m === 'site' ? input.dataset.phSite : input.dataset.phCity) ?? '';
+      status.textContent = '';
+      if (m === 'site') findHits();
+      input.focus();
+    };
+    panel.querySelector('[data-search-modes]')!.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest<HTMLElement>('[data-mode]');
+      if (b) setMode(b.dataset.mode as 'site' | 'city');
+    });
+    panel.dataset.mode = 'site';
+    type Hit = { k: string; t: string; s?: string; u: string; w?: string };
+    let index: Promise<Hit[]> | null = null;
+    const loadIndex = () =>
+      (index ??= fetch(`${panel.dataset.live ?? ''}/${lang}/search-index.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .catch(() => fetch(`/${lang}/search-index.json`).then((r) => (r.ok ? r.json() : []))) as Promise<Hit[]>);
+    /** lower case, without accents: "Görögország" finds "gorog" too */
+    const plain = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const mark = (text: string, terms: string[]) => {
+      const frag = document.createDocumentFragment();
+      const p = plain(text);
+      let at = 0;
+      while (at < text.length) {
+        let best = -1;
+        let len = 0;
+        for (const tm of terms) {
+          const i = p.indexOf(tm, at);
+          if (i >= 0 && (best < 0 || i < best)) {
+            best = i;
+            len = tm.length;
+          }
+        }
+        if (best < 0) break;
+        frag.append(text.slice(at, best), Object.assign(document.createElement('mark'), { textContent: text.slice(best, best + len) }));
+        at = best + len;
+      }
+      frag.append(text.slice(at));
+      return frag;
+    };
+    let timer = 0;
+    async function findHits() {
+      const q = plain(input.value.trim());
+      if (q.length < 2) return void hits.replaceChildren();
+      const terms = q.split(/\s+/).filter(Boolean);
+      const all: Hit[] = await loadIndex();
+      const found = all
+        .map((h) => {
+          const title = plain(h.t);
+          const hay = `${title} ${plain(h.s ?? '')} ${plain(h.w ?? '')}`;
+          if (!terms.every((tm) => hay.includes(tm))) return null;
+          const score = terms.reduce((n, tm) => n + (title.startsWith(tm) ? 5 : title.includes(tm) ? 3 : 1), 0);
+          return { h, score };
+        })
+        .filter((x): x is { h: Hit; score: number } => !!x)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 12);
+      if (plain(input.value.trim()) !== q) return; // typed on meanwhile
+      status.textContent = found.length ? '' : msg('nohits');
+      hits.replaceChildren(
+        ...found.map(({ h }) => {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = h.u.startsWith('/') ? (panel.dataset.live && /search|posts\//.test(h.u) ? panel.dataset.live + h.u : h.u) : h.u;
+          a.append(Object.assign(document.createElement('span'), { className: 'hit-icon', textContent: h.k }));
+          const strong = document.createElement('strong');
+          strong.append(mark(h.t, terms));
+          a.append(strong);
+          if (h.s) {
+            const sm = document.createElement('small');
+            sm.append(mark(h.s, terms));
+            a.append(sm);
+          }
+          li.append(a);
+          return li;
+        }),
+      );
+    }
+    input.addEventListener('input', () => {
+      if (mode !== 'site') return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(findHits, 120);
+    });
+    input.addEventListener('focus', () => void loadIndex(), { once: true });
+
     const setOpen = (open: boolean) => {
       panel.hidden = !open;
       toggle.setAttribute('aria-expanded', String(open));
@@ -263,6 +441,13 @@ const text = {
       e.preventDefault();
       const q = input.value.trim();
       if (!q) return;
+      // keywords: Enter opens the first hit
+      if (mode === 'site') {
+        await findHits();
+        const first = hits.querySelector<HTMLAnchorElement>('a');
+        if (first) first.click();
+        return;
+      }
       status.textContent = msg('searching');
       results.replaceChildren();
       go.disabled = true;

@@ -34,6 +34,8 @@ export interface Photo {
   event?: string;
   /** hashtags (the gallery's folders) */
   tags?: string[];
+  /** id of the counter it belongs to */
+  counter?: string;
   /** repository files of an upload: deleting the picture deletes these */
   files?: string[];
 }
@@ -111,6 +113,7 @@ export async function getPhotos(lang = 'en'): Promise<Photo[]> {
       post: p.data.post,
       event: p.data.event,
       tags: p.data.tags,
+      counter: p.data.counter,
       files: own,
     };
   });

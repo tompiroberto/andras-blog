@@ -86,10 +86,12 @@ const words = {
       <span class="ctr__dev" data-dev-ui>
         <button type="button" data-ctr-do="minus" aria-label="−1">−1</button>
         <button type="button" class="ctr__plus" data-ctr-do="plus" aria-label="+1">+1</button>
+        <button type="button" data-ctr-do="photo" aria-label="📷">📷</button>
         <button type="button" data-ctr-do="edit" aria-label="✎">✎</button>
         <button type="button" data-ctr-do="del" aria-label="🗑">🗑</button>
       </span>
       <div class="ctr__list" role="tooltip">
+        <div class="ctr__pics"></div>
         <ol></ol>
         <p class="ctr__empty"></p>
         <form class="ctr__add" data-dev-ui>
@@ -200,6 +202,32 @@ const words = {
       opacity: 0;
       translate: -50% -6px;
     }
+  }
+  .ctr__pics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .ctr__pics:empty {
+    display: none;
+  }
+  .ctr__pics a {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    overflow: hidden;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: #111;
+    color: #fff;
+    text-decoration: none;
+  }
+  .ctr__pics img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
   .ctr__list ol {
     display: grid;
@@ -444,6 +472,10 @@ const words = {
           void num.offsetWidth;
           num.classList.add('is-bump');
           save(`${c.icon} ${c.title}: ${c.count}`);
+        } else if (what === 'photo') {
+          // a photo / video for this counter: its hashtag (the gallery's folder), place and description are asked for
+          const tag = (c.title_en || c.title).toLowerCase().replace(/\(.*?\)/g, '').trim();
+          window.dispatchEvent(new CustomEvent('andras:upload-photos', { detail: { counter: c.id, tags: [tag] } }));
         } else if (what === 'edit') {
           openNew(c);
         } else if (what === 'del' && window.confirm(W.confirm.replace('{title}', c.title))) {
@@ -469,7 +501,31 @@ const words = {
       });
       return li;
     }
+    // the photos / videos of the counters (uploaded with 📷 in developer mode)
+    type Pic = { counter?: string; caption: string; large: string; thumb: string; video?: string };
+    let pics: Pic[] = [];
+    const picSite = grid.dataset.live ?? '';
+    fetch(`${picSite}/gallery.json`, { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : { items: [] }))
+      .then((d: { items: Pic[] }) => {
+        pics = d.items.filter((x) => x.counter);
+        grid!.querySelectorAll<HTMLElement>('.ctr').forEach((li) => {
+          const c = data.counters.find((x) => x.id === li.dataset.id);
+          if (c) fillList(li, c);
+        });
+      })
+      .catch(() => {});
     function fillList(li: HTMLElement, c: Counter) {
+      li.querySelector('.ctr__pics')!.replaceChildren(
+        ...pics
+          .filter((p) => p.counter === c.id)
+          .map((p) => {
+            const a = Object.assign(document.createElement('a'), { href: picSite + (p.video || p.large), target: '_blank', rel: 'noopener', title: p.caption });
+            if (p.video) a.textContent = '▶';
+            else a.append(Object.assign(document.createElement('img'), { src: picSite + (p.thumb || p.large), alt: p.caption, loading: 'lazy' }));
+            return a;
+          }),
+      );
       const ol = li.querySelector('ol')!;
       ol.replaceChildren(
         ...[...(c.items ?? [])]

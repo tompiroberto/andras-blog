@@ -818,5 +818,10 @@
   "cal.evdMusic": "Music",
   "cal.evdEmpty": "Nothing has been added to this event yet.",
   "lang.portuguese": "Portuguese · learning",
-  "story.lang.portuguese": "I got to know it at an Erasmus+ project – I liked how it sounds so much that I started learning it. For now I know a few words and phrases."
+  "story.lang.portuguese": "I got to know it at an Erasmus+ project – I liked how it sounds so much that I started learning it. For now I know a few words and phrases.",
+  "nav.calendar": "Calendar",
+  "search.site": "On the site",
+  "search.cities": "Cities",
+  "search.sitePh": "A keyword, e.g. Erasmus, Nutella, Georgia…",
+  "search.noHits": "Nothing on the site for this – try the Cities switch for a place."
 }

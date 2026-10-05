@@ -818,5 +818,10 @@
   "cal.evdMusic": "Música",
   "cal.evdEmpty": "Ainda não há nada neste evento.",
   "lang.portuguese": "Português · a aprender",
-  "story.lang.portuguese": "Conheci-o num projeto Erasmus+ – gostei tanto de como soa que comecei a aprendê-lo. Por agora sei algumas palavras e expressões."
+  "story.lang.portuguese": "Conheci-o num projeto Erasmus+ – gostei tanto de como soa que comecei a aprendê-lo. Por agora sei algumas palavras e expressões.",
+  "nav.calendar": "Calendário",
+  "search.site": "No site",
+  "search.cities": "Cidades",
+  "search.sitePh": "Palavra-chave, ex. Erasmus, Nutella, Geórgia…",
+  "search.noHits": "Nada no site – para um lugar, experimenta Cidades."
 }

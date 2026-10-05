@@ -818,5 +818,10 @@
   "cal.evdMusic": "Muzică",
   "cal.evdEmpty": "Încă nu e nimic la acest eveniment.",
   "lang.portuguese": "Portugheză · învăț",
-  "story.lang.portuguese": "L-am cunoscut la un proiect Erasmus+ – mi-a plăcut atât de mult cum sună, încât am început să o învăț. Deocamdată știu câteva cuvinte și expresii."
+  "story.lang.portuguese": "L-am cunoscut la un proiect Erasmus+ – mi-a plăcut atât de mult cum sună, încât am început să o învăț. Deocamdată știu câteva cuvinte și expresii.",
+  "nav.calendar": "Calendar",
+  "search.site": "Pe site",
+  "search.cities": "Orașe",
+  "search.sitePh": "Cuvânt-cheie, ex. Erasmus, Nutella, Georgia…",
+  "search.noHits": "Nimic pe site – pentru un loc, încearcă Orașe."
 }

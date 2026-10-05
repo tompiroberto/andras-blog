@@ -1,0 +1,16 @@
+---
+/**
+ * The calendar as a page of its own (the header's calendar button and the "Calendar" menu item lead here):
+ * it opens with a reveal from the corner and the sheet flipping down. ?event=<id> opens that event.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CalendarView from '../../components/CalendarView.astro';
+import { langStaticPaths, t, type Lang } from '../../i18n';
+
+export const getStaticPaths = langStaticPaths;
+const lang = Astro.params.lang as Lang;
+---
+
+<BaseLayout lang={lang} title={t(lang, 'nav.calendar')} description={t(lang, 'cal.toggle')}>
+  <CalendarView lang={lang} page />
+</BaseLayout>

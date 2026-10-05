@@ -17,9 +17,11 @@ import { HTML_LANG, localePath, t, type Lang } from '../i18n';
 
 interface Props {
   lang: Lang;
+  /** the calendar page: a page of its own, not laid over another one */
+  page?: boolean;
 }
 
-const { lang } = Astro.props;
+const { lang, page = false } = Astro.props;
 const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
 const words = {
   month: t(lang, 'cal.month'),
@@ -91,7 +93,8 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
 }
 ---
 
-<section class="cal-view" data-cal data-lang={HTML_LANG[lang]} data-live={live || undefined} aria-label={t(lang, 'cal.toggle')}>
+{page && <script is:inline>document.documentElement.classList.add('cal-mode', 'cal-page');</script>}
+<section class:list={['cal-view', { 'is-page': page }]} data-cal data-lang={HTML_LANG[lang]} data-live={live || undefined} aria-label={t(lang, 'cal.toggle')}>
   <div class="cal-layout">
   <!-- left: the last adventures and the next one (faded), on a vertical timeline -->
   <aside class="cal-side cal-side--left cal-tl" aria-label={t(lang, 'cal.timeline')}>
@@ -303,8 +306,31 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
   :root.cal-mode .cal-view {
     display: block;
   }
-  :root.cal-mode {
+  :root.cal-mode:not(.cal-page) {
     overflow: hidden;
+  }
+  /* the calendar page: below the header, as high as the window; it opens with a reveal from the corner */
+  .cal-view.is-page {
+    position: relative;
+    inset: auto;
+    z-index: calc(var(--z-header) - 1);
+    display: block;
+    height: calc(100dvh - var(--header-h) * var(--tz, 1));
+    min-height: 600px;
+    animation: cal-page-in 800ms cubic-bezier(0.25, 0.8, 0.25, 1) both;
+  }
+  @keyframes cal-page-in {
+    from {
+      clip-path: circle(0 at var(--cal-x, 88%) 0);
+    }
+    to {
+      clip-path: circle(150% at var(--cal-x, 88%) 0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cal-view.is-page {
+      animation: none;
+    }
   }
   /* the scrollbar ribbon (and its switches) step aside while the calendar is open */
   :root.cal-mode .chile,
@@ -2765,6 +2791,16 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
         note.textContent = err instanceof Error ? err.message : String(err);
       }
     });
+
+    // ?event=<id> (e.g. from the search): that event's page
+    const askedEvent = new URLSearchParams(location.search).get('event');
+    if (askedEvent && view.classList.contains('is-page')) {
+      const e0 = data.events.find((x) => x.id === askedEvent);
+      if (e0) {
+        cursor = new Date(parse(e0.from).getFullYear(), parse(e0.from).getMonth(), 1);
+        window.setTimeout(() => openEvent(askedEvent), 700);
+      }
+    }
 
     // ---- open / close (the header button toggles html.cal-mode) ----
     let wasOn = html.classList.contains('cal-mode');

@@ -361,7 +361,7 @@ const { lang } = Astro.props;
     };
 
     // opened from the world map (a city / a search): the new photos belong to that place
-    let preset: { place?: string; lat?: number; lng?: number; post?: string; event?: string; tags?: string[]; date?: string } | null = null;
+    let preset: { place?: string; lat?: number; lng?: number; post?: string; event?: string; tags?: string[]; date?: string; counter?: string } | null = null;
     // videos go up as they are (GitHub takes up to 100 MB; small ones spare Netlify's traffic)
     const VIDEO_MAX = 40 * 1024 * 1024;
     const toBase64 = (file: File) =>
@@ -372,7 +372,7 @@ const { lang } = Astro.props;
         r.readAsDataURL(file);
       });
     const open = (e?: Event) => {
-      preset = (e as CustomEvent<{ place?: string; lat?: number; lng?: number; post?: string; event?: string; tags?: string[]; date?: string }> | undefined)?.detail ?? null;
+      preset = (e as CustomEvent<{ place?: string; lat?: number; lng?: number; post?: string; event?: string; tags?: string[]; date?: string; counter?: string }> | undefined)?.detail ?? null;
       // uploaded for something (a calendar event…): its day
       if (preset?.date) dateInput.value = preset.date;
       if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
@@ -478,6 +478,7 @@ const { lang } = Astro.props;
             media,
             preset?.post && `post: ${preset.post}`,
             preset?.event && `event: ${preset.event}`,
+            preset?.counter && `counter: ${preset.counter}`,
             `caption: ${JSON.stringify(caption)}`,
             place && `place: ${JSON.stringify(place)}`,
             (() => {

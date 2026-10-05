@@ -818,5 +818,10 @@
   "cal.evdMusic": "Zenék",
   "cal.evdEmpty": "Ehhez az eseményhez még nincs feltöltve semmi.",
   "lang.portuguese": "Portugál · tanulom",
-  "story.lang.portuguese": "Egy Erasmus+ projekten ismerkedtem meg vele – annyira megtetszett, ahogy hangzik, hogy elkezdtem tanulni. Egyelőre néhány szót és kifejezést tudok."
+  "story.lang.portuguese": "Egy Erasmus+ projekten ismerkedtem meg vele – annyira megtetszett, ahogy hangzik, hogy elkezdtem tanulni. Egyelőre néhány szót és kifejezést tudok.",
+  "nav.calendar": "Naptár",
+  "search.site": "Az oldalon",
+  "search.cities": "Városok",
+  "search.sitePh": "Kulcsszó, pl. Erasmus, Nutella, Grúzia…",
+  "search.noHits": "Erre nincs találat az oldalon – egy helyhez próbáld a Városok kapcsolót."
 }
