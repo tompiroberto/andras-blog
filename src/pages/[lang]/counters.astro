@@ -130,6 +130,12 @@ const words = {
   .ctr {
     position: relative;
   }
+  /* .section isolates its layer, so the open list's z-index stays inside it:
+     lift the whole section above the country ribbon (--z-chile: 60) and the
+     footer while a list is open */
+  .ctr-page:has(.ctr:hover, .ctr:focus-within, .ctr.is-open) {
+    z-index: 61;
+  }
   .ctr__face {
     display: grid;
     justify-items: center;
