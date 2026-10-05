@@ -609,7 +609,7 @@ const L = {
 
     // developer UI, and the full-screen views that have their own editing (the world map) or none
     const isDevUi = (el: Element) =>
-      !!el.closest('[data-dev-ui], .dev-panel, .lay-bar, .dev-plus, .lay-save, .dev-gate, .dev-add-menu, .dev-toast, dialog, .site-header .brand, .map-mode-view, .chaos-view, .country-view, .route-view, .street-view, .cal-view, .site-header .header-tools, .site-header .menu-toggle, .mobile-menu, .hero__status');
+      !!el.closest('[data-dev-ui], .dev-panel, .lay-bar, .dev-plus, .lay-save, .dev-gate, .dev-add-menu, .dev-toast, dialog, .site-header .brand, .map-mode-view, .chaos-view, .country-view, .route-view, .street-view, .cal-view, .site-header .header-tools, .site-header .menu-toggle, .mobile-menu, .hero__status, .gal-folders, .gallery__dev, .gal-place, .music__sort, .music__tags, .music__playlists, .track__edit, .track__del, .track-form, .cal-devbar');
     const pickable = (t: EventTarget | null): HTMLElement | null => {
       let el = t instanceof Element ? t : null;
       while (el && !(el instanceof HTMLElement)) el = el.parentElement;
