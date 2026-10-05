@@ -117,9 +117,19 @@
           "date": "2026-02-14"
         },
         {
-          "text": "Skyrunning ifjúsági vb – Makarska, Horvátország",
-          "text_en": "Youth Skyrunning World Championships – Makarska, Croatia",
+          "text": "Skyrunning – Makarska, Horvátország",
+          "text_en": "Skyrunning – Makarska, Croatia",
           "date": "2026-05-01"
+        },
+        {
+          "text": "Prága 5k (osztálykiránduláson)",
+          "text_en": "Prague 5K (on a school trip)",
+          "date": "2026-09-17"
+        },
+        {
+          "text": "Kojori Mountain Trail (11k) – Grúzia",
+          "text_en": "Kojori Mountain Trail (11K) – Georgia",
+          "date": "2026-12-06"
         }
       ]
     }
