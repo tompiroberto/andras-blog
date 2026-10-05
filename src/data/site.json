@@ -63,6 +63,10 @@
     {
       "key": "lang.georgian",
       "level": "learning"
+    },
+    {
+      "key": "lang.portuguese",
+      "level": "learning"
     }
   ],
   "formProvider": "formspree"

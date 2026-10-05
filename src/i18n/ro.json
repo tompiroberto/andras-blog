@@ -463,7 +463,7 @@
   "story.hitchhiking": "Încă nu am prea multă experiență: cea mai lungă călătorie a fost până la lacul Balaton, cu două mașini. Mi se pare foarte palpitant și, pentru că iubesc călătoriile low-budget, vreau să fac asta mult mai des.",
   "story.maps": "Iubesc hărțile și vreau să lucrez în geografie. Îmi place să călătoresc în orice fel: cu avionul, cu trenul, la ocazie, cu bicicleta sau pe jos.",
   "story.budget": "Când călătoresc, de ce să cheltui mult dacă se poate și fără? Așa e chiar mai palpitant – și ajung mai aproape de oameni. De asta îmi place autostopul.",
-  "story.languages": "Mereu apare o limbă nouă care mă fascinează: întâi spaniola, apoi georgiana – și nu se oprește aici, acum mă gândesc la portugheză. Probabil pentru că ador să cunosc tot felul de țări, în parte datorită GeoGuessr.",
+  "story.languages": "Mereu apare o limbă nouă care mă fascinează: întâi spaniola, apoi georgiana – iar acum portugheza, pe care am cunoscut-o la un proiect Erasmus+. Probabil pentru că ador să cunosc tot felul de țări, în parte datorită GeoGuessr.",
   "story.eating": "Un borcan întreg de Nutella? Trei farfurii de spaghete bolognese? Nicio problemă. Îmi place să mănânc, mai ales dulciuri – dar de fapt orice, doar să fie mult. (Patiseria la reducere de la Lidl – mmm!)",
   "story.lang.english": "O învăț de la 13 ani, iar la proiectele Erasmus mi s-a lipit destul de repede. O folosesc bine: pot exprima aproape orice gând.",
   "story.lang.german": "O învăț de la 8 ani, dar din păcate nu prea sunt atent la ore, pentru că facem mereu doar lucruri de bază. În germană diferența dintre A2 și B2 e mare: mă pot exprima la nivel de bază, dar uneori nu-mi vine un cuvânt, iar topica complicată încă nu-mi iese.",
@@ -816,5 +816,7 @@
   "cal.evdDescPh": "Ce s-a întâmplat, ce e în plan…",
   "cal.evdPics": "Poze și video",
   "cal.evdMusic": "Muzică",
-  "cal.evdEmpty": "Încă nu e nimic la acest eveniment."
+  "cal.evdEmpty": "Încă nu e nimic la acest eveniment.",
+  "lang.portuguese": "Portugheză · învăț",
+  "story.lang.portuguese": "L-am cunoscut la un proiect Erasmus+ – mi-a plăcut atât de mult cum sună, încât am început să o învăț. Deocamdată știu câteva cuvinte și expresii."
 }

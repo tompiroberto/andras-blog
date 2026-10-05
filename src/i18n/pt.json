@@ -463,7 +463,7 @@
   "story.hitchhiking": "Ainda não tenho muita experiência: a minha viagem mais longa foi até ao lago Balaton, com duas boleias. Acho isto muito emocionante e, como adoro viajar com pouco dinheiro, quero fazê-lo muito mais.",
   "story.maps": "Adoro mapas e quero trabalhar com geografia. Gosto de viajar de qualquer forma: de avião, de comboio, à boleia, de bicicleta ou a pé.",
   "story.budget": "Quando viajo, para quê gastar muito se dá para fazer sem isso? Assim é ainda mais emocionante – e fico mais perto das pessoas. É por isso que adoro andar à boleia.",
-  "story.languages": "Há sempre uma língua nova que me fascina: primeiro o espanhol, depois o georgiano – e não fica por aqui, agora estou a pensar no português. Provavelmente porque adoro conhecer todo o tipo de países, em parte graças ao GeoGuessr.",
+  "story.languages": "Há sempre uma língua nova que me fascina: primeiro o espanhol, depois o georgiano – e agora o português, que conheci num projeto Erasmus+. Provavelmente porque adoro conhecer todo o tipo de países, em parte graças ao GeoGuessr.",
   "story.eating": "Um frasco inteiro de Nutella? Três pratos de esparguete à bolonhesa? Sem problema. Adoro comer, sobretudo doces – mas na verdade qualquer coisa, desde que seja muito. (Os bolos em promoção do Lidl – nham!)",
   "story.lang.english": "Aprendo inglês desde os 13 anos e nos projetos Erasmus colou-se-me bastante depressa. Uso-o bem: consigo exprimir quase todos os meus pensamentos.",
   "story.lang.german": "Aprendo alemão desde os 8 anos, mas infelizmente não presto muita atenção nas aulas, porque damos sempre só o básico. Em alemão a diferença entre A2 e B2 é grande: consigo exprimir-me a nível básico, mas às vezes falta-me uma palavra e as ordens de palavras complicadas ainda me custam.",
@@ -816,5 +816,7 @@
   "cal.evdDescPh": "O que aconteceu, o que está planeado…",
   "cal.evdPics": "Fotos e vídeos",
   "cal.evdMusic": "Música",
-  "cal.evdEmpty": "Ainda não há nada neste evento."
+  "cal.evdEmpty": "Ainda não há nada neste evento.",
+  "lang.portuguese": "Português · a aprender",
+  "story.lang.portuguese": "Conheci-o num projeto Erasmus+ – gostei tanto de como soa que comecei a aprendê-lo. Por agora sei algumas palavras e expressões."
 }

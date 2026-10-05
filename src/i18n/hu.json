@@ -463,7 +463,7 @@
   "story.hitchhiking": "Még nincs benne sok tapasztalatom: a leghosszabb utam a Balatonig tartott, két fuvarral. Nagyon izgalmasnak találom, és mivel nagyon szeretem a low-budget utazást, sokkal többet szeretnék stoppolni.",
   "story.maps": "Imádom a térképeket, és földrajzzal szeretnék foglalkozni. Utazni bárhogy szeretek: repülővel, vonattal, stoppal, biciklivel vagy gyalog.",
   "story.budget": "Ha utazom, minek költsek sokat, ha anélkül is meg lehet oldani? Sőt, úgy még izgalmasabb – és közelebb kerülök az emberekhez. Ezért is szeretem a stoppolást.",
-  "story.languages": "Mindig jön egy új nyelv, ami lenyűgöz: előbb a spanyol, aztán a grúz – és ezzel nincs vége, most épp a portugálon gondolkozom. Gondolom, azért is, mert nagyon szeretek megismerni mindenféle országot, részben a GeoGuessr miatt.",
+  "story.languages": "Mindig jön egy új nyelv, ami lenyűgöz: előbb a spanyol, aztán a grúz – most pedig a portugál, amit egy Erasmus+ projekten ismertem meg. Gondolom, azért is, mert nagyon szeretek megismerni mindenféle országot, részben a GeoGuessr miatt.",
   "story.eating": "Egy bödön Nutella? Három tányér bolognai spagetti? Meg sem árt. Szeretek enni, főleg édességet – de igazából bármit, csak sok legyen. (Lidl akciós péksütik, nyamm!)",
   "story.lang.english": "13 éves korom óta tanulom, és az Erasmus-projekteken egész gyorsan rám ragadt. Jól tudom használni: szinte minden gondolatomat ki tudom fejezni vele.",
   "story.lang.german": "8 éves korom óta tanulom, de az órákon sajnos nem nagyon figyelek, mert mindig csak alapdolgokat veszünk. A németben nagy a különbség az A2 és a B2 között: alapfokon ki tudom fejezni a gondolataimat, de néha nem jut eszembe egy-egy szó, és a bonyolult szórendek sem mennek még.",
@@ -816,5 +816,7 @@
   "cal.evdDescPh": "Mi történt, mi lesz a program…",
   "cal.evdPics": "Fotók és videók",
   "cal.evdMusic": "Zenék",
-  "cal.evdEmpty": "Ehhez az eseményhez még nincs feltöltve semmi."
+  "cal.evdEmpty": "Ehhez az eseményhez még nincs feltöltve semmi.",
+  "lang.portuguese": "Portugál · tanulom",
+  "story.lang.portuguese": "Egy Erasmus+ projekten ismerkedtem meg vele – annyira megtetszett, ahogy hangzik, hogy elkezdtem tanulni. Egyelőre néhány szót és kifejezést tudok."
 }

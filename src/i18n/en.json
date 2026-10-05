@@ -463,7 +463,7 @@
   "story.hitchhiking": "I don't have much experience yet: my longest trip was to Lake Balaton, with two rides. I find it really exciting, and since I love low-budget travel, I want to do it a lot more.",
   "story.maps": "I love maps, and I want to work in geography. I like travelling any way: by plane, by train, hitchhiking, by bike or on foot.",
   "story.budget": "When I travel, why spend a lot if it can be done without? It's even more exciting that way – and it brings me closer to people. That's why I love hitchhiking.",
-  "story.languages": "There's always a new language that fascinates me: first Spanish, then Georgian – and it doesn't stop there, right now I'm thinking about Portuguese. Probably because I love getting to know all kinds of countries, partly thanks to GeoGuessr.",
+  "story.languages": "There's always a new language that fascinates me: first Spanish, then Georgian – and now Portuguese, which I got to know at an Erasmus+ project. Probably because I love getting to know all kinds of countries, partly thanks to GeoGuessr.",
   "story.eating": "A whole jar of Nutella? Three plates of spaghetti bolognese? No problem. I love eating, especially sweets – but honestly anything, as long as there's a lot of it. (Lidl's discounted pastries – yum!)",
   "story.lang.english": "I've been learning it since I was 13, and at the Erasmus projects it stuck to me pretty fast. I use it well: I can express almost every thought in it.",
   "story.lang.german": "I've been learning it since I was 8, but sadly I don't pay much attention in class, because we always just do the basics. In German the gap between A2 and B2 is big: I can express myself at a basic level, but sometimes a word won't come to mind, and the complicated word orders are hard for me.",
@@ -816,5 +816,7 @@
   "cal.evdDescPh": "What happened, what is planned…",
   "cal.evdPics": "Photos and videos",
   "cal.evdMusic": "Music",
-  "cal.evdEmpty": "Nothing has been added to this event yet."
+  "cal.evdEmpty": "Nothing has been added to this event yet.",
+  "lang.portuguese": "Portuguese · learning",
+  "story.lang.portuguese": "I got to know it at an Erasmus+ project – I liked how it sounds so much that I started learning it. For now I know a few words and phrases."
 }
