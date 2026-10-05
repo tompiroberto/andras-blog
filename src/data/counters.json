@@ -132,6 +132,14 @@
           "date": "2026-12-06"
         }
       ]
+    },
+    {
+      "id": "hitchhiking",
+      "icon": "👍",
+      "title": "Stoppolt fuvar",
+      "title_en": "Hitchhiked rides",
+      "count": 0,
+      "items": []
     }
   ]
 }
