@@ -53,6 +53,13 @@ const words = {
   planAdd: t(lang, 'cal.planAdd'),
   confirmPlan: t(lang, 'cal.confirmPlan'),
   abroad: t(lang, 'cal.abroad'),
+  docs: t(lang, 'cal.docs'),
+  docsSaved: t(lang, 'cal.docsSaved'),
+  docsBig: t(lang, 'cal.docsBig'),
+  home: localePath(lang),
+  quickPhoto: t(lang, 'cal.quickPhoto'),
+  quickMusic: t(lang, 'cal.quickMusic'),
+  foundCountry: t(lang, 'cal.foundCountry'),
   abroadPct: t(lang, 'cal.abroadPct'),
   since: t(lang, 'cal.since'),
   countdown: t(lang, 'cal.countdown'),
@@ -108,6 +115,22 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
         </div>
       </div>
     </header>
+    <!-- developer mode: everything the calendar needs, one click each -->
+    <div class="cal-devbar" data-dev-ui data-cal-devbar>
+      <button type="button" data-cd-do="new">＋ {t(lang, 'cal.devNew')}</button>
+      <button type="button" data-cd-do="last">✎ {t(lang, 'cal.devLast')}</button>
+      <span class="cal-devbar__sep"></span>
+      <label class="cal-devbar__for">{t(lang, 'cal.devFor')}<select data-cd-event></select></label>
+      <button type="button" data-cd-do="edit">✎</button>
+      <button type="button" data-cd-do="photos">📷🎬 {t(lang, 'cal.quickPhoto')}</button>
+      <button type="button" data-cd-do="music">🎵 {t(lang, 'cal.quickMusic')}</button>
+      <label class="cal-devbar__file">📄 {t(lang, 'cal.devDocs')}<input type="file" multiple data-cd-docs /></label>
+      <button type="button" data-cd-do="playlist">🎧</button>
+      <span class="cal-devbar__sep"></span>
+      <button type="button" data-cd-do="plan">💡 {t(lang, 'cal.planAdd')}</button>
+      <button type="button" data-cd-do="where">📍 {t(lang, 'cal.devWhere')}</button>
+      <small data-cd-note></small>
+    </div>
     <p class="cal-hint">{t(lang, 'cal.hint')}</p>
     <div class="cal-body" data-cal-body></div>
   </div>
@@ -172,6 +195,8 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       <label>English 🇬🇧<input type="text" maxlength="80" data-cf="place_en" placeholder="e.g. Elafonisos" /></label>
     </div>
     <label>{t(lang, 'cal.country')}<select data-cf="country"><option value="">—</option></select></label>
+    <small class="cal-form__found" data-cf-found></small>
+    <label>#️⃣ {t(lang, 'cal.tags')}<input type="text" maxlength="200" data-cf="tags" placeholder={t(lang, 'cal.tagsPh')} /></label>
     <div class="cal-form__row">
       <label>{words.from}<input type="date" required data-cf="from" /></label>
       <label>{words.to}<input type="date" required data-cf="to" /></label>
@@ -1087,6 +1112,105 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
   :root.dev-mode:not(.dev-preview) .cal-day__list strong > button {
     display: inline;
   }
+  .cal-devbar {
+    display: none;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: -4px 0 14px;
+    padding: 8px 10px;
+    border: 2px solid #39d353;
+    border-radius: 12px;
+    background: #0d1117;
+    color: #d6f5d6;
+    font: 12px ui-monospace, Consolas, monospace;
+  }
+  :root.dev-mode:not(.dev-preview) .cal-devbar {
+    display: flex;
+  }
+  .cal-devbar button,
+  .cal-devbar__file {
+    padding: 5px 10px;
+    border: 1px solid #39d353;
+    border-radius: 8px;
+    background: #0d1117;
+    color: #39d353;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .cal-devbar button:hover,
+  .cal-devbar__file:hover {
+    background: #39d353;
+    color: #0d1117;
+  }
+  .cal-devbar__file input {
+    display: none;
+  }
+  .cal-devbar__for {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cal-devbar select {
+    max-width: 230px;
+    padding: 4px 6px;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    background: #010409;
+    color: #e6edf3;
+    font: inherit;
+    color-scheme: dark;
+  }
+  .cal-devbar__sep {
+    width: 1px;
+    height: 20px;
+    background: #30363d;
+  }
+  .cal-devbar small {
+    flex-basis: 100%;
+    color: #39d353;
+  }
+  .cal-devbar small:empty {
+    display: none;
+  }
+  .cal-day__docs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .cal-day__docs a {
+    color: var(--violet);
+  }
+  .cal-day__tags {
+    color: var(--violet) !important;
+    font-weight: 700;
+  }
+  .cal-day__quick {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  :root.dev-mode:not(.dev-preview) .cal-day__quick {
+    display: flex;
+  }
+  .cal-day__list .cal-day__quick button {
+    display: inline-block;
+    padding: 3px 10px;
+    border: 1.5px dashed #1f8a3a;
+    border-radius: 99px;
+    background: color-mix(in srgb, #39d353 10%, transparent);
+    color: #1f8a3a;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .cal-form__found {
+    margin-top: -4px;
+    color: #39d353;
+  }
   .cal-day__media {
     display: flex;
     flex-wrap: wrap;
@@ -1348,9 +1472,11 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
 
 <script>
   import { PLACE_MESSAGE_EVENT } from '../lib/constants';
+  import { geocode } from '../lib/geocode';
+  import { parseTags, showTags } from '../lib/tags';
   import { commitFiles, getToken } from '../lib/githubCommit';
 
-  type Ev = { id: string; title: string; title_en?: string; place?: string; place_en?: string; country?: string; from: string; to: string; color: string; note?: string; note_en?: string; music?: string[] };
+  type Ev = { id: string; title: string; title_en?: string; place?: string; place_en?: string; country?: string; from: string; to: string; color: string; note?: string; note_en?: string; music?: string[]; tags?: string[]; docs?: { name: string; file: string }[] };
   type Plan = { id: string; text: string; text_en?: string; when?: string; when_en?: string };
   type Track = { id: string; file: string; title: string; artist?: string };
   const view = document.querySelector<HTMLElement>('[data-cal]');
@@ -1842,9 +1968,26 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
           edit.title = W.edit;
           edit.addEventListener('click', () => openForm(e));
           strong.append(edit);
+          const dev = document.createElement('span');
+          dev.className = 'cal-day__quick';
+          for (const [label, kind] of [[`📷 ${W.quickPhoto}`, 'photos'], [`🎵 ${W.quickMusic}`, 'music']] as const) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = label;
+            b.addEventListener('click', () => uploadFor(e, kind));
+            dev.append(b);
+          }
           const when = document.createElement('small');
           when.textContent = [tr(e, 'place') && `📍 ${tr(e, 'place')}`, `${fmtShort.format(parse(e.from))} – ${fmtShort.format(parse(e.to))}`].filter(Boolean).join(' · ');
           li.append(strong, when);
+          if (e.tags?.length) li.append(Object.assign(document.createElement('small'), { className: 'cal-day__tags', textContent: showTags(e.tags) }));
+          if (e.docs?.length) {
+            const docs = document.createElement('span');
+            docs.className = 'cal-day__docs';
+            for (const d of e.docs) docs.append(Object.assign(document.createElement('a'), { href: (view!.dataset.live ?? '') + d.file, target: '_blank', rel: 'noopener', textContent: `📄 ${d.name}` }));
+            li.append(docs);
+          }
+          li.append(dev);
           if (tr(e, 'note')) {
             const p = document.createElement('span');
             p.textContent = tr(e, 'note');
@@ -2036,7 +2179,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       }
     }
     form.querySelector('[data-cf-photo-upload]')!.addEventListener('click', () =>
-      window.dispatchEvent(new CustomEvent('andras:upload-photos', { detail: { event: formKey(), ...(cf('place').value.trim() ? { place: cf('place').value.trim() } : {}) } })),
+      window.dispatchEvent(new CustomEvent('andras:upload-photos', { detail: { event: formKey(), tags: parseTags(cf('tags').value), date: cf('from').value, ...(cf('place').value.trim() ? { place: cf('place').value.trim() } : {}) } })),
     );
     window.addEventListener('andras:photos-uploaded', (ev) => {
       const d = (ev as CustomEvent<{ for: string; items: Pic[] }>).detail;
@@ -2097,13 +2240,123 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       }
     });
     form.querySelector('[data-cf-upload]')!.addEventListener('click', () =>
-      window.dispatchEvent(new CustomEvent('andras:upload-music', { detail: { event: formKey(), ...(cf('place').value.trim() ? { place: cf('place').value.trim() } : {}) } })),
+      window.dispatchEvent(new CustomEvent('andras:upload-music', { detail: { event: formKey(), tags: parseTags(cf('tags').value), date: cf('from').value, ...(cf('place').value.trim() ? { place: cf('place').value.trim() } : {}) } })),
     );
-    window.addEventListener('andras:music-uploaded', (ev) => {
+    /** from the day box (developer mode): photos / music for an event – with its place and hashtags */
+    function uploadFor(e: Ev, kind: 'photos' | 'music') {
+      window.dispatchEvent(new CustomEvent(`andras:upload-${kind}`, { detail: { event: e.id, tags: e.tags ?? [], date: e.from, ...(e.place ? { place: e.place } : {}) } }));
+    }
+    window.addEventListener('andras:music-uploaded', async (ev) => {
       const d = (ev as CustomEvent<{ items: Track[]; for?: string }>).detail;
       const keep = chosenMusic();
       tracks = [...tracks.filter((x) => !d.items.some((n) => n.id === x.id)), ...d.items];
-      renderMusic(!form.hidden && d.for === formKey() ? [...keep, ...d.items.map((x) => x.id)] : keep);
+      if (!form.hidden && d.for === formKey()) return renderMusic([...keep, ...d.items.map((x) => x.id)]);
+      renderMusic(keep);
+      // uploaded from the day box: it belongs to that event right away
+      const target = data.events.find((x) => x.id === d.for);
+      if (!target) return;
+      target.music = [...new Set([...(target.music ?? []), ...d.items.map((x) => x.id)])];
+      try {
+        await save(`🎵 → 📅 ${target.title}`);
+        render();
+        if (!dayBox.hidden) showDay(openDay, openTo);
+      } catch (err) {
+        window.alert(err instanceof Error ? err.message : String(err));
+      }
+    });
+    // ---- the developer bar ----
+    const devbar = view.querySelector<HTMLElement>('[data-cal-devbar]')!;
+    const evSel = devbar.querySelector<HTMLSelectElement>('[data-cd-event]')!;
+    const devNote = devbar.querySelector<HTMLElement>('[data-cd-note]')!;
+    /** the event the bar works on: the one going on now, else the latest that has begun */
+    function fillEventSelect() {
+      const keep = evSel.value;
+      const today = iso(new Date());
+      const list = sorted();
+      evSel.replaceChildren(...[...list].reverse().map((e) => new Option(`${e.title} (${range(e)})`, e.id)));
+      const def = list.filter((e) => e.from <= today).pop() ?? list[0];
+      evSel.value = list.some((e) => e.id === keep) ? keep : (def?.id ?? '');
+    }
+    const chosen = () => data.events.find((e) => e.id === evSel.value);
+    devbar.addEventListener('focusin', fillEventSelect);
+    devbar.addEventListener('pointerdown', (e) => {
+      if (!(e.target as Element).closest('select')) fillEventSelect();
+    });
+    devbar.addEventListener('click', (ev) => {
+      const what = (ev.target as Element).closest<HTMLElement>('[data-cd-do]')?.dataset.cdDo;
+      if (!what) return;
+      devNote.textContent = '';
+      const e = chosen();
+      if (what === 'new') return openForm(null, todayIso);
+      if (what === 'last') {
+        const last = sorted().filter((x) => x.from <= todayIso).pop();
+        return last && openForm(last);
+      }
+      if (what === 'plan') return openPlan(null);
+      if (what === 'where') {
+        // the pill's editor is on the home page
+        if (document.querySelector('[data-where]')) {
+          html.classList.remove('cal-mode');
+          window.setTimeout(() => document.querySelector<HTMLElement>('[data-where]')?.click(), 350);
+        } else location.href = `${W.home}?where=edit`;
+        return;
+      }
+      if (!e) return;
+      if (what === 'edit') return openForm(e);
+      if (what === 'photos' || what === 'music') return uploadFor(e, what);
+      if (what === 'playlist') location.href = `${W.musicPage}?playlist=${encodeURIComponent(e.id)}`;
+    });
+    // documents (tickets, programmes, PDFs…) for the chosen event: public/docs, listed in its day box
+    const toBase64 = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result).replace(/^data:[^,]*,/, ''));
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+    const docsIn = devbar.querySelector<HTMLInputElement>('[data-cd-docs]')!;
+    docsIn.addEventListener('change', async () => {
+      const e = chosen();
+      const files = Array.from(docsIn.files ?? []);
+      docsIn.value = '';
+      if (!e || !files.length) return;
+      if (files.some((f) => f.size > 20 * 1024 * 1024)) return void (devNote.textContent = W.docsBig);
+      let key = getToken();
+      if (!key) key = (window.prompt(W.key) ?? '').trim();
+      if (!key) return;
+      devNote.textContent = '…';
+      try {
+        const added = files.map((f) => {
+          const ext = (f.name.match(/\.([a-z0-9]{1,5})$/i)?.[1] ?? 'bin').toLowerCase();
+          const base = f.name.replace(/\.[^.]+$/, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'doc';
+          return { f, name: f.name.replace(/\.[^.]+$/, ''), file: `/docs/${e.id}-${base}.${ext}` };
+        });
+        e.docs = [...(e.docs ?? []), ...added.map((x) => ({ name: x.name, file: x.file }))];
+        const parts = await Promise.all(added.map(async (x) => ({ path: `public${x.file}`, base64: await toBase64(x.f) })));
+        await commitFiles(key, [...parts, { path: 'src/data/calendar.json', text: `${JSON.stringify(data, null, 2)}\n` }], `Calendar: documents for ${e.title}`, added.map((x) => `📄 ${x.name} → 📅 ${e.title}`));
+        devNote.textContent = W.docsSaved;
+        if (!dayBox.hidden) showDay(openDay, openTo);
+      } catch (err) {
+        devNote.textContent = err instanceof Error ? err.message : String(err);
+      }
+    });
+
+    // the place → its country (the flag), found by itself; changed by hand, it stays
+    let countryByHand = false;
+    const found = form.querySelector<HTMLElement>('[data-cf-found]')!;
+    cf('country').addEventListener('change', () => (countryByHand = true));
+    cf('place').addEventListener('change', async () => {
+      const q = cf('place').value.trim();
+      found.textContent = '';
+      if (!q) return;
+      const hit = (await geocode(q, 'hu').catch(() => []))[0];
+      const cc = hit?.country_code?.toUpperCase();
+      if (!cc) return;
+      found.textContent = `📍 ${W.foundCountry.replace('{country}', regionNames.of(cc) ?? cc)}`;
+      if (!countryByHand || !cf('country').value) {
+        fillCountries();
+        cf('country').value = cc;
+      }
     });
     function openForm(e: Ev | null, day = openDay || todayIso) {
       editing = e;
@@ -2115,6 +2368,9 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       cf('place').value = e?.place ?? '';
       fillCountries();
       cf('country').value = e?.country ?? '';
+      countryByHand = !!e?.country;
+      found.textContent = '';
+      cf('tags').value = showTags(e?.tags);
       cf('from').value = e?.from ?? day;
       cf('to').value = e?.to ?? (day === openDay && openTo ? openTo : day);
       cf('note').value = e?.note ?? '';
@@ -2156,6 +2412,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
         ...(cf('note').value.trim() ? { note: cf('note').value.trim() } : {}),
         ...(cf('note_en').value.trim() ? { note_en: cf('note_en').value.trim() } : {}),
         ...(chosenMusic().length ? { music: chosenMusic() } : {}),
+        ...(parseTags(cf('tags').value).length ? { tags: parseTags(cf('tags').value) } : {}),
       };
       const before = data.events;
       data.events = [...data.events.filter((x) => x.id !== item.id), item];

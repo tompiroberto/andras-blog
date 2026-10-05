@@ -1,8 +1,9 @@
 ---
 import Globe from './Globe.astro';
-import { STEPS, stepAt } from '../lib/whereabouts';
+import { STEPS, stepAt, stepText } from '../lib/whereabouts';
 import Icon from './Icon.astro';
-import { type TKey, t, type Lang } from '../i18n';
+import { HTML_LANG, type TKey, t, type Lang } from '../i18n';
+import translations from '../i18n/hu.json';
 import site from '../data/site.json';
 
 interface Props {
@@ -20,8 +21,12 @@ const after = nameAt >= 0 ? title.slice(nameAt + site.owner.length) : '';
 // Only the lead-in is translated; the nicknames are always shown exactly as in site.json
 const nickLead = t(lang, 'hero.nicknames').split(':')[0].trim();
 // where he is: chosen when the page is built, and again in the visitor's browser (it moves on by itself)
-const whereSteps = STEPS.map((st) => ({ from: st.from, text: t(lang, `where.${st.key}` as TKey) }));
-const whereNow = stepAt() ? t(lang, `where.${stepAt()!.key}` as TKey) : t(lang, 'hero.status');
+// a step's text: its own (written in developer mode: Hungarian on the Hungarian page, English elsewhere) or a translated one
+// for the browser too: the translated texts (a copy reads the main site's steps and calendar)
+const whereWords = Object.fromEntries(Object.keys(translations).filter((k) => k.startsWith('where.')).map((k) => [k.slice(6), t(lang, k as TKey)]));
+const whereSteps = STEPS.map((st) => ({ from: st.from, text: stepText(st, lang, whereWords) }));
+const whereNow = stepAt() ? stepText(stepAt()!, lang, whereWords) : t(lang, 'hero.status');
+const whereLive = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
 ---
 
 <section class="hero section" data-lay="hero" aria-labelledby="hero-title">
@@ -46,12 +51,35 @@ const whereNow = stepAt() ? t(lang, `where.${stepAt()!.key}` as TKey) : t(lang, 
 
   <div class="container hero__inner">
     <div class="hero__copy">
-      <p class="pill hero__status" data-where={JSON.stringify(whereSteps)}>
+      <p class="pill hero__status" data-where={JSON.stringify(whereSteps)} data-where-words={JSON.stringify(whereWords)} data-where-lang={lang} data-where-live={whereLive || undefined}>
         <span class="hero__pin" aria-hidden="true">
           <Icon name="map-pin" size={14} />
         </span>
         <span data-where-text>{whereNow}</span>
+        <span class="hero__where-edit" aria-hidden="true">✎</span>
       </p>
+      <!-- developer mode: a click on the pill – where am I now (from now, or from a given time) -->
+      <!-- developer mode: the internet connection says another country – update? -->
+      <p class="where-guess" hidden data-where-guess data-dev-ui>
+        <span data-where-guess-text></span>
+        <button type="button" data-where-guess-yes>✓ {t(lang, 'whereEd.yes')}</button>
+        <button type="button" data-where-guess-no>✕</button>
+      </p>
+      <template data-where-guess-t>{t(lang, 'whereEd.guess')}</template>
+      <form class="where-ed" hidden data-where-form data-dev-ui data-locale={HTML_LANG[lang]}>
+        <strong>📍 {t(lang, 'whereEd.title')}</strong>
+        <label>{t(lang, 'whereEd.country')}
+          <span class="where-ed__country"><img alt="" hidden data-where-flag /><select required data-where-country><option value="">—</option></select></span>
+        </label>
+        <label>🇭🇺 {t(lang, 'whereEd.text')}<input type="text" maxlength="80" required data-where-hu /></label>
+        <label>🇬🇧 English<input type="text" maxlength="80" data-where-en /></label>
+        <label>{t(lang, 'whereEd.from')}<input type="datetime-local" required data-where-from /></label>
+        <small data-where-note></small>
+        <div class="where-ed__actions">
+          <button type="button" data-where-cancel>✕</button>
+          <button type="submit">✓ {t(lang, 'whereEd.save')}</button>
+        </div>
+      </form>
 
       <div class="hero__title-wrap" data-nick>
         <h1 id="hero-title">
@@ -114,6 +142,114 @@ const whereNow = stepAt() ? t(lang, `where.${stepAt()!.key}` as TKey) : t(lang, 
   .hero__status {
     margin: 0 0 24px;
     padding: 6px 16px 6px 6px;
+  }
+  /* developer mode: the pill can be rewritten (a click) */
+  .hero__where-edit {
+    display: none;
+    margin-left: 6px;
+    color: #1f8a3a;
+  }
+  :global(html.dev-mode:not(.dev-preview)) .hero__status {
+    outline: 2px dashed #39d353;
+    outline-offset: 3px;
+    cursor: pointer;
+  }
+  :global(html.dev-mode:not(.dev-preview)) .hero__where-edit {
+    display: inline;
+  }
+  .where-guess {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    max-width: 560px;
+    margin: -12px 0 18px;
+    padding: 10px 12px;
+    border: 2px solid #39d353;
+    border-radius: 12px;
+    background: #0d1117;
+    color: #d6f5d6;
+    font: 13px ui-monospace, Consolas, monospace;
+  }
+  .where-guess[hidden] {
+    display: none;
+  }
+  .where-guess button {
+    padding: 5px 12px;
+    border: 1px solid #39d353;
+    border-radius: 8px;
+    background: #0d1117;
+    color: #39d353;
+    font: inherit;
+    cursor: pointer;
+  }
+  .where-guess [data-where-guess-yes] {
+    background: #39d353;
+    color: #0d1117;
+    font-weight: 800;
+  }
+  .where-ed {
+    position: absolute;
+    z-index: 50;
+    display: grid;
+    gap: 10px;
+    width: min(340px, calc(100vw - 24px));
+    margin-top: -12px;
+    padding: 14px;
+    border: 2px solid #39d353;
+    border-radius: 14px;
+    background: #0d1117;
+    color: #d6f5d6;
+    box-shadow: 0 0 0 4px rgb(57 211 83 / 0.2);
+    font: 13px ui-monospace, Consolas, monospace;
+  }
+  .where-ed[hidden] {
+    display: none;
+  }
+  .where-ed label {
+    display: grid;
+    gap: 4px;
+  }
+  .where-ed input,
+  .where-ed select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: #010409;
+    color: #e6edf3;
+    font: inherit;
+    color-scheme: dark;
+  }
+  .where-ed__country {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .where-ed__country img {
+    width: 30px;
+    height: 20px;
+    border-radius: 3px;
+    object-fit: cover;
+  }
+  .where-ed__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .where-ed button {
+    padding: 7px 14px;
+    border: 1px solid #39d353;
+    border-radius: 8px;
+    background: #0d1117;
+    color: #39d353;
+    font: inherit;
+    cursor: pointer;
+  }
+  .where-ed button[type='submit'] {
+    background: #39d353;
+    color: #0d1117;
+    font-weight: 800;
   }
   .hero__pin {
     position: relative;
@@ -361,12 +497,170 @@ const whereNow = stepAt() ? t(lang, `where.${stepAt()!.key}` as TKey) : t(lang, 
 </script>
 
 <script>
-  // the pill moves on by itself: the last step that has started, in the visitor's own time
+  import { commitFiles, getToken } from '../lib/githubCommit';
+  import { MANUAL, STEPS, stepNow, stepText, timeline, type Step, type Trip } from '../lib/whereabouts';
+
+  // the pill moves on by itself: the last step that has started (set by hand, or a trip of the calendar)
   document.querySelectorAll<HTMLElement>('[data-where]').forEach((pill) => {
-    const steps = JSON.parse(pill.dataset.where ?? '[]') as { from: string; text: string }[];
-    const now = Date.now();
-    const step = steps.filter((st) => Date.parse(st.from) <= now).pop();
-    if (step) pill.querySelector('[data-where-text]')!.textContent = step.text;
+    const words = JSON.parse(pill.dataset.whereWords ?? '{}') as Record<string, string>;
+    const lang = pill.dataset.whereLang ?? 'hu';
+    let list: Step[] = STEPS;
+    const show = () => {
+      const step = stepNow(list);
+      if (step) pill.querySelector('[data-where-text]')!.textContent = stepText(step, lang, words);
+    };
+    show();
+    // the steps set by hand (the editor adds to them); a copy on another host: the main site's, and its calendar
+    let raw: { _comment?: string; steps: Step[] } | null = { steps: MANUAL };
+    const site = pill.dataset.whereLive ?? '';
+    const getJson = <T,>(path: string) => fetch(site + path, { cache: 'no-cache' }).then((r) => (r.ok ? (r.json() as Promise<T>) : Promise.reject(new Error(String(r.status)))));
+    const loaded = Promise.all([getJson<{ _comment?: string; steps: Step[] }>('/whereabouts.json'), getJson<{ events: Trip[] }>('/calendar.json')])
+      .then(([w, c]) => {
+        raw = w;
+        list = timeline(w.steps, c.events);
+        show();
+      })
+      .catch(() => {});
+    const textOf = (st: Step) => stepText(st, lang, words);
+
+    // ---- developer mode: a click on the pill rewrites it ----
+    const form = document.querySelector<HTMLFormElement>('[data-where-form]');
+    if (!form) return;
+    const isDev = () => document.documentElement.classList.contains('dev-mode') && !document.documentElement.classList.contains('dev-preview');
+    const sel = form.querySelector<HTMLSelectElement>('[data-where-country]')!;
+    const flag = form.querySelector<HTMLImageElement>('[data-where-flag]')!;
+    const inHu = form.querySelector<HTMLInputElement>('[data-where-hu]')!;
+    const inEn = form.querySelector<HTMLInputElement>('[data-where-en]')!;
+    const inFrom = form.querySelector<HTMLInputElement>('[data-where-from]')!;
+    const note = form.querySelector<HTMLElement>('[data-where-note]')!;
+    const huNames = new Intl.DisplayNames(['hu'], { type: 'region' });
+    const enNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    const pageNames = new Intl.DisplayNames([form.dataset.locale || 'hu'], { type: 'region' });
+    const name = (n: Intl.DisplayNames, c: string) => {
+      try {
+        return n.of(c) ?? c;
+      } catch {
+        return c;
+      }
+    };
+    let filled = false;
+    const fill = () => {
+      if (filled) return;
+      filled = true;
+      const codes: string[] = [];
+      for (let a = 65; a <= 90; a++) for (let b = 65; b <= 90; b++) codes.push(String.fromCharCode(a, b));
+      codes
+        .map((c) => [c, name(pageNames, c)] as const)
+        .filter(([c, n]) => n !== c && !/^(Unknown|ismeretlen)/i.test(n) && !['EU', 'EZ', 'UN', 'QO', 'XA', 'XB', 'ZZ'].includes(c))
+        .sort((a, b) => a[1].localeCompare(b[1], form.dataset.locale))
+        .forEach(([c, n]) => sel.add(new Option(n, c)));
+    };
+    // the schema: choosing a country writes the texts (they can be changed)
+    sel.addEventListener('change', () => {
+      const c = sel.value;
+      flag.hidden = !c;
+      if (c) flag.src = `/flags/${c.toLowerCase()}.svg`;
+      if (!c) return;
+      inHu.value = c === 'HU' ? 'Jelenleg itthon, Magyarországon' : `Jelenleg itt: ${name(huNames, c)}`;
+      inEn.value = c === 'HU' ? 'Back home in Hungary' : `Currently in ${name(enNames, c)}`;
+    });
+    const localNow = () => {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    };
+    pill.addEventListener('click', (e) => {
+      if (!isDev()) return;
+      e.preventDefault();
+      fill();
+      const cur = stepNow(list);
+      sel.value = cur?.country ?? '';
+      flag.hidden = !sel.value;
+      if (sel.value) flag.src = `/flags/${sel.value.toLowerCase()}.svg`;
+      inHu.value = cur?.text ?? pill.querySelector('[data-where-text]')!.textContent ?? '';
+      inEn.value = cur?.text_en ?? '';
+      inFrom.value = localNow();
+      note.textContent = '';
+      form.hidden = false;
+      sel.focus();
+    });
+    form.querySelector('[data-where-cancel]')!.addEventListener('click', () => (form.hidden = true));
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await loaded;
+      if (!raw) return void (note.textContent = '⚠ whereabouts.json');
+      let key = getToken();
+      if (!key) key = (window.prompt('GitHub key') ?? '').trim();
+      if (!key) return;
+      // the time with its own offset (e.g. +02:00), like the other steps
+      const at = new Date(inFrom.value);
+      const off = -at.getTimezoneOffset();
+      const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, '0');
+      const from = `${inFrom.value}:00${off >= 0 ? '+' : '-'}${pad(off / 60)}:${pad(off % 60)}`;
+      const step: Step = { from, country: sel.value, text: inHu.value.trim(), ...(inEn.value.trim() ? { text_en: inEn.value.trim() } : {}) };
+      // a new step from that moment; a later one that was planned stays
+      const steps = [...raw.steps.filter((st) => Date.parse(st.from) !== Date.parse(from)), step].sort((a, b) => Date.parse(a.from) - Date.parse(b.from));
+      const next = { ...raw, steps };
+      try {
+        note.textContent = '…';
+        await commitFiles(key, [{ path: 'src/data/whereabouts.json', text: `${JSON.stringify(next, null, 2)}\n` }], 'Where am I now: changed on the site', [`📍 ${step.text}`]);
+        raw = next;
+        list = timeline(steps, (await getJson<{ events: Trip[] }>('/calendar.json').catch(() => ({ events: [] as Trip[] }))).events);
+        show();
+        note.textContent = '✓';
+        window.setTimeout(() => (form.hidden = true), 800);
+      } catch (err) {
+        note.textContent = err instanceof Error ? err.message : String(err);
+      }
+    });
+
+    // ---- developer mode switched on: the internet connection's country (an e-mail address says nothing
+    // about where one is); when it differs from the pill, one click updates it. Asked once a day per country.
+    const guess = document.querySelector<HTMLElement>('[data-where-guess]');
+    const guessT = document.querySelector<HTMLTemplateElement>('[data-where-guess-t]')?.content.textContent ?? '';
+    let found = '';
+    const askedKey = () => `andras-where-asked-${new Date().toISOString().slice(0, 10)}-${found}`;
+    async function check() {
+      if (!guess || !isDev()) return;
+      try {
+        const d = (await (await fetch('https://get.geojs.io/v1/ip/geo.json')).json()) as { country_code?: string; city?: string };
+        found = (d.country_code ?? '').toUpperCase();
+        const cur = stepNow(list);
+        if (!found || !cur || cur.country === found) return;
+        try {
+          if (localStorage.getItem(askedKey())) return;
+        } catch {
+          /* storage unavailable */
+        }
+        guess.querySelector('[data-where-guess-text]')!.textContent = `📍 ${guessT.replace('{country}', `${name(pageNames, found)}${d.city ? ` (${d.city})` : ''}`)}`;
+        guess.hidden = false;
+      } catch {
+        /* no answer: nothing to ask */
+      }
+    }
+    const remember = () => {
+      try {
+        localStorage.setItem(askedKey(), '1');
+      } catch {
+        /* storage unavailable */
+      }
+      guess!.hidden = true;
+    };
+    guess?.querySelector('[data-where-guess-no]')!.addEventListener('click', remember);
+    guess?.querySelector('[data-where-guess-yes]')!.addEventListener('click', () => {
+      remember();
+      // the editor, filled in: one more click saves it
+      pill.click();
+      sel.value = found;
+      sel.dispatchEvent(new Event('change'));
+    });
+    if (new URLSearchParams(location.search).get('where') === 'edit' && isDev()) window.setTimeout(() => pill.click(), 400);
+    let wasDev = isDev();
+    if (wasDev) void loaded.then(check);
+    new MutationObserver(() => {
+      if (isDev() && !wasDev) void loaded.then(check);
+      wasDev = isDev();
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   });
 </script>
 

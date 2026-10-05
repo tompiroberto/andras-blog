@@ -59,6 +59,13 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
           ))
         }
       </p>
+      <p class="music__sort" data-music-sort hidden={allTags.length === 0}>
+        <span>{t(lang, 'music.sortBy')}</span>
+        <button type="button" class="tagchip is-on" data-sort="tags">#️⃣ {t(lang, 'music.byTag')}</button>
+        <button type="button" class="tagchip" data-sort="new">📅 {t(lang, 'music.byDate')}</button>
+      </p>
+      <template data-music-group><li class="music__group"><span></span></li></template>
+      <template data-music-untagged>{t(lang, 'gal.untagged')}</template>
       <ol class="music__list" data-music-list data-live={live}>
         {
           tracks.map((tr, i) => (
@@ -232,6 +239,26 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
     border-radius: 50%;
     background: var(--yellow);
     font-size: 15px;
+  }
+  .music__sort {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0 0;
+    font-weight: 700;
+  }
+  .music__sort[hidden] {
+    display: none;
+  }
+  .music__group {
+    grid-column: 1 / -1;
+    margin: 10px 0 -4px;
+    font: 800 clamp(18px, 2vw, 22px) / 1.2 var(--font-heading);
+    color: var(--violet);
+  }
+  .music__group[hidden] {
+    display: none;
   }
   /* small tiles side by side */
   .music__list {
@@ -473,6 +500,58 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
 <script>
   import { commitFiles, getToken } from '../../lib/githubCommit';
 
+  // sorting: grouped by hashtag (each track under its first one), or newest first
+  const listEl = document.querySelector<HTMLElement>('[data-music-list]');
+  const groupTpl = document.querySelector<HTMLTemplateElement>('[data-music-group]');
+  const untagged = document.querySelector<HTMLTemplateElement>('[data-music-untagged]')?.content.textContent ?? '';
+  let sortMode: 'tags' | 'new' = 'tags';
+  function arrange() {
+    if (!listEl || !groupTpl) return;
+    listEl.querySelectorAll('.music__group').forEach((g) => g.remove());
+    const tracks = Array.from(listEl.querySelectorAll<HTMLElement>('[data-track]'));
+    const first = (tr: HTMLElement) => (tr.dataset.tags ?? '').split(',').filter(Boolean)[0] ?? '';
+    const date = (tr: HTMLElement) => tr.querySelector('time')?.getAttribute('datetime') ?? '';
+    tracks.sort((a, b) => date(b).localeCompare(date(a)));
+    if (sortMode === 'tags') {
+      // the most used hashtags first, the untagged ones at the end
+      const count = new Map<string, number>();
+      for (const tr of tracks) count.set(first(tr), (count.get(first(tr)) ?? 0) + 1);
+      const rank = (t: string) => (t ? -(count.get(t) ?? 0) : 1);
+      tracks.sort((a, b) => rank(first(a)) - rank(first(b)) || first(a).localeCompare(first(b)));
+      let last: string | null = null;
+      for (const tr of tracks) {
+        if (first(tr) !== last) {
+          last = first(tr);
+          const h = groupTpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+          h.dataset.group = last;
+          h.querySelector('span')!.textContent = last ? `#${last}` : untagged;
+          listEl.append(h);
+        }
+        listEl.append(tr);
+      }
+    } else tracks.forEach((tr) => listEl.append(tr));
+    headers();
+  }
+  /** a group's title shows only when some of its tracks do */
+  function headers() {
+    listEl?.querySelectorAll<HTMLElement>('.music__group').forEach((h) => {
+      let n = h.nextElementSibling as HTMLElement | null;
+      let any = false;
+      while (n && !n.classList.contains('music__group')) {
+        if (!n.hidden) any = true;
+        n = n.nextElementSibling as HTMLElement | null;
+      }
+      h.hidden = !any;
+    });
+  }
+  document.querySelector('[data-music-sort]')?.addEventListener('click', (e) => {
+    const b = (e.target as Element).closest<HTMLElement>('[data-sort]');
+    if (!b) return;
+    sortMode = b.dataset.sort as 'tags' | 'new';
+    document.querySelectorAll('[data-sort]').forEach((x) => x.classList.toggle('is-on', x === b));
+    arrange();
+  });
+
   // hashtag filter
   const tagBox = document.querySelector<HTMLElement>('[data-music-tags]');
   tagBox?.addEventListener('click', (e) => {
@@ -482,6 +561,7 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
     document.querySelectorAll('.plcard').forEach((x) => x.classList.remove('is-on'));
     const tag = b.dataset.tag;
     document.querySelectorAll<HTMLElement>('[data-track]').forEach((tr) => (tr.hidden = !!tag && !(tr.dataset.tags ?? '').split(',').includes(tag)));
+    headers();
   });
 
   // playlists: every calendar event with music; a click shows its songs and plays them one after the other
@@ -541,6 +621,8 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
     });
     // in the playlist's order
     if (ids) shown.sort((a, c) => ids.indexOf(a.dataset.id!) - ids.indexOf(c.dataset.id!)).forEach((tr) => tr.parentElement!.append(tr));
+    else arrange();
+    headers();
     if (on) shown[0]?.querySelector<HTMLButtonElement>('[data-track-play]')?.click();
   });
 
@@ -595,6 +677,7 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
     : Promise.resolve();
 
   void fromMain.then(async () => {
+    arrange();
     startPlayer();
     let events = JSON.parse(document.querySelector('[data-pl-events]')?.textContent || '[]') as PlEvent[];
     if (liveSite)

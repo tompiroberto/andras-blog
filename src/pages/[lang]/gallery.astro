@@ -67,10 +67,24 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
         )
       }
 
+      <!-- folders: one for each hashtag (and the empty ones made in developer mode) -->
+      <div class="gal-folders" data-gal-folders>
+        <div class="gal-folders__row" data-gal-folder-row></div>
+        <form class="gal-folders__new" hidden data-gal-newfolder>
+          <span>📁</span>
+          <input type="text" maxlength="40" required placeholder={t(lang, 'gal.folderName')} data-gal-newfolder-in />
+          <button type="submit">✓</button>
+          <button type="button" data-gal-newfolder-x>✕</button>
+        </form>
+        <p class="gal-folders__empty" hidden data-gal-folder-empty>{t(lang, 'gal.folderEmpty')}</p>
+      </div>
+      <template data-gal-t-all>{t(lang, 'gal.all')}</template>
+      <template data-gal-t-newfolder>{t(lang, 'gal.newFolder')}</template>
+      <template data-gal-t-untagged>{t(lang, 'gal.untagged')}</template>
       <ul class="gallery__grid" data-gallery-grid data-live={import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefined} data-lang={lang}>
         {
           photos.map((p, i) => (
-            <li class="gallery__item" data-key={p.key} data-files={p.files ? JSON.stringify(p.files) : undefined}>
+            <li class="gallery__item" data-key={p.key} data-tags={(p.tags ?? []).join(',')} data-files={p.files ? JSON.stringify(p.files) : undefined}>
               <button type="button" class="gallery__open" data-index={i} data-large={p.large} data-video={p.video ?? ''} data-caption={p.caption} data-place={p.place ?? ''} data-when={p.when} data-post={p.post ? localePath(lang, `posts/${p.post}`) : ''}>
                 {p.video ? (
                   <span class="gallery__video">
@@ -89,6 +103,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
                 <button type="button" data-gal-del title={t(lang, 'gal.delete')} aria-label={t(lang, 'gal.delete')}>🗑</button>
               </span>
               <p class="gallery__caption">{p.caption}</p>
+              <p class="gallery__tags" data-gal-tags>{(p.tags ?? []).map((x) => `#${x}`).join(' ')}</p>
               {(p.place || p.when) && (
                 <p class="gallery__meta">
                   {p.place && (
@@ -126,10 +141,23 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
     <textarea rows="3" maxlength="300" placeholder={t(lang, 'upload.caption')} data-gal-in-caption></textarea>
     <input type="text" maxlength="80" placeholder={t(lang, 'upload.place')} data-gal-in-place />
     <input type="text" maxlength="60" placeholder={t(lang, 'upload.coords')} data-gal-in-coords />
+    <input type="text" maxlength="200" placeholder={t(lang, 'upload.tags')} data-gal-in-tags />
     <small data-gal-note></small>
     <div><button type="button" data-gal-cancel>✕</button><button type="submit">{t(lang, 'gal.save')}</button></div>
   </form>
   <script type="application/json" data-gal-data set:html={JSON.stringify(gallery)} />
+  <template data-gal-tile>
+    <li class="gallery__item">
+      <button type="button" class="gallery__open"></button>
+      <span class="gallery__dev">
+        <button type="button" data-gal-place title={t(lang, 'gal.edit')} aria-label={t(lang, 'gal.edit')}>✎</button>
+        <button type="button" data-gal-del title={t(lang, 'gal.delete')} aria-label={t(lang, 'gal.delete')}>🗑</button>
+      </span>
+      <p class="gallery__caption"></p>
+      <p class="gallery__tags" data-gal-tags></p>
+      <p class="gallery__meta"></p>
+    </li>
+  </template>
   <template data-gal-t-confirmdel>{t(lang, 'gal.confirmDelete')}</template>
   <template data-gal-t-saved>{t(lang, 'gal.saved')}</template>
   <template data-gal-t-nogeo>{t(lang, 'upload.noGeo')}</template>
@@ -186,6 +214,115 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
     background: #0d1117;
     font-size: 15px;
     cursor: pointer;
+  }
+  .gallery__tags {
+    margin: 2px 0 0;
+    color: var(--violet);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .gallery__tags:empty,
+  .gallery__meta:empty {
+    display: none;
+  }
+  .gallery__item[hidden] {
+    display: none;
+  }
+  /* folders */
+  .gal-folders {
+    margin: 22px 0 6px;
+  }
+  .gal-folders__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .gal-folders__row :global(.gal-folder) {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px 5px 5px;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 150ms ease;
+  }
+  .gal-folders__row :global(.gal-folder:hover) {
+    transform: translateY(-2px);
+  }
+  .gal-folders__row :global(.gal-folder.is-on) {
+    background: var(--yellow);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .gal-folders__row :global(.gal-folder__cover) {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    overflow: hidden;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--violet-tint, #eee);
+    font-size: 18px;
+  }
+  .gal-folders__row :global(.gal-folder__cover img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .gal-folders__row :global(.gal-folder small) {
+    color: var(--muted);
+  }
+  .gal-folders__row :global(.gal-folder__x) {
+    display: none;
+    margin-left: 2px;
+    color: #c0392b;
+  }
+  :global(html.dev-mode:not(.dev-preview)) .gal-folders__row :global(.gal-folder__x) {
+    display: inline;
+  }
+  .gal-folders__row :global(.gal-folder--new) {
+    display: none;
+    padding: 5px 14px;
+    border-style: dashed;
+    border-color: #1f8a3a;
+    color: #1f8a3a;
+  }
+  :global(html.dev-mode:not(.dev-preview)) .gal-folders__row :global(.gal-folder--new) {
+    display: inline-flex;
+  }
+  .gal-folders__new {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .gal-folders__new[hidden],
+  .gal-folders__empty[hidden] {
+    display: none;
+  }
+  .gal-folders__new input {
+    padding: 7px 10px;
+    border: 2px solid #1f8a3a;
+    border-radius: 10px;
+    font: inherit;
+  }
+  .gal-folders__new button {
+    padding: 6px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--surface, #fff);
+    font: inherit;
+    cursor: pointer;
+  }
+  .gal-folders__empty {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-weight: 700;
   }
   .gallery__item.is-removed {
     opacity: 0.3;
@@ -639,18 +776,109 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
 
 <script>
   /*
-   * Developer mode: 📍 gives a picture a place (a name or coordinates → a pin on the gallery map and the
-   * world map), 🗑 takes it out of the gallery: an uploaded photo is deleted, other pictures of the site
-   * are hidden from the gallery (src/data/gallery.json). Saved to GitHub; 🚀 Publish puts it online.
+   * Folders (a hashtag each), developer mode (✎: description, place, hashtags; 🗑: out of the gallery;
+   * ＋ new folder) and, on a copy on another host, the pictures uploaded on the main site since then.
+   * Saved to GitHub (src/data/gallery.json); 🚀 Publish puts it online.
    */
   import { commitFiles, getToken } from '../../lib/githubCommit';
   import { geocode } from '../../lib/geocode';
+  import { parseTags, showTags } from '../../lib/tags';
 
+  type Meta = { caption?: string; place?: string; lat?: number; lng?: number; tags?: string[] };
+  const grid = document.querySelector<HTMLElement>('[data-gallery-grid]');
   const form = document.querySelector<HTMLFormElement>('[data-gal-form]');
   const raw = document.querySelector('[data-gal-data]');
-  if (form && raw) {
-    const data = JSON.parse(raw.textContent || '{}') as { hidden: string[]; meta: Record<string, { caption?: string; place?: string; lat?: number; lng?: number }> };
+  if (grid && form && raw) {
+    const data = JSON.parse(raw.textContent || '{}') as { hidden: string[]; meta: Record<string, Meta>; folders?: string[] };
+    data.folders ??= [];
     const tx = (n: string) => document.querySelector<HTMLTemplateElement>(`[data-gal-t-${n}]`)?.content.textContent ?? '';
+    const tilesAll = () => Array.from(grid.querySelectorAll<HTMLElement>('.gallery__item:not(.is-removed)')).filter((li) => !li.dataset.gone);
+    const tagsOf = (li: HTMLElement) => (li.dataset.tags ?? '').split(',').filter(Boolean);
+
+    // ---- folders ----
+    const row = document.querySelector<HTMLElement>('[data-gal-folder-row]')!;
+    const newForm = document.querySelector<HTMLFormElement>('[data-gal-newfolder]')!;
+    const emptyNote = document.querySelector<HTMLElement>('[data-gal-folder-empty]')!;
+    let open = '';
+    function applyFolder() {
+      let shown = 0;
+      for (const li of tilesAll()) {
+        li.hidden = !!open && !tagsOf(li).includes(open);
+        if (!li.hidden) shown++;
+      }
+      emptyNote.hidden = !open || shown > 0;
+      row.querySelectorAll<HTMLElement>('[data-folder]').forEach((b) => b.classList.toggle('is-on', b.dataset.folder === open));
+    }
+    function renderFolders() {
+      const count = new Map<string, number>();
+      const cover = new Map<string, string>();
+      for (const li of tilesAll())
+        for (const tg of tagsOf(li)) {
+          count.set(tg, (count.get(tg) ?? 0) + 1);
+          if (!cover.has(tg)) {
+            const img = li.querySelector<HTMLImageElement>('.gallery__open img');
+            if (img) cover.set(tg, img.currentSrc || img.src);
+          }
+        }
+      const names = [...new Set([...data.folders!, ...count.keys()])].sort((a, b) => (count.get(b) ?? 0) - (count.get(a) ?? 0) || a.localeCompare(b));
+      const chip = (name: string, label: string, n: number, pic?: string) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'gal-folder';
+        b.dataset.folder = name;
+        const c = document.createElement('span');
+        c.className = 'gal-folder__cover';
+        if (pic) c.append(Object.assign(document.createElement('img'), { src: pic, alt: '' }));
+        else c.textContent = name ? '📁' : '🗂';
+        const s = document.createElement('span');
+        s.append(label, ' ');
+        s.append(Object.assign(document.createElement('small'), { textContent: `(${n})` }));
+        b.append(c, s);
+        // developer mode: an empty folder made by hand can go
+        if (name && !count.get(name) && data.folders!.includes(name)) {
+          const x = Object.assign(document.createElement('span'), { className: 'gal-folder__x', textContent: '✕', title: '✕' });
+          x.addEventListener('click', async (ev) => {
+            ev.stopPropagation();
+            data.folders = data.folders!.filter((f) => f !== name);
+            if (open === name) open = '';
+            renderFolders();
+            await save([`🗑 📁 ${name}`]).catch(() => {});
+          });
+          b.append(x);
+        }
+        return b;
+      };
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'gal-folder gal-folder--new';
+      add.textContent = `＋ ${tx('newfolder')}`;
+      add.addEventListener('click', () => {
+        newForm.hidden = false;
+        newForm.querySelector('input')!.focus();
+      });
+      row.replaceChildren(chip('', tx('all'), tilesAll().length), ...names.map((n) => chip(n, `#${n}`, count.get(n) ?? 0, cover.get(n))), add);
+      applyFolder();
+    }
+    row.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest<HTMLElement>('[data-folder]');
+      if (!b) return;
+      open = b.dataset.folder ?? '';
+      applyFolder();
+    });
+    newForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = parseTags(newForm.querySelector('input')!.value)[0];
+      if (!name) return;
+      if (!data.folders!.includes(name)) data.folders!.push(name);
+      newForm.hidden = true;
+      newForm.reset();
+      open = name;
+      renderFolders();
+      await save([`📁 ${name}`]).catch((err) => err instanceof Error && err.message !== 'no key' && window.alert(err.message));
+    });
+    newForm.querySelector('[data-gal-newfolder-x]')!.addEventListener('click', () => (newForm.hidden = true));
+
+    // ---- developer mode: ✎ and 🗑 (for every tile, also those that arrive later) ----
     const key = () => {
       let k = getToken();
       if (!k) k = (window.prompt(tx('key')) ?? '').trim();
@@ -664,24 +892,27 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
     const inPlace = form.querySelector<HTMLInputElement>('[data-gal-in-place]')!;
     const inCaption = form.querySelector<HTMLTextAreaElement>('[data-gal-in-caption]')!;
     const inCoords = form.querySelector<HTMLInputElement>('[data-gal-in-coords]')!;
+    const inTags = form.querySelector<HTMLInputElement>('[data-gal-in-tags]')!;
     const note = form.querySelector<HTMLElement>('[data-gal-note]')!;
     let item: HTMLElement | null = null;
 
-    document.querySelectorAll<HTMLElement>('.gallery__item').forEach((li) => {
-      li.querySelector('[data-gal-place]')!.addEventListener('click', (e) => {
+    grid.addEventListener('click', async (e) => {
+      const li = (e.target as Element).closest<HTMLElement>('.gallery__item');
+      if (!li) return;
+      if ((e.target as Element).closest('[data-gal-place]')) {
         item = li;
         const m = data.meta[li.dataset.key!] ?? {};
         inCaption.value = li.querySelector('.gallery__open')?.getAttribute('data-caption') ?? '';
         inPlace.value = m.place ?? li.querySelector('.gallery__open')?.getAttribute('data-place') ?? '';
         inCoords.value = m.lat !== undefined && m.lng !== undefined ? `${m.lat}, ${m.lng}` : '';
+        inTags.value = showTags(tagsOf(li));
         note.textContent = '';
-        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const r = ((e.target as Element).closest('[data-gal-place]') as HTMLElement).getBoundingClientRect();
         form.hidden = false;
         form.style.left = `${Math.max(12, Math.min(window.innerWidth - form.offsetWidth - 12, r.right - form.offsetWidth))}px`;
-        form.style.top = `${Math.min(window.innerHeight - form.offsetHeight - 12, r.bottom + 8)}px`;
+        form.style.top = `${Math.max(12, Math.min(window.innerHeight - form.offsetHeight - 12, r.bottom + 8))}px`;
         inCaption.focus();
-      });
-      li.querySelector('[data-gal-del]')!.addEventListener('click', async () => {
+      } else if ((e.target as Element).closest('[data-gal-del]')) {
         const caption = li.querySelector('.gallery__open')?.getAttribute('data-caption') ?? '';
         if (!window.confirm(tx('confirmdel').replace('{name}', caption))) return;
         const files = li.dataset.files ? (JSON.parse(li.dataset.files) as string[]) : null;
@@ -696,10 +927,11 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
             await save([`🗑 📷 ${caption}`]);
           }
           li.classList.add('is-removed');
+          renderFolders();
         } catch (err) {
           if (err instanceof Error && err.message !== 'no key') window.alert(err.message);
         }
-      });
+      }
     });
     form.querySelector('[data-gal-cancel]')!.addEventListener('click', () => (form.hidden = true));
     form.addEventListener('submit', async (e) => {
@@ -708,6 +940,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
       const k = item.dataset.key!;
       const place = inPlace.value.trim();
       const caption = inCaption.value.trim();
+      const tags = parseTags(inTags.value);
       const before = item.querySelector('.gallery__open')?.getAttribute('data-place') ?? '';
       const m = inCoords.value.trim().match(/^(-?\d{1,2}(?:[.,]\d+)?)\s*[,; ]\s*(-?\d{1,3}(?:[.,]\d+)?)$/);
       let lat: number | undefined;
@@ -726,94 +959,94 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
         ...(caption ? { caption } : {}),
         ...(place ? { place } : {}),
         ...(lat !== undefined ? { lat, lng } : old.lat !== undefined && place === before ? { lat: old.lat, lng: old.lng } : {}),
+        tags,
       };
       try {
-        await save([`✎ 📷 ${caption}${place ? ` · 📍 ${place}` : ''}`]);
+        await save([`✎ 📷 ${caption}${place ? ` · 📍 ${place}` : ''}${tags.length ? ` · ${showTags(tags)}` : ''}`]);
         // show it at once
-        const open = item.querySelector<HTMLElement>('.gallery__open');
-        if (open) {
-          open.dataset.caption = caption;
-          open.dataset.place = place;
+        const openBtn = item.querySelector<HTMLElement>('.gallery__open');
+        if (openBtn) {
+          openBtn.dataset.caption = caption;
+          openBtn.dataset.place = place;
         }
         const cap = item.querySelector('.gallery__caption');
         if (cap && caption) cap.textContent = caption;
+        item.dataset.tags = tags.join(',');
+        const tagLine = item.querySelector('[data-gal-tags]');
+        if (tagLine) tagLine.textContent = showTags(tags);
+        renderFolders();
         note.textContent = tx('saved');
         window.setTimeout(() => (form.hidden = true), 900);
       } catch (err) {
         if (err instanceof Error && err.message !== 'no key') note.textContent = err.message;
       }
     });
-  }
-</script>
 
-<script>
-  /*
-   * A copy of the site on another host: the gallery also shows what was uploaded on the main site since
-   * the copy was made (and leaves out what was removed there) – read from the main site's /gallery.json.
-   */
-  const grid = document.querySelector<HTMLElement>('[data-gallery-grid][data-live]');
-  if (grid) {
-    const live = grid.dataset.live!;
-    const fmt = new Intl.DateTimeFormat(document.documentElement.lang || 'hu', { year: 'numeric', month: 'long', day: 'numeric' });
-    type Item = { key: string; caption: string; place: string; date: string; post: string; video: string; large: string; thumb: string };
-    fetch(`${live}/gallery.json`, { cache: 'no-cache' })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(({ items }: { items: Item[] }) => {
-        const keys = new Set(items.map((x) => x.key));
-        // removed on the main site
-        grid.querySelectorAll<HTMLElement>('.gallery__item').forEach((li) => {
-          if (li.dataset.key && !keys.has(li.dataset.key)) li.hidden = true;
-        });
-        const have = new Set(Array.from(grid.querySelectorAll<HTMLElement>('.gallery__item')).map((li) => li.dataset.key));
-        const lang = grid.dataset.lang ?? 'hu';
-        const fresh = items.filter((x) => !have.has(x.key));
-        for (const x of fresh.reverse()) {
-          const li = document.createElement('li');
-          li.className = 'gallery__item';
-          li.dataset.key = x.key;
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'gallery__open';
-          const when = x.date ? fmt.format(new Date(x.date)) : '';
-          Object.assign(b.dataset, {
-            large: x.large ? live + x.large : '',
-            video: x.video ? live + x.video : '',
-            caption: x.caption,
-            place: x.place,
-            when,
-            post: x.post ? `${live}/${lang}/posts/${x.post}/` : '',
+    // ---- a copy on another host: the main site's pictures (and folders) ----
+    const live = grid.dataset.live;
+    if (live) {
+      const fmt = new Intl.DateTimeFormat(document.documentElement.lang || 'hu', { year: 'numeric', month: 'long', day: 'numeric' });
+      const tileTpl = document.querySelector<HTMLTemplateElement>('[data-gal-tile]')!;
+      type Item = { key: string; caption: string; place: string; date: string; post: string; video: string; large: string; thumb: string; tags?: string[] };
+      fetch(`${live}/gallery.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then(({ items, folders }: { items: Item[]; folders?: string[] }) => {
+          const byKey = new Map(items.map((x) => [x.key, x]));
+          // removed on the main site; hashtags as there
+          grid.querySelectorAll<HTMLElement>('.gallery__item').forEach((li) => {
+            const x = li.dataset.key ? byKey.get(li.dataset.key) : undefined;
+            if (!x) {
+              li.hidden = true;
+              li.dataset.gone = '1';
+              return;
+            }
+            li.dataset.tags = (x.tags ?? []).join(',');
+            const tagLine = li.querySelector('[data-gal-tags]');
+            if (tagLine) tagLine.textContent = showTags(x.tags);
           });
-          if (x.video) {
-            const v = document.createElement('video');
-            v.src = `${live}${x.video}#t=0.5`;
-            v.preload = 'metadata';
-            v.muted = true;
-            v.playsInline = true;
-            v.style.cssText = 'display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#000';
-            b.append(v);
-          } else {
-            const img = document.createElement('img');
-            img.src = live + x.thumb;
-            img.alt = x.caption;
-            img.loading = 'lazy';
-            b.append(img);
+          const have = new Set(Array.from(grid.querySelectorAll<HTMLElement>('.gallery__item')).map((li) => li.dataset.key));
+          const lang = grid.dataset.lang ?? 'hu';
+          for (const x of items.filter((y) => !have.has(y.key)).reverse()) {
+            const li = tileTpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+            li.dataset.key = x.key;
+            li.dataset.tags = (x.tags ?? []).join(',');
+            const b = li.querySelector<HTMLElement>('.gallery__open')!;
+            const when = x.date ? fmt.format(new Date(x.date)) : '';
+            Object.assign(b.dataset, {
+              large: x.large ? live + x.large : '',
+              video: x.video ? live + x.video : '',
+              caption: x.caption,
+              place: x.place,
+              when,
+              post: x.post ? `${live}/${lang}/posts/${x.post}/` : '',
+            });
+            if (x.video) {
+              const v = document.createElement('video');
+              v.src = `${live}${x.video}#t=0.5`;
+              v.preload = 'metadata';
+              v.muted = true;
+              v.playsInline = true;
+              v.style.cssText = 'display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#000';
+              b.append(v);
+            } else {
+              const img = document.createElement('img');
+              img.src = live + x.thumb;
+              img.alt = x.caption;
+              img.loading = 'lazy';
+              b.append(img);
+            }
+            li.querySelector('.gallery__caption')!.textContent = x.caption;
+            li.querySelector('[data-gal-tags]')!.textContent = showTags(x.tags);
+            li.querySelector('.gallery__meta')!.textContent = [x.place && `📍 ${x.place}`, when].filter(Boolean).join(' · ');
+            grid.prepend(li);
           }
-          const cap = document.createElement('p');
-          cap.className = 'gallery__caption';
-          cap.textContent = x.caption;
-          li.append(b, cap);
-          if (x.place || when) {
-            const meta = document.createElement('p');
-            meta.className = 'gallery__meta';
-            meta.textContent = [x.place && `📍 ${x.place}`, when].filter(Boolean).join(' · ');
-            li.append(meta);
-          }
-          grid.prepend(li);
-        }
-        const empty = document.querySelector<HTMLElement>('[data-gallery-empty]');
-        if (empty) empty.hidden = !!grid.querySelector('.gallery__item:not([hidden])');
-      })
-      .catch((err) => console.warn('[gallery] the main site could not be reached', err));
+          data.folders = [...new Set([...(folders ?? []), ...data.folders!])];
+          renderFolders();
+          const empty = document.querySelector<HTMLElement>('[data-gallery-empty]');
+          if (empty) empty.hidden = !!grid.querySelector('.gallery__item:not([hidden])');
+        })
+        .catch((err) => console.warn('[gallery] the main site could not be reached', err));
+    }
+    renderFolders();
   }
 </script>
-

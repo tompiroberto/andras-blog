@@ -51,6 +51,7 @@ const { lang } = Astro.props;
         <input class="upl__caption" type="text" maxlength="200" placeholder={t(lang, 'upload.caption')} aria-label={t(lang, 'upload.caption')} />
         <input class="upl__place" type="text" maxlength="80" placeholder={t(lang, 'upload.place')} aria-label={t(lang, 'upload.place')} />
         <input class="upl__coords" type="text" inputmode="decimal" maxlength="60" placeholder={t(lang, 'upload.coords')} aria-label={t(lang, 'upload.coords')} />
+        <input class="upl__tags" type="text" maxlength="200" placeholder={t(lang, 'upload.tags')} aria-label={t(lang, 'upload.tags')} />
         <span class="upl__geo" data-geo></span>
       </div>
       <button type="button" class="upl__remove" aria-label={t(lang, 'upload.remove')} title={t(lang, 'upload.remove')}><Icon name="trash-2" size={16} /></button>
@@ -230,6 +231,7 @@ const { lang } = Astro.props;
 
 <script>
   import { commitFiles, shrinkToJpeg, slugify, wireTokenField, type NewFile } from '../lib/githubCommit';
+  import { parseTags } from '../lib/tags';
   import { geocode, reverseGeocode } from '../lib/geocode';
 
   const dialog = document.querySelector<HTMLDialogElement>('[data-upload]');
@@ -359,7 +361,7 @@ const { lang } = Astro.props;
     };
 
     // opened from the world map (a city / a search): the new photos belong to that place
-    let preset: { place?: string; lat?: number; lng?: number; post?: string; event?: string } | null = null;
+    let preset: { place?: string; lat?: number; lng?: number; post?: string; event?: string; tags?: string[]; date?: string } | null = null;
     // videos go up as they are (GitHub takes up to 100 MB; small ones spare Netlify's traffic)
     const VIDEO_MAX = 40 * 1024 * 1024;
     const toBase64 = (file: File) =>
@@ -370,7 +372,9 @@ const { lang } = Astro.props;
         r.readAsDataURL(file);
       });
     const open = (e?: Event) => {
-      preset = (e as CustomEvent<{ place?: string; lat?: number; lng?: number; post?: string; event?: string }> | undefined)?.detail ?? null;
+      preset = (e as CustomEvent<{ place?: string; lat?: number; lng?: number; post?: string; event?: string; tags?: string[]; date?: string }> | undefined)?.detail ?? null;
+      // uploaded for something (a calendar event…): its day
+      if (preset?.date) dateInput.value = preset.date;
       if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
       token.refresh();
       say('');
@@ -401,12 +405,21 @@ const { lang } = Astro.props;
         });
         row.querySelector('.upl__caption')!.addEventListener('input', (e) => (e.target as HTMLInputElement).removeAttribute('aria-invalid'));
         wireGeo(row, file);
+        // hashtags: the preset's, or the gallery folder that is open
+        const folder = document.querySelector<HTMLElement>('[data-gal-folders] [data-folder].is-on')?.dataset.folder ?? '';
+        const startTags = preset?.tags?.length ? preset.tags : folder ? [folder] : [];
+        if (startTags.length) row.querySelector<HTMLInputElement>('.upl__tags')!.value = startTags.map((x) => `#${x}`).join(' ');
         if (preset?.lat !== undefined && preset.lng !== undefined) {
           row.querySelector<HTMLInputElement>('.upl__place')!.value = preset.place ?? '';
           row.dataset.lat = String(preset.lat);
           row.dataset.lng = String(preset.lng);
           row.dataset.fromGps = '1';
           geoLine(row, preset.place ?? '');
+        } else if (preset?.place) {
+          // only a place name (e.g. a calendar event's): it is looked up, like a typed one
+          const pl = row.querySelector<HTMLInputElement>('.upl__place')!;
+          pl.value = preset.place;
+          pl.dispatchEvent(new Event('change'));
         }
         picked.set(row, file);
         list.append(row);
@@ -467,6 +480,10 @@ const { lang } = Astro.props;
             preset?.event && `event: ${preset.event}`,
             `caption: ${JSON.stringify(caption)}`,
             place && `place: ${JSON.stringify(place)}`,
+            (() => {
+              const tags = parseTags(row.querySelector<HTMLInputElement>('.upl__tags')!.value);
+              return tags.length ? `tags: ${JSON.stringify(tags)}` : '';
+            })(),
             `date: ${date}`,
             lat !== null && lng !== null && `lat: ${lat}\nlng: ${lng}`,
           ]

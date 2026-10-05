@@ -30,13 +30,24 @@ const { lang } = Astro.props;
       <input name="title" type="text" maxlength="120" required />
     </label>
 
-    <div class="ped__row">
-      <label class="ped__field">
-        <span>{t(lang, 'post.category')}</span>
-        <select name="category">
-          {CATEGORIES.map((c) => <option value={c}>{t(lang, categoryMeta(c).titleKey)}</option>)}
-        </select>
-      </label>
+    <!-- the category: big cards; the post will look like the others there (see the preview below) -->
+    <div class="ped__field">
+      <span>{t(lang, 'post.category')}</span>
+      <div class="ped__cats" role="radiogroup" data-ped-cats>
+        {
+          CATEGORIES.map((c) => (
+            <button type="button" role="radio" aria-checked="false" class:list={['ped__cat', `is-${categoryMeta(c).tone}`]} data-cat={c}>
+              <span class="ped__cat-icon"><Icon name={categoryMeta(c).icon} size={20} /></span>
+              {t(lang, categoryMeta(c).titleKey)}
+            </button>
+          ))
+        }
+      </div>
+      <select name="category" hidden>
+        {CATEGORIES.map((c) => <option value={c}>{t(lang, categoryMeta(c).titleKey)}</option>)}
+      </select>
+    </div>
+    <div class="ped__row ped__row--two">
       <label class="ped__field">
         <span>{t(lang, 'post.lang')}</span>
         <select name="lang">
@@ -55,6 +66,27 @@ const { lang } = Astro.props;
     </label>
     <!-- opened from the world map: the post is pinned to this place -->
     <p class="ped__place" hidden data-ped-place></p>
+
+    <!-- how its card will look among the category's posts -->
+    <div class="ped__preview">
+      <span class="ped__preview-label">👀 {t(lang, 'post.preview')}</span>
+      <article class="ped-card" data-ped-card>
+        <div class="ped-card__cover" data-ped-card-cover>
+          <img alt="" hidden data-ped-card-img />
+          <span class="ped-card__ph" data-ped-card-ph>
+            {CATEGORIES.map((c) => <span class="ped-card__icon" data-icon-for={c} hidden><Icon name={categoryMeta(c).icon} size={34} /></span>)}
+          </span>
+          <span class="ped-card__tri"></span>
+        </div>
+        <div class="ped-card__body">
+          <span class="ped-card__tag" data-ped-card-tag></span>
+          <strong data-ped-card-title></strong>
+          <time data-ped-card-date></time>
+          <p data-ped-card-excerpt></p>
+          <span class="ped-card__link">{t(lang, 'posts.readMore')} →</span>
+        </div>
+      </article>
+    </div>
 
     <div class="ped__cover">
       <label class="ped__pick">
@@ -165,6 +197,167 @@ const { lang } = Astro.props;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
+  }
+  .ped__row--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* the category cards */
+  .ped__cats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+  }
+  .ped__cat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px 8px 8px;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 150ms ease;
+  }
+  .ped__cat:hover {
+    transform: translateY(-2px);
+  }
+  .ped__cat[aria-checked='true'] {
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .ped__cat.is-yellow[aria-checked='true'] {
+    background: var(--yellow);
+  }
+  .ped__cat.is-violet[aria-checked='true'] {
+    background: var(--violet-tint);
+  }
+  .ped__cat-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--violet);
+    color: #fff;
+  }
+  .ped__cat.is-violet .ped__cat-icon {
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  /* the preview card: like PostCard */
+  .ped__preview {
+    display: grid;
+    gap: 6px;
+  }
+  .ped__preview-label {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .ped-card {
+    width: min(100%, 320px);
+    overflow: hidden;
+    border: var(--border);
+    border-radius: var(--radius-card, 18px);
+    background: var(--surface);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+  .ped-card.is-violet {
+    box-shadow: 6px 6px 0 var(--violet);
+  }
+  .ped-card__cover {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-bottom: var(--border);
+    background: var(--yellow-tint);
+  }
+  .ped-card.is-violet .ped-card__cover {
+    background: var(--violet-tint);
+  }
+  .ped-card__cover img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .ped-card__ph {
+    position: absolute;
+    left: 14%;
+    top: 22%;
+    display: grid;
+    place-items: center;
+    width: 38%;
+    aspect-ratio: 1;
+    border: var(--border);
+    border-radius: 50%;
+    background: var(--violet);
+    color: #fff;
+  }
+  .ped-card.is-violet .ped-card__ph {
+    background: var(--yellow);
+    color: var(--ink);
+  }
+  .ped-card__icon[hidden],
+  .ped-card__cover img[hidden] + .ped-card__ph[hidden] {
+    display: none;
+  }
+  .ped-card__tri {
+    position: absolute;
+    right: 14%;
+    bottom: 16%;
+    width: 30%;
+    aspect-ratio: 1;
+    background: var(--ink);
+    clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  }
+  .ped-card.has-cover .ped-card__ph,
+  .ped-card.has-cover .ped-card__tri {
+    display: none;
+  }
+  .ped-card__body {
+    display: grid;
+    gap: 6px;
+    padding: 16px 18px 14px;
+  }
+  .ped-card__tag {
+    justify-self: start;
+    padding: 2px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 99px;
+    background: var(--yellow);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .ped-card.is-violet .ped-card__tag {
+    background: var(--violet-tint);
+    color: var(--violet-dark);
+  }
+  .ped-card strong {
+    font: 800 20px / 1.15 var(--font-heading);
+    overflow-wrap: anywhere;
+  }
+  .ped-card strong:empty::before {
+    content: '…';
+    opacity: 0.4;
+  }
+  .ped-card time {
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .ped-card p {
+    margin: 0;
+    font-size: 14px;
+  }
+  .ped-card__link {
+    color: var(--violet);
+    font-weight: 800;
+    font-size: 14px;
   }
   .ped__field {
     display: grid;
@@ -411,6 +604,42 @@ const { lang } = Astro.props;
       }
     });
 
+    // ---- the category cards and the preview card ----
+    const catSel = field<HTMLSelectElement>('category');
+    const card = q<HTMLElement>('[data-ped-card]');
+    const cats = Array.from(dialog!.querySelectorAll<HTMLButtonElement>('[data-cat]'));
+    const fmtDate = new Intl.DateTimeFormat(document.documentElement.lang || 'hu', { year: 'numeric', month: 'long', day: 'numeric' });
+    function preview() {
+      const c = catSel.value;
+      const btn = cats.find((b) => b.dataset.cat === c);
+      cats.forEach((b) => b.setAttribute('aria-checked', String(b === btn)));
+      card.classList.toggle('is-violet', !!btn?.classList.contains('is-violet'));
+      dialog!.querySelectorAll<HTMLElement>('[data-icon-for]').forEach((i) => (i.hidden = i.dataset.iconFor !== c));
+      q<HTMLElement>('[data-ped-card-tag]').textContent = btn?.textContent?.trim() ?? '';
+      q<HTMLElement>('[data-ped-card-title]').textContent = field<HTMLInputElement>('title').value.trim();
+      q<HTMLElement>('[data-ped-card-excerpt]').textContent = field<HTMLInputElement>('excerpt').value.trim();
+      const d = field<HTMLInputElement>('date').value;
+      q<HTMLElement>('[data-ped-card-date]').textContent = d ? fmtDate.format(new Date(`${d}T12:00:00`)) : '';
+      const img = q<HTMLImageElement>('[data-ped-card-img]');
+      img.hidden = !cover;
+      card.classList.toggle('has-cover', !!cover);
+      if (cover && img.dataset.for !== cover.name) {
+        img.src = URL.createObjectURL(cover);
+        img.dataset.for = cover.name;
+      }
+      img.style.objectPosition = coverPosition === 'attention' ? 'center' : coverPosition;
+    }
+    cats.forEach((b) =>
+      b.addEventListener('click', () => {
+        catSel.value = b.dataset.cat!;
+        preview();
+      }),
+    );
+    form.addEventListener('input', preview);
+    form.addEventListener('change', preview);
+    form.addEventListener('click', () => window.setTimeout(preview, 0));
+    dialog.addEventListener('toggle', preview);
+
     let pinned: { place?: string; lat?: number; lng?: number } | null = null;
     const placeNote = q<HTMLElement>('[data-ped-place]');
     window.addEventListener('andras:new-post', (e) => {
@@ -427,6 +656,7 @@ const { lang } = Astro.props;
       token.refresh();
       say('');
       if (!dialog.open) dialog.showModal();
+      preview();
       field<HTMLInputElement>('title').focus();
     });
     q('[data-ped-close]').addEventListener('click', () => dialog.close());
@@ -538,6 +768,19 @@ const { lang } = Astro.props;
 
         await commitFiles(key, files, `Post: ${title.value.trim()} (written on the site)`);
         token.saved();
+        window.dispatchEvent(
+          new CustomEvent('andras:post-created', {
+            detail: {
+              slug,
+              category: field<HTMLSelectElement>('category').value,
+              title: title.value.trim(),
+              excerpt: excerpt.value.trim(),
+              date,
+              cover: cover ? q<HTMLImageElement>('[data-ped-card-img]').src : '',
+              lang: dialog.dataset.lang,
+            },
+          }),
+        );
         form.reset();
         field<HTMLSelectElement>('lang').value = dialog.dataset.lang!;
         cover = null;

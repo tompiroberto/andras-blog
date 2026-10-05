@@ -12,6 +12,8 @@ export interface GeoResult {
   latitude: number;
   longitude: number;
   country?: string;
+  /** ISO alpha-2 (Open-Meteo: country_code; Nominatim: address.country_code) */
+  country_code?: string;
   admin1?: string;
 }
 
@@ -43,7 +45,7 @@ export async function geocode(q: string, lang: string): Promise<GeoResult[]> {
     display_name: string;
     lat: string;
     lon: string;
-    address?: { country?: string; state?: string };
+    address?: { country?: string; state?: string; country_code?: string };
   }
   const url = `${NOMINATIM}?q=${encodeURIComponent(q)}&format=jsonv2&addressdetails=1&limit=${MAX_RESULTS}&accept-language=${encodeURIComponent(lang)}`;
   return (await getJson<Place[]>(url)).map((p) => ({
@@ -51,6 +53,7 @@ export async function geocode(q: string, lang: string): Promise<GeoResult[]> {
     latitude: Number(p.lat),
     longitude: Number(p.lon),
     country: p.address?.country,
+    country_code: p.address?.country_code?.toUpperCase(),
     admin1: p.address?.state,
   }));
 }

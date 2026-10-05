@@ -10,7 +10,13 @@ on:
     - cron: '5 23 2 12 *'   # 3 Dec 2026, 00:05 Hungarian time
     - cron: '5 23 10 12 *'  # 11 Dec 2026, 00:05 Hungarian time
     - cron: '30 6 * * 1'    # and every Monday, in case one was missed
+    - cron: '15 22 * * *'   # and every night (a trip of the calendar may start any day)
   workflow_dispatch:
+  # a change made on the site (developer mode: a click on the "currently in" pill)
+  push:
+    paths:
+      - src/data/whereabouts.json
+      - src/data/calendar.json
 
 permissions:
   contents: write

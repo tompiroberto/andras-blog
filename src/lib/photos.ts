@@ -32,12 +32,14 @@ export interface Photo {
   post?: string;
   /** id of the calendar event it belongs to */
   event?: string;
+  /** hashtags (the gallery's folders) */
+  tags?: string[];
   /** repository files of an upload: deleting the picture deletes these */
   files?: string[];
 }
 
-type Meta = { caption?: string; place?: string; lat?: number; lng?: number };
-const G = gallery as { hidden: string[]; meta: Record<string, Meta> };
+type Meta = { caption?: string; place?: string; lat?: number; lng?: number; tags?: string[] };
+const G = gallery as { hidden: string[]; meta: Record<string, Meta>; folders?: string[] };
 
 const files = import.meta.glob<ImageMetadata>('../assets/photos/*.{jpg,jpeg,png,webp,avif,JPG,JPEG,PNG,WEBP}', {
   eager: true,
@@ -108,6 +110,7 @@ export async function getPhotos(lang = 'en'): Promise<Photo[]> {
       lng: p.data.lng,
       post: p.data.post,
       event: p.data.event,
+      tags: p.data.tags,
       files: own,
     };
   });
@@ -128,6 +131,6 @@ export async function getPhotos(lang = 'en'): Promise<Photo[]> {
     .filter((p) => !G.hidden.includes(p.key))
     .map((p) => {
       const m = G.meta[p.key];
-      return m ? { ...p, caption: m.caption || p.caption, place: m.place ?? p.place, lat: m.lat ?? p.lat, lng: m.lng ?? p.lng } : p;
+      return m ? { ...p, caption: m.caption || p.caption, place: m.place ?? p.place, lat: m.lat ?? p.lat, lng: m.lng ?? p.lng, tags: m.tags ?? p.tags } : p;
     });
 }

@@ -1,5 +1,5 @@
 {
-  "_comment": "Where András is from a given moment on (the header-pill of the home page; scripts/whereabouts.mjs also sets the 'now' country in countries.json for the maps). Each step: from (ISO time with offset), country (id from countries.json), key (i18n text 'where.<key>').",
+  "_comment": "Where András is from a given moment on (the home page's pill; scripts/whereabouts.mjs also sets the 'now' country in countries.json for the maps). Each step: from (ISO time with offset), country (ISO alpha-2), and either key (i18n text 'where.<key>') or text / text_en (written in developer mode: a click on the pill).",
   "steps": [
     {
       "from": "2026-09-23T00:00:00+03:00",

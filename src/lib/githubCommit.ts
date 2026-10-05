@@ -23,6 +23,8 @@ async function gh<T>(token: string, path: string, init?: { method?: string; body
       ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
     },
     body: init?.body ? JSON.stringify(init.body) : undefined,
+    // never an old answer from the browser's cache (an old branch head makes the save "not a fast forward")
+    cache: 'no-store',
   });
   if (!res.ok) {
     let detail = '';
@@ -31,6 +33,10 @@ async function gh<T>(token: string, path: string, init?: { method?: string; body
     } catch {
       /* no JSON body */
     }
+    // the usual reasons, in plain words
+    if (res.status === 401) throw new Error('GitHub 401: a GitHub-kulcs nem érvényes (elírva, törölve vagy lejárt) – készíts újat: github.com/settings/personal-access-tokens');
+    if (res.status === 403 && !/rate limit/i.test(detail))
+      throw new Error('GitHub 403: a kulcsnak nincs írási joga – a kulcsnál ez kell: Repository access → tompiroberto/andras-blog, Permissions → Contents: Read and write (vagy lejárt). github.com/settings/personal-access-tokens');
     throw new Error(`GitHub ${res.status}${detail ? `: ${detail}` : ''}`);
   }
   return (await res.json()) as T;
@@ -89,10 +95,8 @@ export async function publishSite(token: string): Promise<void> {
 }
 
 async function commitRaw(token: string, files: NewFile[], message: string): Promise<void> {
-  const ref = await gh<{ object: { sha: string } }>(token, `/git/ref/heads/${BRANCH}`);
-  const parent = ref.object.sha;
-  const head = await gh<{ tree: { sha: string } }>(token, `/git/commits/${parent}`);
-  const tree = [];
+  // the big files go up once
+  const tree: { path: string; mode: string; type: string; sha?: string | null; content?: string }[] = [];
   for (const f of files) {
     if ('delete' in f) {
       tree.push({ path: f.path, mode: '100644', type: 'blob', sha: null });
@@ -103,9 +107,22 @@ async function commitRaw(token: string, files: NewFile[], message: string): Prom
       tree.push({ path: f.path, mode: '100644', type: 'blob', content: f.text });
     }
   }
-  const newTree = await gh<{ sha: string }>(token, '/git/trees', { method: 'POST', body: { base_tree: head.tree.sha, tree } });
-  const commit = await gh<{ sha: string }>(token, '/git/commits', { method: 'POST', body: { message, tree: newTree.sha, parents: [parent] } });
-  await gh(token, `/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: { sha: commit.sha } });
+  // something else may have been saved in the meantime (another tab, a scheduled job): then once more on top of it
+  for (let attempt = 1; ; attempt++) {
+    const ref = await gh<{ object: { sha: string } }>(token, `/git/ref/heads/${BRANCH}`);
+    const parent = ref.object.sha;
+    const head = await gh<{ tree: { sha: string } }>(token, `/git/commits/${parent}`);
+    const newTree = await gh<{ sha: string }>(token, '/git/trees', { method: 'POST', body: { base_tree: head.tree.sha, tree } });
+    const commit = await gh<{ sha: string }>(token, '/git/commits', { method: 'POST', body: { message, tree: newTree.sha, parents: [parent] } });
+    try {
+      await gh(token, `/git/refs/heads/${BRANCH}`, { method: 'PATCH', body: { sha: commit.sha } });
+      return;
+    } catch (err) {
+      const busy = err instanceof Error && /(422|409).*(fast forward|fast-forward|conflict|reference)/i.test(err.message);
+      if (!busy || attempt >= 4) throw err;
+      await new Promise((r) => setTimeout(r, 600 * attempt));
+    }
+  }
 }
 
 /** Current text of a file on the branch (UTF-8). */

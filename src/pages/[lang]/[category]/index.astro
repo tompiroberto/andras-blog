@@ -46,6 +46,7 @@ const intro = t(lang, meta.textKey);
       <Globe size="min(700px, 120vw)" left="-24%" top="10%" speed={70} direction="ccw" />
     </div>
     <div class="container">
+      <template data-card-soon>{t(lang, 'post.soon')}</template>
       <ul class="post-grid" data-post-grid data-live={live} data-category={category} data-lang={lang} data-cat-title={title} hidden={!posts.length && !live}>
         {
           posts.map((post, i) => (
@@ -64,7 +65,7 @@ const intro = t(lang, meta.textKey);
         )
       }
       {
-        live && sample && (
+        sample && (
           <template data-card-tpl>
             <li>
               <PostCard post={sample} lang={lang} index={0} />
@@ -136,6 +137,45 @@ const intro = t(lang, meta.textKey);
    * A copy of the site on another host: posts written on the main site since the copy was made get a
    * card here (opening on the main site); posts deleted there are left out. Read from /posts.json.
    */
+  // a post just written in developer mode: its card shows at once (like the others), marked "after 🚀 Publish"
+  {
+    const g = document.querySelector<HTMLElement>('[data-post-grid]');
+    const t = document.querySelector<HTMLTemplateElement>('[data-card-tpl]');
+    const soon = document.querySelector<HTMLTemplateElement>('[data-card-soon]')?.content.textContent ?? '';
+    window.addEventListener('andras:post-created', (ev) => {
+      const d = (ev as CustomEvent<{ slug: string; category: string; title: string; excerpt: string; date: string; cover: string; lang: string }>).detail;
+      if (!g || !t || d.category !== g.dataset.category) return;
+      const li = t.content.firstElementChild!.cloneNode(true) as HTMLElement;
+      li.dataset.postId = d.slug;
+      const cover = li.querySelector<HTMLElement>('.post-card__cover');
+      if (cover && d.cover) {
+        cover.innerHTML = '';
+        cover.append(Object.assign(document.createElement('img'), { src: d.cover, alt: '', style: 'display:block;width:100%;height:100%;object-fit:cover' }));
+      }
+      li.querySelectorAll('.post-card__draft, .post-card__lang').forEach((n) => n.remove());
+      const tag = li.querySelector('.post-card__tag');
+      if (tag) {
+        tag.textContent = g.dataset.catTitle ?? '';
+        const mark = Object.assign(document.createElement('span'), { textContent: soon });
+        mark.style.cssText = 'margin-left:6px;padding:3px 10px;border-radius:99px;background:#0d1117;color:#39d353;font-size:12px;font-weight:700';
+        tag.after(mark);
+      }
+      li.querySelector('.ph-circle')?.replaceChildren();
+      const h = li.querySelector('h3');
+      if (h) h.textContent = d.title;
+      const time = li.querySelector('time');
+      if (time) time.textContent = d.date ? new Intl.DateTimeFormat(document.documentElement.lang || 'hu', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(`${d.date}T12:00:00`)) : '';
+      const ex = li.querySelector('.post-card__excerpt');
+      if (ex) ex.textContent = d.excerpt;
+      const a = li.querySelector<HTMLAnchorElement>('.post-card__link');
+      if (a) a.href = `/${d.lang}/posts/${d.slug}/`;
+      g.hidden = false;
+      document.querySelector<HTMLElement>('[data-posts-empty]')?.setAttribute('hidden', '');
+      g.prepend(li);
+      li.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+  }
+
   const grid = document.querySelector<HTMLElement>('[data-post-grid][data-live]');
   const tpl = document.querySelector<HTMLTemplateElement>('[data-card-tpl]');
   if (grid && tpl) {
