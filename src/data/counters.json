@@ -4,26 +4,44 @@
     {
       "id": "nutella",
       "icon": "🍫",
-      "title": "Megevett Nutellás bödön",
-      "title_en": "Jars of Nutella eaten",
-      "count": 0,
+      "title": "Megevett Nutellás bödön (2026 szept. óta)",
+      "title_en": "Jars of Nutella eaten (since Sept 2026)",
+      "count": 2,
       "items": []
     },
     {
       "id": "sleep-rough",
       "icon": "🏕️",
-      "title": "Sleep rough – éjszaka a szabad ég alatt",
-      "title_en": "Nights sleeping rough",
-      "count": 0,
-      "items": []
+      "title": "Sleep rough – éjszaka a szabad ég alatt (2026 szept. óta)",
+      "title_en": "Nights sleeping rough (since Sept 2026)",
+      "count": 4,
+      "items": [
+        {
+          "text": "3 éjszaka a szabad ég alatt",
+          "text_en": "3 nights under the open sky"
+        },
+        {
+          "text": "1 éjszaka egy motorcsónakban 🚤",
+          "text_en": "1 night in a motorboat 🚤"
+        }
+      ]
     },
     {
       "id": "feast",
       "icon": "🍽️",
-      "title": "Nagy lakoma",
-      "title_en": "Big feasts",
-      "count": 0,
-      "items": []
+      "title": "Nagy lakoma (2026 aug. óta)",
+      "title_en": "Big feasts (since Aug 2026)",
+      "count": 2,
+      "items": [
+        {
+          "text": "Európa hajó",
+          "text_en": "The Európa boat"
+        },
+        {
+          "text": "Balkáni lakodalom a görög Erasmuson",
+          "text_en": "A Balkan wedding at the Greek Erasmus"
+        }
+      ]
     },
     {
       "id": "flights",
@@ -82,6 +100,26 @@
           "text": "Görögország – Elafonisszosz (szept. 23. – okt. 4.)",
           "text_en": "Greece – Elafonisos (23 Sep – 4 Oct)",
           "date": "2026-09-23"
+        }
+      ]
+    },
+    {
+      "id": "races-abroad",
+      "icon": "🏃",
+      "title": "Futóverseny külföldön",
+      "title_en": "Running races abroad",
+      "count": 0,
+      "fromList": true,
+      "items": [
+        {
+          "text": "Split 10k – Horvátország",
+          "text_en": "Split 10K – Croatia",
+          "date": "2026-02-14"
+        },
+        {
+          "text": "Skyrunning ifjúsági vb – Makarska, Horvátország",
+          "text_en": "Youth Skyrunning World Championships – Makarska, Croatia",
+          "date": "2026-05-01"
         }
       ]
     }
