@@ -810,5 +810,11 @@
   "ctr.titlePh": "Ce numeri?",
   "ctr.new": "Contor nou",
   "ctr.pick": "Alege un model:",
-  "ctr.start": "Pornește de la"
+  "ctr.start": "Pornește de la",
+  "cal.evdOpen": "Deschide: descriere, fișiere",
+  "cal.evdDesc": "Descriere",
+  "cal.evdDescPh": "Ce s-a întâmplat, ce e în plan…",
+  "cal.evdPics": "Poze și video",
+  "cal.evdMusic": "Muzică",
+  "cal.evdEmpty": "Încă nu e nimic la acest eveniment."
 }

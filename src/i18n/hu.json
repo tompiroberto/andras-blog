@@ -810,5 +810,11 @@
   "ctr.titlePh": "Mit számolsz?",
   "ctr.new": "Új számláló",
   "ctr.pick": "Válassz mintát (átírható):",
-  "ctr.start": "Kezdő szám"
+  "ctr.start": "Kezdő szám",
+  "cal.evdOpen": "Megnyitás: leírás, fájlok",
+  "cal.evdDesc": "Leírás",
+  "cal.evdDescPh": "Mi történt, mi lesz a program…",
+  "cal.evdPics": "Fotók és videók",
+  "cal.evdMusic": "Zenék",
+  "cal.evdEmpty": "Ehhez az eseményhez még nincs feltöltve semmi."
 }

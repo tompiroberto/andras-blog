@@ -53,6 +53,7 @@ const words = {
   planAdd: t(lang, 'cal.planAdd'),
   confirmPlan: t(lang, 'cal.confirmPlan'),
   abroad: t(lang, 'cal.abroad'),
+  open: t(lang, 'cal.evdOpen'),
   docs: t(lang, 'cal.docs'),
   docsSaved: t(lang, 'cal.docsSaved'),
   docsBig: t(lang, 'cal.docsBig'),
@@ -182,6 +183,43 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
     <p class="cal-day__none" data-cal-day-none>{words.none}</p>
     <button type="button" class="btn btn--primary cal-day__msg" data-cal-day-msg><Icon name="message-circle" size={18} />{words.message}</button>
     <button type="button" class="cal-btn cal-btn--add cal-day__add" data-cal-day-add>＋ {words.add}</button>
+  </aside>
+
+  <!-- an event: its description and everything that belongs to it (photos, videos, music, documents) -->
+  <aside class="cal-day cal-evd" hidden data-cal-evd>
+    <button type="button" class="cal-day__x" aria-label="✕" data-cal-evd-close>✕</button>
+    <p class="cal-evd__when" data-evd-when></p>
+    <h3 class="cal-evd__title" data-evd-title></h3>
+    <p class="cal-evd__tags" data-evd-tags></p>
+    <section class="cal-evd__sec" data-evd-sec="desc">
+      <h4>📝 {t(lang, 'cal.evdDesc')}</h4>
+      <p class="cal-evd__desc" data-evd-desc></p>
+      <form class="cal-evd__desc-ed" data-dev-ui data-evd-desc-form>
+        <textarea rows="3" maxlength="2000" data-evd-hu placeholder={`🇭🇺 ${t(lang, 'cal.evdDescPh')}`}></textarea>
+        <textarea rows="2" maxlength="2000" data-evd-en placeholder="🇬🇧 English"></textarea>
+        <div class="cal-evd__row"><small data-evd-note></small><button type="submit">✓ {t(lang, 'gal.save')}</button></div>
+      </form>
+    </section>
+    <section class="cal-evd__sec" data-evd-sec="pics">
+      <h4>📷 {t(lang, 'cal.evdPics')} <small data-evd-n="pics"></small></h4>
+      <div class="cal-evd__pics" data-evd-pics></div>
+    </section>
+    <section class="cal-evd__sec" data-evd-sec="music">
+      <h4>🎵 {t(lang, 'cal.evdMusic')} <small data-evd-n="music"></small></h4>
+      <div class="cal-evd__music" data-evd-music></div>
+    </section>
+    <section class="cal-evd__sec" data-evd-sec="docs">
+      <h4>📄 {t(lang, 'cal.docs')} <small data-evd-n="docs"></small></h4>
+      <div class="cal-evd__docs" data-evd-docs></div>
+    </section>
+    <p class="cal-evd__empty" data-evd-empty>{t(lang, 'cal.evdEmpty')}</p>
+    <div class="cal-evd__dev" data-dev-ui>
+      <button type="button" data-evd-do="photos">📷🎬 {t(lang, 'cal.quickPhoto')}</button>
+      <button type="button" data-evd-do="music">🎵 {t(lang, 'cal.quickMusic')}</button>
+      <label>📄 {t(lang, 'cal.devDocs')}<input type="file" multiple data-evd-docs-in /></label>
+      <button type="button" data-evd-do="edit">✎ {t(lang, 'cal.edit')}</button>
+    </div>
+    <button type="button" class="btn btn--primary cal-day__msg" data-evd-msg><Icon name="message-circle" size={18} />{words.message}</button>
   </aside>
 
   <form class="cal-form" hidden data-cal-form>
@@ -1112,6 +1150,180 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
   :root.dev-mode:not(.dev-preview) .cal-day__list strong > button {
     display: inline;
   }
+  /* an event's page */
+  .cal-evd {
+    width: min(580px, calc(100% - 24px)) !important;
+  }
+  .cal-evd__when {
+    margin: 0 30px 2px 0;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .cal-evd__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 30px 6px 0;
+    font: 900 clamp(22px, 3vw, 28px) / 1.15 var(--font-heading);
+  }
+  .cal-evd__title img {
+    width: 36px;
+    height: 24px;
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    object-fit: cover;
+  }
+  .cal-evd__tags {
+    margin: 0 0 8px;
+    color: var(--violet);
+    font-weight: 700;
+  }
+  .cal-evd__tags:empty {
+    display: none;
+  }
+  .cal-evd__sec {
+    margin: 14px 0 0;
+    padding-top: 12px;
+    border-top: 2px dashed color-mix(in srgb, var(--ink) 20%, transparent);
+  }
+  .cal-evd__sec[hidden],
+  .cal-evd__empty[hidden] {
+    display: none;
+  }
+  .cal-evd__sec h4 {
+    margin: 0 0 8px;
+    font-size: 16px;
+  }
+  .cal-evd__sec h4 small {
+    color: var(--muted);
+  }
+  .cal-evd__desc {
+    margin: 0;
+    white-space: pre-line;
+  }
+  .cal-evd__desc:empty {
+    display: none;
+  }
+  .cal-evd__pics {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+  }
+  .cal-evd__pics button {
+    position: relative;
+    aspect-ratio: 1;
+    padding: 0;
+    overflow: hidden;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: #111;
+    color: #fff;
+    font-size: 28px;
+    cursor: pointer;
+    transition: transform 150ms ease;
+  }
+  .cal-evd__pics button:hover {
+    transform: scale(1.04);
+  }
+  .cal-evd__pics img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .cal-evd__music {
+    display: grid;
+    gap: 4px;
+  }
+  .cal-evd__music span {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .cal-evd__music audio {
+    width: 100%;
+    height: 34px;
+  }
+  .cal-evd__docs {
+    display: grid;
+    gap: 6px;
+  }
+  .cal-evd__docs a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    color: var(--ink);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .cal-evd__docs a:hover {
+    background: var(--yellow);
+  }
+  .cal-evd__empty {
+    margin: 14px 0 0;
+    color: var(--muted);
+  }
+  .cal-evd__desc-ed,
+  .cal-evd__dev {
+    display: none;
+  }
+  :root.dev-mode:not(.dev-preview) .cal-evd__desc-ed {
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  :root.dev-mode:not(.dev-preview) .cal-evd__dev {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 14px 0;
+    padding: 10px;
+    border: 2px solid #39d353;
+    border-radius: 12px;
+    background: #0d1117;
+  }
+  .cal-evd__desc-ed textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1.5px dashed #1f8a3a;
+    border-radius: 10px;
+    background: color-mix(in srgb, #39d353 6%, transparent);
+    color: inherit;
+    font: inherit;
+  }
+  .cal-evd__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .cal-evd__row small {
+    color: #1f8a3a;
+    font-weight: 700;
+  }
+  .cal-evd__desc-ed button,
+  .cal-evd__dev button,
+  .cal-evd__dev label {
+    padding: 5px 12px;
+    border: 1px solid #39d353;
+    border-radius: 8px;
+    background: #0d1117;
+    color: #39d353;
+    font: 700 12px ui-monospace, Consolas, monospace;
+    cursor: pointer;
+  }
+  .cal-evd__dev input {
+    display: none;
+  }
+  .cal-day__open {
+    font-weight: 800 !important;
+  }
+  .cal-legend li,
+  .cal-ev:not(.is-gap) {
+    cursor: pointer;
+  }
   .cal-devbar {
     display: none;
     flex-wrap: wrap;
@@ -1537,6 +1749,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       for (const e of inView) {
         const li = document.createElement('li');
         li.style.setProperty('--c', e.color);
+        li.addEventListener('click', () => openEvent(e.id));
         li.innerHTML = '<i></i>';
         li.append(`${tr(e, 'title')}${tr(e, 'place') ? ` · ${tr(e, 'place')}` : ''} (${fmtShort.format(parse(e.from))} – ${fmtShort.format(parse(e.to))})`);
         legend.append(li);
@@ -1599,6 +1812,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
             cursor = new Date(parse(e.from).getFullYear(), parse(e.from).getMonth(), 1);
             if (mode !== 'month') setMode('month');
             else render(true);
+            openEvent(e.id);
           });
           return li;
         }),
@@ -1872,6 +2086,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
               bar.classList.toggle('is-start', e.from === day);
               bar.classList.toggle('is-end', e.to === day);
               bar.textContent = startsHere ? tr(e, 'title') : ' ';
+              bar.dataset.ev = e.id;
               const marks = `${e.music?.length ? '♪' : ''}${picsOf(e.id).length ? '📷' : ''}`;
               bar.title = `${tr(e, 'title')}${tr(e, 'place') ? ` · ${tr(e, 'place')}` : ''}${marks ? ` · ${marks}` : ''}`;
               if (startsHere && marks) bar.textContent = `${marks} ${tr(e, 'title')}`;
@@ -1993,12 +2208,15 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
             p.textContent = tr(e, 'note');
             li.append(p);
           }
-          // photos and music: a button for each (only when there are some)
+          // photos and music: a button for each (only when there are some); the event's own page always
           const music = (e.music ?? []).map((id) => tracks.find((x) => x.id === id)).filter((x): x is Track => !!x);
           const pics = picsOf(e.id);
-          if (pics.length || music.length) {
+          {
             const row = document.createElement('div');
             row.className = 'cal-day__media';
+            const openB = Object.assign(document.createElement('button'), { type: 'button', className: 'cal-btn cal-day__open', textContent: `📂 ${W.open}` });
+            openB.addEventListener('click', () => openEvent(e.id));
+            row.append(openB);
             if (pics.length) {
               const b = document.createElement('button');
               b.type = 'button';
@@ -2058,9 +2276,11 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       const [a, b] = dragFrom <= dragTo ? [dragFrom, dragTo] : [dragTo, dragFrom];
       body.querySelectorAll<HTMLElement>('[data-day]').forEach((c) => c.classList.toggle('is-picked', !!dragFrom && c.dataset.day! >= a && c.dataset.day! <= b));
     };
+    let downEv = '';
     body.addEventListener('pointerdown', (e) => {
       const cell = (e.target as Element).closest<HTMLElement>('[data-day]');
       if (!cell || e.button !== 0) return;
+      downEv = (e.target as Element).closest<HTMLElement>('.cal-ev[data-ev]')?.dataset.ev ?? '';
       dragFrom = dragTo = cell.dataset.day!;
       mark();
       body.setPointerCapture(e.pointerId);
@@ -2077,7 +2297,8 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       if (!dragFrom) return;
       const [a, b] = dragFrom <= dragTo ? [dragFrom, dragTo] : [dragTo, dragFrom];
       dragFrom = '';
-      showDay(a, b);
+      if (a === b && downEv) openEvent(downEv);
+      else showDay(a, b);
       window.setTimeout(mark, 0);
     };
     body.addEventListener('pointerup', endDrag);
@@ -2186,6 +2407,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       if (!d.for) return;
       photos[d.for] = [...picsOf(d.for), ...d.items];
       renderFormPics();
+      if (!evd.hidden && evdId === d.for) openEvent(d.for);
       if (html.classList.contains('cal-mode')) render();
     });
     // the lightbox
@@ -2259,6 +2481,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       try {
         await save(`🎵 → 📅 ${target.title}`);
         render();
+        if (!evd.hidden && evdId === target.id) openEvent(target.id);
         if (!dayBox.hidden) showDay(openDay, openTo);
       } catch (err) {
         window.alert(err instanceof Error ? err.message : String(err));
@@ -2319,7 +2542,10 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       const e = chosen();
       const files = Array.from(docsIn.files ?? []);
       docsIn.value = '';
-      if (!e || !files.length) return;
+      if (e) await uploadDocs(e, files, devNote);
+    });
+    async function uploadDocs(e: Ev, files: File[], devNote: HTMLElement) {
+      if (!files.length) return;
       if (files.some((f) => f.size > 20 * 1024 * 1024)) return void (devNote.textContent = W.docsBig);
       let key = getToken();
       if (!key) key = (window.prompt(W.key) ?? '').trim();
@@ -2336,9 +2562,108 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
         await commitFiles(key, [...parts, { path: 'src/data/calendar.json', text: `${JSON.stringify(data, null, 2)}\n` }], `Calendar: documents for ${e.title}`, added.map((x) => `📄 ${x.name} → 📅 ${e.title}`));
         devNote.textContent = W.docsSaved;
         if (!dayBox.hidden) showDay(openDay, openTo);
+        if (!evd.hidden && evdId === e.id) openEvent(e.id);
       } catch (err) {
         devNote.textContent = err instanceof Error ? err.message : String(err);
       }
+    }
+
+    // ---- an event's page: description, photos / videos, music, documents ----
+    const evd = view.querySelector<HTMLElement>('[data-cal-evd]')!;
+    let evdId = '';
+    const evdQ = <T extends Element = HTMLElement>(s: string) => evd.querySelector<T>(s)!;
+    const evdNote = evdQ('[data-evd-note]');
+    function openEvent(id: string) {
+      const e = data.events.find((x) => x.id === id);
+      if (!e) return;
+      evdId = id;
+      const dev = html.classList.contains('dev-mode') && !html.classList.contains('dev-preview');
+      evdQ('[data-evd-when]').textContent = [tr(e, 'place') && `📍 ${tr(e, 'place')}`, range(e)].filter(Boolean).join(' · ');
+      const title = evdQ('[data-evd-title]');
+      title.replaceChildren();
+      const flag = flagImg(e.country);
+      if (flag) title.append(flag);
+      title.append(tr(e, 'title'));
+      evdQ('[data-evd-tags]').textContent = showTags(e.tags);
+      // description (and its editor in developer mode)
+      evdQ('[data-evd-desc]').textContent = tr(e, 'note');
+      evdQ<HTMLTextAreaElement>('[data-evd-hu]').value = e.note ?? '';
+      evdQ<HTMLTextAreaElement>('[data-evd-en]').value = e.note_en ?? '';
+      evdNote.textContent = '';
+      // photos and videos: a click opens them large
+      const pics = picsOf(e.id);
+      evdQ('[data-evd-pics]').replaceChildren(
+        ...pics.map((p, i) => {
+          const b = Object.assign(document.createElement('button'), { type: 'button', title: p.caption });
+          if (p.video) b.textContent = '▶';
+          else b.append(Object.assign(document.createElement('img'), { src: p.thumb || p.large, alt: p.caption, loading: 'lazy' }));
+          b.addEventListener('click', () => openLb(pics, i));
+          return b;
+        }),
+      );
+      const music = (e.music ?? []).map((m) => tracks.find((x) => x.id === m)).filter((x): x is Track => !!x);
+      evdQ('[data-evd-music]').replaceChildren(
+        ...music.flatMap((tr2) => [
+          Object.assign(document.createElement('span'), { textContent: `🎵 ${trackName(tr2)}` }),
+          Object.assign(document.createElement('audio'), { controls: true, preload: 'none', src: audioSrc(tr2) }),
+        ]),
+      );
+      const docs = e.docs ?? [];
+      evdQ('[data-evd-docs]').replaceChildren(...docs.map((d) => Object.assign(document.createElement('a'), { href: (view!.dataset.live ?? '') + d.file, target: '_blank', rel: 'noopener', textContent: `📄 ${d.name}` })));
+      const counts: Record<string, number> = { desc: tr(e, 'note') ? 1 : 0, pics: pics.length, music: music.length, docs: docs.length };
+      evd.querySelectorAll<HTMLElement>('[data-evd-sec]').forEach((s) => (s.hidden = !dev && !counts[s.dataset.evdSec!]));
+      evd.querySelectorAll<HTMLElement>('[data-evd-n]').forEach((n) => (n.textContent = counts[n.dataset.evdN!] ? `(${counts[n.dataset.evdN!]})` : ''));
+      evdQ('[data-evd-empty]').hidden = dev || Object.values(counts).some(Boolean);
+      stopMusic();
+      dayBox.hidden = true;
+      form.hidden = true;
+      evd.hidden = false;
+    }
+    const closeEvd = () => {
+      evd.querySelectorAll('audio').forEach((a) => a.pause());
+      evd.hidden = true;
+    };
+    evdQ('[data-cal-evd-close]').addEventListener('click', closeEvd);
+    evdQ<HTMLFormElement>('[data-evd-desc-form]').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const e = data.events.find((x) => x.id === evdId);
+      if (!e) return;
+      const hu = evdQ<HTMLTextAreaElement>('[data-evd-hu]').value.trim();
+      const en = evdQ<HTMLTextAreaElement>('[data-evd-en]').value.trim();
+      const before = { note: e.note, note_en: e.note_en };
+      if (hu) e.note = hu;
+      else delete e.note;
+      if (en) e.note_en = en;
+      else delete e.note_en;
+      evdNote.textContent = '…';
+      try {
+        await save(`📝 ${e.title}`);
+        evdNote.textContent = W.saved;
+        evdQ('[data-evd-desc]').textContent = tr(e, 'note');
+      } catch (err) {
+        Object.assign(e, before);
+        evdNote.textContent = err instanceof Error ? err.message : String(err);
+      }
+    });
+    evd.querySelector('.cal-evd__dev')!.addEventListener('click', (ev) => {
+      const what = (ev.target as Element).closest<HTMLElement>('[data-evd-do]')?.dataset.evdDo;
+      const e = data.events.find((x) => x.id === evdId);
+      if (!what || !e) return;
+      if (what === 'edit') {
+        closeEvd();
+        openForm(e);
+      } else uploadFor(e, what as 'photos' | 'music');
+    });
+    evdQ<HTMLInputElement>('[data-evd-docs-in]').addEventListener('change', async (ev) => {
+      const input = ev.target as HTMLInputElement;
+      const files = Array.from(input.files ?? []);
+      input.value = '';
+      const e = data.events.find((x) => x.id === evdId);
+      if (e) await uploadDocs(e, files, evdNote);
+    });
+    evdQ('[data-evd-msg]').addEventListener('click', () => {
+      const e = data.events.find((x) => x.id === evdId);
+      if (e) window.dispatchEvent(new CustomEvent(PLACE_MESSAGE_EVENT, { detail: { place: `${tr(e, 'title')} (${range(e)})`, topic: 'buddy', kind: 'date' } }));
     });
 
     // the place → its country (the flag), found by itself; changed by hand, it stays
@@ -2453,6 +2778,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
         render(true);
       } else {
         stopMusic();
+        closeEvd();
         dayBox.hidden = true;
         form.hidden = true;
         view.classList.add('is-closing');
@@ -2462,6 +2788,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
     window.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape' || !html.classList.contains('cal-mode')) return;
       if (!lb.hidden) closeLb();
+      else if (!evd.hidden) closeEvd();
       else if (!form.hidden) form.hidden = true;
       else if (!dayBox.hidden) {
         stopMusic();

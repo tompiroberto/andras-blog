@@ -810,5 +810,11 @@
   "ctr.titlePh": "O que contas?",
   "ctr.new": "Novo contador",
   "ctr.pick": "Escolhe um modelo:",
-  "ctr.start": "Começa em"
+  "ctr.start": "Começa em",
+  "cal.evdOpen": "Abrir: descrição, ficheiros",
+  "cal.evdDesc": "Descrição",
+  "cal.evdDescPh": "O que aconteceu, o que está planeado…",
+  "cal.evdPics": "Fotos e vídeos",
+  "cal.evdMusic": "Música",
+  "cal.evdEmpty": "Ainda não há nada neste evento."
 }

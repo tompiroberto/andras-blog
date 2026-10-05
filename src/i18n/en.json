@@ -810,5 +810,11 @@
   "ctr.titlePh": "What do you count?",
   "ctr.new": "New counter",
   "ctr.pick": "Pick a pattern (it can be changed):",
-  "ctr.start": "Starts from"
+  "ctr.start": "Starts from",
+  "cal.evdOpen": "Open: description, files",
+  "cal.evdDesc": "Description",
+  "cal.evdDescPh": "What happened, what is planned…",
+  "cal.evdPics": "Photos and videos",
+  "cal.evdMusic": "Music",
+  "cal.evdEmpty": "Nothing has been added to this event yet."
 }
