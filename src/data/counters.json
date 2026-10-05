@@ -138,8 +138,21 @@
       "icon": "👍",
       "title": "Stoppolt fuvar",
       "title_en": "Hitchhiked rides",
-      "count": 0,
-      "items": []
+      "count": 5,
+      "items": [
+        {
+          "text": "2× pár km egy osztálytárssal a Szentendrei-szigeten",
+          "text_en": "2× a few km with a classmate on Szentendre Island"
+        },
+        {
+          "text": "1× pár km egyedül, Pomázra",
+          "text_en": "1× a few km alone, to Pomáz"
+        },
+        {
+          "text": "2× le a Balatonra – az első igazi stoppolás (2026. július eleje)",
+          "text_en": "2× down to Lake Balaton – the first real hitchhiking (early July 2026)"
+        }
+      ]
     }
   ]
 }
