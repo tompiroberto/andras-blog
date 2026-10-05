@@ -21,12 +21,14 @@ interface Props {
 const { lang, path } = Astro.props;
 const home = localePath(lang);
 
-const links: { key: TKey; hash: string }[] = [
+const links: { key: TKey; hash?: string; href?: string }[] = [
   { key: 'nav.about', hash: 'about' },
   { key: 'nav.explore', hash: 'explore' },
   { key: 'nav.plans', hash: 'plans' },
+  { key: 'nav.counters', href: localePath(lang, 'counters') },
   { key: 'nav.message', hash: 'message' },
 ];
+const linkHref = (l: { hash?: string; href?: string }) => l.href ?? `${home}#${l.hash}`;
 const contactHref = `${home}#contact`;
 const bgToggle = {
   htmlClass: 'bg-dynamic',
@@ -95,7 +97,7 @@ const citiesToggle = {
 
     <nav class="nav-desktop" aria-label="Main">
       <ul>
-        {links.map((l) => <li><a href={`${home}#${l.hash}`}>{t(lang, l.key)}</a></li>)}
+        {links.map((l) => <li><a href={linkHref(l)}>{t(lang, l.key)}</a></li>)}
       </ul>
       <a class="btn btn--yellow nav-contact" href={contactHref}>
         <Icon name="mail" size={18} />
@@ -137,7 +139,7 @@ const citiesToggle = {
         {
           links.map((l, i) => (
             <li>
-              <a href={`${home}#${l.hash}`} data-menu-link>
+              <a href={linkHref(l)} data-menu-link>
                 <span class:list={['mobile-menu__dot', i % 2 ? 'is-yellow' : 'is-violet']} aria-hidden="true" />
                 {t(lang, l.key)}
               </a>

@@ -797,5 +797,18 @@
   "cal.devWhere": "Agora em…",
   "cal.docs": "Documentos",
   "cal.docsSaved": "✓ Guardado – após 🚀 Publicar abrem-se no evento.",
-  "cal.docsBig": "Um ficheiro tem mais de 20 MB."
+  "cal.docsBig": "Um ficheiro tem mais de 20 MB.",
+  "nav.counters": "Contadores",
+  "ctr.title": "Contadores",
+  "ctr.lead": "As estatísticas importantes da minha vida. Aponta para ver a lista.",
+  "ctr.plus": "+1",
+  "ctr.addLine": "Juntar à lista",
+  "ctr.linePh": "ex. Lisboa, com o Marco",
+  "ctr.empty": "A lista ainda está vazia.",
+  "ctr.confirm": "Apagar o contador „{title}”?",
+  "ctr.saving": "A guardar…",
+  "ctr.titlePh": "O que contas?",
+  "ctr.new": "Novo contador",
+  "ctr.pick": "Escolhe um modelo:",
+  "ctr.start": "Começa em"
 }

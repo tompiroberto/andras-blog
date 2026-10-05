@@ -797,5 +797,18 @@
   "cal.devWhere": "Acum în…",
   "cal.docs": "Documente",
   "cal.docsSaved": "✓ Salvat – după 🚀 Publicare se deschid la eveniment.",
-  "cal.docsBig": "Un fișier are peste 20 MB."
+  "cal.docsBig": "Un fișier are peste 20 MB.",
+  "nav.counters": "Contoare",
+  "ctr.title": "Contoare",
+  "ctr.lead": "Statisticile importante ale vieții mele. Arată spre una ca să vezi lista.",
+  "ctr.plus": "+1",
+  "ctr.addLine": "Adaugă în listă",
+  "ctr.linePh": "ex. Lisabona, cu Marco",
+  "ctr.empty": "Lista e încă goală.",
+  "ctr.confirm": "Ștergi contorul „{title}”?",
+  "ctr.saving": "Se salvează…",
+  "ctr.titlePh": "Ce numeri?",
+  "ctr.new": "Contor nou",
+  "ctr.pick": "Alege un model:",
+  "ctr.start": "Pornește de la"
 }

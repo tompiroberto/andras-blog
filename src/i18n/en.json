@@ -797,5 +797,18 @@
   "cal.devWhere": "Currently in…",
   "cal.docs": "Documents",
   "cal.docsSaved": "✓ Saved – after 🚀 Publish they can be opened in the event's day box.",
-  "cal.docsBig": "A file is over 20 MB – too big."
+  "cal.docsBig": "A file is over 20 MB – too big.",
+  "nav.counters": "Counters",
+  "ctr.title": "Counters",
+  "ctr.lead": "The important statistics of my life. Point at one to see the list behind it.",
+  "ctr.plus": "+1",
+  "ctr.addLine": "Add to the list",
+  "ctr.linePh": "e.g. Lisbon, with Marco",
+  "ctr.empty": "The list is still empty.",
+  "ctr.confirm": "Delete the counter „{title}”?",
+  "ctr.saving": "Saving…",
+  "ctr.titlePh": "What do you count?",
+  "ctr.new": "New counter",
+  "ctr.pick": "Pick a pattern (it can be changed):",
+  "ctr.start": "Starts from"
 }

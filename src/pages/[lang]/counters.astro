@@ -1,0 +1,567 @@
+---
+/**
+ * Counters: Nutella jars eaten, nights sleeping rough, big feasts… (src/data/counters.json). Each one is a
+ * big tile; pointing at it (or a tap) shows its list. In developer mode: +1 / −1, a line for the list,
+ * a new counter from a ready-made pattern, rename, delete – saved to GitHub, live after 🚀 Publish.
+ * A copy of the site on another host reads the main site's /counters.json.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import Icon from '../../components/Icon.astro';
+import counters from '../../data/counters.json';
+import { langStaticPaths, localePath, t, type Lang } from '../../i18n';
+
+export const getStaticPaths = langStaticPaths;
+
+const lang = Astro.params.lang as Lang;
+const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
+// ready-made counters for "+ new counter" (the title can be changed)
+const PATTERNS = [
+  { icon: '🍫', title: 'Megevett Nutellás bödön', title_en: 'Jars of Nutella eaten' },
+  { icon: '🏕️', title: 'Sleep rough – éjszaka a szabad ég alatt', title_en: 'Nights sleeping rough' },
+  { icon: '🍽️', title: 'Nagy lakoma', title_en: 'Big feasts' },
+  { icon: '👍', title: 'Stoppolt fuvar', title_en: 'Hitchhiked rides' },
+  { icon: '🏃', title: 'Futóverseny', title_en: 'Races run' },
+  { icon: '🏔️', title: 'Megmászott csúcs', title_en: 'Peaks climbed' },
+  { icon: '🌍', title: 'Új ország', title_en: 'New countries' },
+  { icon: '✈️', title: 'Repülőút', title_en: 'Flights' },
+  { icon: '🚂', title: 'Vonatút', title_en: 'Train rides' },
+  { icon: '⛺', title: 'Kemping', title_en: 'Campsites' },
+  { icon: '✨', title: '', title_en: '' },
+];
+const words = {
+  plus: t(lang, 'ctr.plus'),
+  addLine: t(lang, 'ctr.addLine'),
+  linePh: t(lang, 'ctr.linePh'),
+  empty: t(lang, 'ctr.empty'),
+  confirm: t(lang, 'ctr.confirm'),
+  key: t(lang, 'dev.msgKey'),
+  saved: t(lang, 'gal.saved'),
+  saving: t(lang, 'ctr.saving'),
+  titlePh: t(lang, 'ctr.titlePh'),
+};
+---
+
+<BaseLayout lang={lang} title={t(lang, 'ctr.title')} description={t(lang, 'ctr.lead')}>
+  <section class="section ctr-page">
+    <div class="container">
+      <p class="ctr-back">
+        <a href={localePath(lang)}><Icon name="arrow-left" size={18} />{t(lang, 'posts.back')}</a>
+      </p>
+      <SectionHeading icon="sparkles" as="h1">{t(lang, 'ctr.title')}</SectionHeading>
+      <p class="ctr-lead">{t(lang, 'ctr.lead')}</p>
+
+      <ul class="ctr-grid" data-ctr-grid data-lang={lang} data-live={live || undefined}></ul>
+
+      <!-- developer mode: a new counter from a pattern -->
+      <div class="ctr-new" data-dev-ui>
+        <button type="button" class="ctr-new__open" data-ctr-new>＋ {t(lang, 'ctr.new')}</button>
+        <form class="ctr-new__form" hidden data-ctr-new-form>
+          <p class="ctr-new__label">{t(lang, 'ctr.pick')}</p>
+          <div class="ctr-new__patterns" data-ctr-patterns>
+            {PATTERNS.map((p, i) => <button type="button" data-pattern={i} title={p.title || '✨'}>{p.icon}</button>)}
+          </div>
+          <div class="ctr-new__row">
+            <input class="ctr-new__icon" type="text" maxlength="4" required data-ctr-in="icon" aria-label="emoji" />
+            <input type="text" maxlength="80" required data-ctr-in="title" placeholder={`🇭🇺 ${words.titlePh}`} />
+          </div>
+          <input type="text" maxlength="80" data-ctr-in="title_en" placeholder="🇬🇧 English" />
+          <div class="ctr-new__row">
+            <label>{t(lang, 'ctr.start')} <input type="number" min="0" step="1" value="0" data-ctr-in="count" /></label>
+            <button type="button" data-ctr-new-x>✕</button>
+            <button type="submit" class="ctr-new__save">✓ {t(lang, 'gal.save')}</button>
+          </div>
+        </form>
+        <small class="ctr-note" data-ctr-note></small>
+      </div>
+    </div>
+  </section>
+  <template data-ctr-tile>
+    <li class="ctr">
+      <button type="button" class="ctr__face" aria-expanded="false">
+        <span class="ctr__icon"></span>
+        <b class="ctr__num">0</b>
+        <span class="ctr__title"></span>
+      </button>
+      <span class="ctr__dev" data-dev-ui>
+        <button type="button" data-ctr-do="minus" aria-label="−1">−1</button>
+        <button type="button" class="ctr__plus" data-ctr-do="plus" aria-label="+1">+1</button>
+        <button type="button" data-ctr-do="edit" aria-label="✎">✎</button>
+        <button type="button" data-ctr-do="del" aria-label="🗑">🗑</button>
+      </span>
+      <div class="ctr__list" role="tooltip">
+        <ol></ol>
+        <p class="ctr__empty"></p>
+        <form class="ctr__add" data-dev-ui>
+          <input type="text" maxlength="140" required />
+          <input type="date" />
+          <button type="submit">＋</button>
+        </form>
+      </div>
+    </li>
+  </template>
+  <script type="application/json" data-ctr-data set:html={JSON.stringify(counters)} />
+  <script type="application/json" data-ctr-patterns-data set:html={JSON.stringify(PATTERNS)} />
+  <script type="application/json" data-ctr-words set:html={JSON.stringify(words)} />
+</BaseLayout>
+
+<style is:global>
+  .ctr-back a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+  }
+  .ctr-lead {
+    max-width: 60ch;
+    color: var(--muted);
+    font-size: var(--fs-tagline);
+  }
+  .ctr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+    gap: 22px;
+    margin: 30px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ctr {
+    position: relative;
+  }
+  .ctr__face {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 26px 18px 22px;
+    border: var(--border, 3px solid var(--ink));
+    border-radius: 22px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    box-shadow: 6px 6px 0 var(--violet);
+    font: inherit;
+    cursor: pointer;
+    transition: transform 180ms ease;
+  }
+  .ctr:nth-child(even) .ctr__face {
+    box-shadow: 6px 6px 0 var(--yellow);
+  }
+  .ctr__face:hover,
+  .ctr.is-open .ctr__face {
+    transform: translate(-2px, -3px);
+  }
+  .ctr__icon {
+    font-size: 46px;
+    line-height: 1;
+  }
+  .ctr__num {
+    font: 900 clamp(46px, 6vw, 64px) / 1 var(--font-heading);
+    font-variant-numeric: tabular-nums;
+  }
+  .ctr__num.is-bump {
+    animation: ctr-bump 420ms cubic-bezier(0.3, 1.8, 0.5, 1);
+  }
+  @keyframes ctr-bump {
+    40% {
+      transform: scale(1.35);
+      color: var(--violet);
+    }
+  }
+  .ctr__title {
+    font-weight: 800;
+    text-align: center;
+  }
+  /* the list: when pointed at (or tapped) */
+  .ctr__list {
+    position: absolute;
+    left: 50%;
+    top: calc(100% - 6px);
+    z-index: 20;
+    display: none;
+    width: min(320px, 92vw);
+    max-height: 320px;
+    overflow: auto;
+    padding: 12px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    translate: -50% 0;
+  }
+  .ctr:hover .ctr__list,
+  .ctr:focus-within .ctr__list,
+  .ctr.is-open .ctr__list {
+    display: block;
+    animation: ctr-pop 200ms ease;
+  }
+  @keyframes ctr-pop {
+    from {
+      opacity: 0;
+      translate: -50% -6px;
+    }
+  }
+  .ctr__list ol {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding-left: 20px;
+  }
+  .ctr__list li {
+    font-size: 14px;
+  }
+  .ctr__list li.is-later {
+    opacity: 0.45;
+  }
+  .ctr__list li small {
+    color: var(--muted);
+  }
+  .ctr__list li button {
+    display: none;
+    margin-left: 6px;
+    border: 0;
+    background: none;
+    color: #c0392b;
+    cursor: pointer;
+  }
+  .ctr__empty {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .ctr__empty:empty {
+    display: none;
+  }
+  /* developer mode */
+  .ctr__dev,
+  .ctr__add,
+  .ctr-new {
+    display: none;
+  }
+  :root.dev-mode:not(.dev-preview) .ctr__dev {
+    position: absolute;
+    top: -14px;
+    right: 10px;
+    z-index: 3;
+    display: flex;
+    gap: 4px;
+  }
+  :root.dev-mode:not(.dev-preview) .ctr__add {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  :root.dev-mode:not(.dev-preview) .ctr__list li button {
+    display: inline;
+  }
+  :root.dev-mode:not(.dev-preview) .ctr-new {
+    display: block;
+    margin-top: 30px;
+  }
+  .ctr__dev button,
+  .ctr__add button,
+  .ctr-new button,
+  .ctr-new__open {
+    padding: 4px 10px;
+    border: 1.5px solid #39d353;
+    border-radius: 8px;
+    background: #0d1117;
+    color: #39d353;
+    font: 700 13px ui-monospace, Consolas, monospace;
+    cursor: pointer;
+  }
+  .ctr__dev .ctr__plus {
+    padding: 4px 14px;
+    background: #39d353;
+    color: #0d1117;
+    font-size: 15px;
+  }
+  .ctr__add input {
+    min-width: 0;
+    flex: 1;
+    padding: 6px 8px;
+    border: 1.5px solid #1f8a3a;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 13px;
+  }
+  .ctr__add input[type='date'] {
+    flex: 0 0 auto;
+    width: 130px;
+  }
+  .ctr-new__open {
+    padding: 10px 18px !important;
+    border-style: dashed !important;
+    font-size: 15px !important;
+  }
+  .ctr-new__form {
+    display: grid;
+    gap: 10px;
+    max-width: 520px;
+    margin-top: 12px;
+    padding: 14px;
+    border: 2px solid #39d353;
+    border-radius: 14px;
+    background: #0d1117;
+    color: #d6f5d6;
+    font: 13px ui-monospace, Consolas, monospace;
+  }
+  .ctr-new__form[hidden] {
+    display: none;
+  }
+  .ctr-new__label {
+    margin: 0;
+  }
+  .ctr-new__patterns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .ctr-new__patterns button {
+    font-size: 22px !important;
+    padding: 4px 8px !important;
+  }
+  .ctr-new__patterns button.is-on {
+    background: #39d353 !important;
+  }
+  .ctr-new__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ctr-new__form input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: #010409;
+    color: #e6edf3;
+    font: inherit;
+  }
+  .ctr-new__icon {
+    flex: 0 0 56px !important;
+    font-size: 22px !important;
+    text-align: center;
+  }
+  .ctr-new__form label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+  }
+  .ctr-new__save {
+    background: #39d353 !important;
+    color: #0d1117 !important;
+  }
+  .ctr-note {
+    display: block;
+    margin-top: 8px;
+    color: #1f8a3a;
+    font-weight: 700;
+  }
+</style>
+
+<script>
+  import { commitFiles, getToken } from '../../lib/githubCommit';
+
+  type Item = { text: string; text_en?: string; date?: string };
+  type Counter = { id: string; icon: string; title: string; title_en?: string; count: number; items: Item[]; fromList?: boolean };
+  const today = () => new Date().toISOString().slice(0, 10);
+  /** a list-counted counter: its lines whose day has come (a later one counts from its day) */
+  const value = (c: Counter) => (c.fromList ? (c.items ?? []).filter((it) => !it.date || it.date <= today()).length : c.count);
+  const grid = document.querySelector<HTMLElement>('[data-ctr-grid]');
+  if (grid) {
+    let data = JSON.parse(document.querySelector('[data-ctr-data]')!.textContent || '{"counters":[]}') as { _comment?: string; counters: Counter[] };
+    const patterns = JSON.parse(document.querySelector('[data-ctr-patterns-data]')!.textContent || '[]') as { icon: string; title: string; title_en: string }[];
+    const W = JSON.parse(document.querySelector('[data-ctr-words]')!.textContent || '{}') as Record<string, string>;
+    const isHu = grid.dataset.lang === 'hu';
+    const tr = (o: { title?: string; title_en?: string; text?: string; text_en?: string }, k: 'title' | 'text') => (isHu ? o[k] : o[`${k}_en`] || o[k]) ?? '';
+    const tpl = document.querySelector<HTMLTemplateElement>('[data-ctr-tile]')!;
+    const note = document.querySelector<HTMLElement>('[data-ctr-note]')!;
+    const fmt = new Intl.DateTimeFormat(document.documentElement.lang || 'hu', { year: 'numeric', month: 'short', day: 'numeric' });
+    const nf = new Intl.NumberFormat(document.documentElement.lang || 'hu');
+
+    // ---- saving: a few quick clicks become one save ----
+    let timer = 0;
+    const lines: string[] = [];
+    const save = (line: string) => {
+      lines.push(line);
+      note.textContent = W.saving;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(async () => {
+        let key = getToken();
+        if (!key) key = (window.prompt(W.key) ?? '').trim();
+        if (!key) return void (note.textContent = '');
+        const said = lines.splice(0);
+        try {
+          await commitFiles(key, [{ path: 'src/data/counters.json', text: `${JSON.stringify(data, null, 2)}\n` }], 'Counters: changed on the site', said);
+          note.textContent = W.saved;
+        } catch (err) {
+          note.textContent = err instanceof Error ? err.message : String(err);
+        }
+      }, 1200);
+    };
+
+    /** the number rolls to its value */
+    const roll = (el: HTMLElement, to: number) => {
+      const from = Number(el.dataset.n ?? 0);
+      el.dataset.n = String(to);
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches || from === to) return void (el.textContent = nf.format(to));
+      const t0 = performance.now();
+      const step = (now: number) => {
+        const k = Math.min(1, (now - t0) / 900);
+        el.textContent = nf.format(Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3))));
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+
+    function tile(c: Counter): HTMLElement {
+      const li = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+      li.dataset.id = c.id;
+      li.querySelector('.ctr__icon')!.textContent = c.icon;
+      li.querySelector('.ctr__title')!.textContent = tr(c, 'title');
+      fillList(li, c);
+      // a tap opens / closes the list (touch screens have no pointing)
+      li.querySelector('.ctr__face')!.addEventListener('click', () => {
+        const open = !li.classList.contains('is-open');
+        grid!.querySelectorAll('.ctr.is-open').forEach((x) => x.classList.remove('is-open'));
+        li.classList.toggle('is-open', open);
+        li.querySelector('.ctr__face')!.setAttribute('aria-expanded', String(open));
+      });
+      li.querySelector('.ctr__dev')!.addEventListener('click', (e) => {
+        const what = (e.target as Element).closest<HTMLElement>('[data-ctr-do]')?.dataset.ctrDo;
+        if (!what) return;
+        if (c.fromList && (what === 'plus' || what === 'minus')) {
+          // counted from its list: +1 is a new line (where from, where to, when)
+          li.classList.add('is-open');
+          li.querySelector<HTMLInputElement>('.ctr__add input')!.focus();
+        } else if (what === 'plus' || what === 'minus') {
+          c.count = Math.max(0, c.count + (what === 'plus' ? 1 : -1));
+          const num = li.querySelector<HTMLElement>('.ctr__num')!;
+          roll(num, c.count);
+          num.classList.remove('is-bump');
+          void num.offsetWidth;
+          num.classList.add('is-bump');
+          save(`${c.icon} ${c.title}: ${c.count}`);
+        } else if (what === 'edit') {
+          openNew(c);
+        } else if (what === 'del' && window.confirm(W.confirm.replace('{title}', c.title))) {
+          data.counters = data.counters.filter((x) => x !== c);
+          li.remove();
+          save(`🗑 ${c.icon} ${c.title}`);
+        }
+      });
+      // a line for the list
+      const add = li.querySelector<HTMLFormElement>('.ctr__add')!;
+      const [txt, day] = Array.from(add.querySelectorAll('input'));
+      txt.placeholder = W.linePh;
+      day.value = new Date().toISOString().slice(0, 10);
+      add.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = txt.value.trim();
+        if (!text) return;
+        c.items = [...(c.items ?? []), { text, ...(day.value ? { date: day.value } : {}) }];
+        txt.value = '';
+        fillList(li, c);
+        if (c.fromList) roll(li.querySelector<HTMLElement>('.ctr__num')!, value(c));
+        save(`${c.icon} ${c.title} ＋ ${text}`);
+      });
+      return li;
+    }
+    function fillList(li: HTMLElement, c: Counter) {
+      const ol = li.querySelector('ol')!;
+      ol.replaceChildren(
+        ...[...(c.items ?? [])]
+          .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+          // the lines still to come: only in developer mode (faded)
+          .filter((it) => !c.fromList || !it.date || it.date <= today() || document.documentElement.classList.contains('dev-mode'))
+          .map((it) => {
+          const row = document.createElement('li');
+          if (it.date && it.date > today()) {
+            row.className = 'is-later';
+            row.append('⏳ ');
+          }
+          row.append(tr(it, 'text'));
+          if (it.date) row.append(' ', Object.assign(document.createElement('small'), { textContent: `· ${fmt.format(new Date(`${it.date}T12:00:00`))}` }));
+          const x = Object.assign(document.createElement('button'), { type: 'button', textContent: '✕' });
+          x.addEventListener('click', (e) => {
+            e.stopPropagation();
+            c.items = c.items.filter((y) => y !== it);
+            fillList(li, c);
+            if (c.fromList) roll(li.querySelector<HTMLElement>('.ctr__num')!, value(c));
+            save(`${c.icon} ${c.title} − ${it.text}`);
+          });
+          row.append(x);
+          return row;
+        }),
+      );
+      li.querySelector('.ctr__empty')!.textContent = ol.childElementCount ? '' : W.empty;
+    }
+    function render() {
+      grid!.replaceChildren(...data.counters.map(tile));
+      // the numbers roll up when they come into view
+      const io = new IntersectionObserver((entries) => {
+        for (const en of entries) {
+          if (!en.isIntersecting) continue;
+          io.unobserve(en.target);
+          const c = data.counters.find((x) => x.id === (en.target as HTMLElement).dataset.id);
+          if (c) roll(en.target.querySelector<HTMLElement>('.ctr__num')!, value(c));
+        }
+      });
+      grid!.querySelectorAll('.ctr').forEach((li) => io.observe(li));
+    }
+    render();
+    document.addEventListener('click', (e) => {
+      if (!(e.target as Element).closest('.ctr')) grid.querySelectorAll('.ctr.is-open').forEach((x) => x.classList.remove('is-open'));
+    });
+
+    // ---- a new counter (or a changed one) from a pattern ----
+    const form = document.querySelector<HTMLFormElement>('[data-ctr-new-form]')!;
+    const inp = (k: string) => form.querySelector<HTMLInputElement>(`[data-ctr-in="${k}"]`)!;
+    let editing: Counter | null = null;
+    function openNew(c: Counter | null) {
+      editing = c;
+      inp('icon').value = c?.icon ?? patterns[0].icon;
+      inp('title').value = c?.title ?? patterns[0].title;
+      inp('title_en').value = c?.title_en ?? patterns[0].title_en;
+      inp('count').value = String(c?.count ?? 0);
+      form.querySelectorAll('[data-pattern]').forEach((b, i) => b.classList.toggle('is-on', !c && i === 0));
+      form.hidden = false;
+      form.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      inp('title').focus();
+    }
+    document.querySelector('[data-ctr-new]')!.addEventListener('click', () => openNew(null));
+    form.querySelector('[data-ctr-new-x]')!.addEventListener('click', () => (form.hidden = true));
+    form.querySelector('[data-ctr-patterns]')!.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest<HTMLElement>('[data-pattern]');
+      if (!b) return;
+      const p = patterns[Number(b.dataset.pattern)];
+      form.querySelectorAll('[data-pattern]').forEach((x) => x.classList.toggle('is-on', x === b));
+      inp('icon').value = p.icon;
+      inp('title').value = p.title;
+      inp('title_en').value = p.title_en;
+      inp('title').focus();
+    });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fields = { icon: inp('icon').value.trim() || '✨', title: inp('title').value.trim(), title_en: inp('title_en').value.trim() || undefined, count: Math.max(0, Math.round(Number(inp('count').value) || 0)) };
+      if (editing) Object.assign(editing, fields);
+      else data.counters.push({ id: `${Date.now().toString(36)}`, ...fields, items: [] });
+      form.hidden = true;
+      render();
+      save(`${fields.icon} ${fields.title}${editing ? ' ✎' : ' ＋'}`);
+    });
+
+    // ---- a copy on another host: the main site's counters ----
+    if (grid.dataset.live) {
+      fetch(`${grid.dataset.live}/counters.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((d: { counters: Counter[] }) => {
+          data = { ...data, counters: d.counters };
+          render();
+        })
+        .catch((err) => console.warn('[counters] the main site could not be reached', err));
+    }
+  }
+</script>

@@ -1,0 +1,89 @@
+{
+  "_comment": "The counters page (/<lang>/counters/): each counter has an emoji, a title (Hungarian, title_en: English), a number and a list (text, date). Changed in developer mode on that page. fromList: the number is the list's lines whose date has come (later ones count from their day).",
+  "counters": [
+    {
+      "id": "nutella",
+      "icon": "🍫",
+      "title": "Megevett Nutellás bödön",
+      "title_en": "Jars of Nutella eaten",
+      "count": 0,
+      "items": []
+    },
+    {
+      "id": "sleep-rough",
+      "icon": "🏕️",
+      "title": "Sleep rough – éjszaka a szabad ég alatt",
+      "title_en": "Nights sleeping rough",
+      "count": 0,
+      "items": []
+    },
+    {
+      "id": "feast",
+      "icon": "🍽️",
+      "title": "Nagy lakoma",
+      "title_en": "Big feasts",
+      "count": 0,
+      "items": []
+    },
+    {
+      "id": "flights",
+      "icon": "✈️",
+      "title": "Repülőút",
+      "title_en": "Flights",
+      "count": 0,
+      "items": [
+        {
+          "text": "Budapest → Varsó",
+          "text_en": "Budapest → Warsaw",
+          "date": "2026-08-14"
+        },
+        {
+          "text": "Varsó → Budapest",
+          "text_en": "Warsaw → Budapest",
+          "date": "2026-08-21"
+        },
+        {
+          "text": "Budapest → Athén",
+          "text_en": "Budapest → Athens",
+          "date": "2026-09-23"
+        },
+        {
+          "text": "Athén → Budapest",
+          "text_en": "Athens → Budapest",
+          "date": "2026-10-04"
+        },
+        {
+          "text": "Budapest → Kutaiszi",
+          "text_en": "Budapest → Kutaisi",
+          "date": "2026-12-03"
+        },
+        {
+          "text": "Kutaiszi → Budapest",
+          "text_en": "Kutaisi → Budapest",
+          "date": "2026-12-10"
+        }
+      ],
+      "fromList": true
+    },
+    {
+      "id": "youth-exchanges",
+      "icon": "🤝",
+      "title": "Youth exchange (Erasmus+)",
+      "title_en": "Youth exchanges (Erasmus+)",
+      "count": 0,
+      "fromList": true,
+      "items": [
+        {
+          "text": "Litvánia (aug. 14–21.)",
+          "text_en": "Lithuania (14–21 Aug)",
+          "date": "2026-08-14"
+        },
+        {
+          "text": "Görögország – Elafonisszosz (szept. 23. – okt. 4.)",
+          "text_en": "Greece – Elafonisos (23 Sep – 4 Oct)",
+          "date": "2026-09-23"
+        }
+      ]
+    }
+  ]
+}

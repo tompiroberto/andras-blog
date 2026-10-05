@@ -797,5 +797,18 @@
   "cal.devWhere": "Jelenleg itt vagyok…",
   "cal.docs": "Dokumentumok",
   "cal.docsSaved": "✓ Elmentve – a 🚀 Közzététel után megnyithatók az esemény napjánál.",
-  "cal.docsBig": "Egy fájl 20 MB-nál nagyobb – túl nagy."
+  "cal.docsBig": "Egy fájl 20 MB-nál nagyobb – túl nagy.",
+  "nav.counters": "Számlálók",
+  "ctr.title": "Számlálók",
+  "ctr.lead": "Az életem fontos statisztikái. Vidd fölé az egeret (vagy koppints rá), és megmutatja a listát is.",
+  "ctr.plus": "+1",
+  "ctr.addLine": "Hozzáadás a listához",
+  "ctr.linePh": "pl. Lisszabon, Marcóval",
+  "ctr.empty": "A lista még üres.",
+  "ctr.confirm": "Törlöd a számlálót: „{title}”?",
+  "ctr.saving": "Mentés…",
+  "ctr.titlePh": "Mit számolsz?",
+  "ctr.new": "Új számláló",
+  "ctr.pick": "Válassz mintát (átírható):",
+  "ctr.start": "Kezdő szám"
 }
