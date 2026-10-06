@@ -782,6 +782,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
 
 <script>
   import { PENDING_EVENT, TOKEN_KEY, commitFiles, getToken, pendingCount, pendingLog, publishSite, readFile } from '../lib/githubCommit';
+  import { VIEW_SESSION_KEY } from '../lib/constants';
 
   const KEY = 'andras-dev-mode';
 
@@ -1548,10 +1549,19 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
         e.preventDefault();
         planet.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: 500, easing: 'ease-out' });
       }
-      // already on this page: no reload, so the clicks can follow each other quickly
-      else if (new URL(brand.href).pathname === location.pathname) {
-        e.preventDefault();
-        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+      else {
+        // the title always leads to the top of the blog (not to the CV front page)
+        try {
+          sessionStorage.setItem(VIEW_SESSION_KEY, 'blog');
+        } catch {
+          /* storage unavailable */
+        }
+        // already on this page: no reload, so the clicks can follow each other quickly
+        if (new URL(brand.href).pathname === location.pathname) {
+          e.preventDefault();
+          if (html.classList.contains('cv-mode')) document.querySelector<HTMLButtonElement>('[data-html-toggle="cv-mode"]')?.click();
+          window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        }
       }
       if (clicks.length >= CLICKS) {
         clicks = [];

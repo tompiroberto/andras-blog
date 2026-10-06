@@ -40,35 +40,14 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
 
       {photos.length === 0 && <p class="gallery__empty" data-gallery-empty>{t(lang, 'gallery.empty')}</p>}
 
-      {
-        pinned.length > 0 && (
-          <div class="gmap" data-gmap>
-            <div class="gmap__stage" data-gmap-stage>
-              <img class="gmap__land" src="/world-land.svg" alt="" draggable="false" />
-              {pinned.map(({ p, i }) => (
-                <button
-                  type="button"
-                  class="gmap__pin"
-                  style={`left:${((p.lng! + 180) / 360) * 100}%;top:${((90 - p.lat!) / 180) * 100}%`}
-                  data-pin={i}
-                  aria-label={p.place ? `${p.caption} – ${p.place}` : p.caption}
-                >
-                  {p.thumb ? <img src={p.thumb} alt="" loading="lazy" /> : <span class="gmap__video">▶</span>}
-                  <span class="gmap__tip">{p.caption}{p.place && <small>{p.place}</small>}</span>
-                </button>
-              ))}
-            </div>
-            <div class="gmap__zoom">
-              <button type="button" data-gmap-zoom="1" aria-label="+">+</button>
-              <button type="button" data-gmap-zoom="-1" aria-label="−">−</button>
-            </div>
-            <p class="gmap__hint">{t(lang, 'gallery.mapHint')}</p>
-          </div>
-        )
-      }
-
       <!-- folders: one for each hashtag (and the empty ones made in developer mode) -->
       <div class="gal-folders" data-gal-folders>
+        <!-- photos or videos (together with the hashtag folders below) -->
+        <div class="gal-types" role="group" data-gal-types>
+          <button type="button" class="gal-type is-on" data-type="">🗂 {t(lang, 'gal.all')} <small data-gal-n=""></small></button>
+          <button type="button" class="gal-type" data-type="photo">📷 {t(lang, 'gal.photos')} <small data-gal-n="photo"></small></button>
+          <button type="button" class="gal-type" data-type="video">🎬 {t(lang, 'gal.videos')} <small data-gal-n="video"></small></button>
+        </div>
         <div class="gal-folders__row" data-gal-folder-row></div>
         <form class="gal-folders__new" hidden data-gal-newfolder>
           <span>📁</span>
@@ -119,6 +98,34 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
           ))
         }
       </ul>
+
+      <!-- the pictures with a place, on a map (under the gallery) -->
+      {
+        pinned.length > 0 && (
+          <div class="gmap" data-gmap>
+            <div class="gmap__stage" data-gmap-stage>
+              <svg class="gmap__land" viewBox="0 0 360 180" preserveAspectRatio="none" aria-hidden="true" data-gmap-land></svg>
+              {pinned.map(({ p, i }) => (
+                <button
+                  type="button"
+                  class="gmap__pin"
+                  style={`left:${((p.lng! + 180) / 360) * 100}%;top:${((90 - p.lat!) / 180) * 100}%`}
+                  data-pin={i}
+                  aria-label={p.place ? `${p.caption} – ${p.place}` : p.caption}
+                >
+                  {p.thumb ? <img src={p.thumb} alt="" loading="lazy" /> : <span class="gmap__video">▶</span>}
+                  <span class="gmap__tip">{p.caption}{p.place && <small>{p.place}</small>}</span>
+                </button>
+              ))}
+            </div>
+            <div class="gmap__zoom">
+              <button type="button" data-gmap-zoom="1" aria-label="+">+</button>
+              <button type="button" data-gmap-zoom="-1" aria-label="−">−</button>
+            </div>
+            <p class="gmap__hint">{t(lang, 'gallery.mapHint')}</p>
+          </div>
+        )
+      }
     </div>
   </section>
 
@@ -231,6 +238,34 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
   /* folders */
   .gal-folders {
     margin: 22px 0 6px;
+  }
+  .gal-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .gal-type {
+    padding: 6px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 150ms ease;
+  }
+  .gal-type:hover {
+    transform: translateY(-2px);
+  }
+  .gal-type.is-on {
+    background: var(--violet);
+    color: #fff;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .gal-type small {
+    opacity: 0.75;
   }
   .gal-folders__row {
     display: flex;
@@ -382,19 +417,32 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
   .gallery__empty {
     font-weight: 700;
   }
+  /* the map under the gallery: plain and quiet */
   .gmap {
     position: relative;
-    margin: 0 0 32px;
-    border: var(--border);
-    border-radius: var(--radius-card);
+    margin: 40px 0 0;
+    border: 1.5px solid color-mix(in srgb, var(--ink) 25%, transparent);
+    border-radius: 16px;
     overflow: hidden;
-    background: var(--violet-tint);
-    box-shadow: var(--shadow-yellow);
+    background: color-mix(in srgb, var(--violet) 4%, var(--surface, #fff));
     touch-action: none;
+  }
+  /* the continents: a light fill and a thin line at any zoom (the path comes from /world-land.svg) */
+  .gmap__land :global(path) {
+    fill: color-mix(in srgb, var(--violet) 9%, var(--surface, #fff));
+    stroke: color-mix(in srgb, var(--violet) 40%, transparent);
+    /* non-scaling-stroke undoes the viewBox stretch; the zoom (a CSS scale on the stage) is undone here */
+    stroke-width: calc(1.2px / var(--gz, 1));
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .gmap__pin .gmap__video {
+    border-radius: 50%;
+    font-size: 10px;
   }
   .gmap__stage {
     position: relative;
-    aspect-ratio: 2 / 1;
+    aspect-ratio: 2.2 / 1;
     transform-origin: 0 0;
     cursor: grab;
   }
@@ -411,24 +459,27 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
   }
   .gmap__pin {
     position: absolute;
-    width: 34px;
-    height: 34px;
+    width: 26px;
+    height: 26px;
     padding: 0;
-    border: 2px solid var(--ink);
-    border-radius: 50% 50% 50% 0;
-    background: var(--yellow);
-    transform: translate(-50%, -100%) rotate(-45deg) scale(calc(1 / var(--gz, 1)));
-    transform-origin: 50% 100%;
-    box-shadow: 2px 2px 0 var(--ink);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--violet);
+    transform: translate(-50%, -50%) scale(calc(1 / var(--gz, 1)));
+    transform-origin: 50% 50%;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
     cursor: pointer;
     overflow: visible;
+    transition: scale 150ms ease;
+  }
+  .gmap__pin:hover {
+    scale: 1.25;
   }
   .gmap__pin img {
     width: 100%;
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
-    transform: rotate(45deg);
     pointer-events: none;
   }
   .gmap__tip {
@@ -446,8 +497,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
     font-size: 13px;
     font-weight: 700;
     text-align: left;
-    transform: translateX(-50%) rotate(45deg);
-    transform-origin: 0 100%;
+    transform: translateX(-50%);
     pointer-events: none;
   }
   .gmap__tip small {
@@ -458,7 +508,6 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
   .gmap__pin:hover,
   .gmap__pin:focus-visible {
     z-index: 2;
-    background: var(--violet);
   }
   .gmap__pin:hover .gmap__tip,
   .gmap__pin:focus-visible .gmap__tip {
@@ -472,9 +521,9 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
     gap: 6px;
   }
   .gmap__zoom button {
-    width: 38px;
-    height: 38px;
-    border: 2px solid var(--ink);
+    width: 34px;
+    height: 34px;
+    border: 1.5px solid color-mix(in srgb, var(--ink) 35%, transparent);
     border-radius: 50%;
     background: var(--surface);
     color: var(--ink);
@@ -651,6 +700,18 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
   const gmap = document.querySelector<HTMLElement>('[data-gmap]');
   if (gmap) {
     const stage = gmap.querySelector<HTMLElement>('[data-gmap-stage]')!;
+    // the continents (one path in a 360 × 180 plate-carrée space, as on the background map)
+    const land = gmap.querySelector<SVGSVGElement>('[data-gmap-land]');
+    fetch('/world-land.svg')
+      .then((r) => r.text())
+      .then((svg) => {
+        const d = new DOMParser().parseFromString(svg, 'image/svg+xml').querySelector('path')?.getAttribute('d');
+        if (!d || !land) return;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', d);
+        land.append(path);
+      })
+      .catch(() => {});
     let z = 1;
     let x = 0;
     let y = 0;
@@ -800,19 +861,36 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
     const newForm = document.querySelector<HTMLFormElement>('[data-gal-newfolder]')!;
     const emptyNote = document.querySelector<HTMLElement>('[data-gal-folder-empty]')!;
     let open = '';
+    // photos or videos: '' = both
+    let kind = '';
+    const kindOf = (li: HTMLElement) => (li.querySelector<HTMLElement>('.gallery__open')?.dataset.video ? 'video' : 'photo');
+    const ofKind = () => tilesAll().filter((li) => !kind || kindOf(li) === kind);
+    const types = document.querySelector<HTMLElement>('[data-gal-types]')!;
+    types.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest<HTMLElement>('[data-type]');
+      if (!b) return;
+      kind = b.dataset.type ?? '';
+      types.querySelectorAll<HTMLElement>('[data-type]').forEach((x) => x.classList.toggle('is-on', x === b));
+      renderFolders();
+    });
     function applyFolder() {
       let shown = 0;
       for (const li of tilesAll()) {
-        li.hidden = !!open && !tagsOf(li).includes(open);
+        li.hidden = (!!open && !tagsOf(li).includes(open)) || (!!kind && kindOf(li) !== kind);
         if (!li.hidden) shown++;
       }
       emptyNote.hidden = !open || shown > 0;
       row.querySelectorAll<HTMLElement>('[data-folder]').forEach((b) => b.classList.toggle('is-on', b.dataset.folder === open));
     }
     function renderFolders() {
+      const tiles = tilesAll();
+      types.querySelectorAll<HTMLElement>('[data-gal-n]').forEach((n) => {
+        const k = n.dataset.galN;
+        n.textContent = `(${k ? tiles.filter((li) => kindOf(li) === k).length : tiles.length})`;
+      });
       const count = new Map<string, number>();
       const cover = new Map<string, string>();
-      for (const li of tilesAll())
+      for (const li of ofKind())
         for (const tg of tagsOf(li)) {
           count.set(tg, (count.get(tg) ?? 0) + 1);
           if (!cover.has(tg)) {
@@ -856,7 +934,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
         newForm.hidden = false;
         newForm.querySelector('input')!.focus();
       });
-      row.replaceChildren(chip('', tx('all'), tilesAll().length), ...names.map((n) => chip(n, `#${n}`, count.get(n) ?? 0, cover.get(n))), add);
+      row.replaceChildren(chip('', tx('all'), ofKind().length), ...names.map((n) => chip(n, `#${n}`, count.get(n) ?? 0, cover.get(n))), add);
       applyFolder();
     }
     row.addEventListener('click', (e) => {
@@ -1046,6 +1124,12 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
           if (empty) empty.hidden = !!grid.querySelector('.gallery__item:not([hidden])');
         })
         .catch((err) => console.warn('[gallery] the main site could not be reached', err));
+    }
+    // ?tag=… (an album on the home page): that folder is open
+    const wanted = new URLSearchParams(location.search).get('tag');
+    if (wanted) {
+      open = wanted;
+      requestAnimationFrame(() => row.scrollIntoView({ block: 'start', behavior: 'smooth' }));
     }
     renderFolders();
   }

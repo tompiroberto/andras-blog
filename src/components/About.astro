@@ -53,7 +53,8 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
 
     <div class="about__side reveal">
       <figure class="portrait">
-        <div class="portrait__frame">
+        <!-- pointing at it (or a tap) opens a little offer of help with any food -->
+        <div class="portrait__frame" role="button" tabindex="0" data-info-title={t(lang, 'about.photoCaption')} data-info-text={t(lang, 'about.photoStory')}>
           <picture>
             <source srcset="/images/andras-520.webp 520w, /images/andras.webp 800w" sizes="260px" type="image/webp" />
             <img
@@ -180,6 +181,7 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
     max-height: 70vw;
     margin-inline: auto;
     border-radius: 50%;
+    cursor: pointer;
     /* ink outline, 6px yellow ring, ink outline */
     box-shadow:
       0 0 0 2px var(--ink),

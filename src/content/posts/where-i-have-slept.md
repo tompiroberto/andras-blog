@@ -1,5 +1,5 @@
 ---
-title: 'Places where I have slept'
+title: 'Sleeping rough'
 category: random
 lang: en
 excerpt: 'A beach without a blanket, the middle of a forest, a bus stop, a castle ruin and a motorboat – so far.'

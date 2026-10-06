@@ -68,7 +68,8 @@
   --z-globe: 0;
   --z-content: 1;
   --z-grid: 45;
-  --z-header: 50;
+  /* above everything on the page (the country ribbon, an open counter list…); only overlays go higher */
+  --z-header: 70;
   --z-chile: 60;
   --z-overlay: 100;
   --z-tooltip: 110;
@@ -1153,6 +1154,8 @@ select {
 }
 .infobox__x {
   position: absolute;
+  /* above the head, whose animation gives it a layer of its own */
+  z-index: 2;
   top: 8px;
   right: 8px;
   width: 30px;

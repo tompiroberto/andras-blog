@@ -4,9 +4,21 @@
  * the page itself (in <body>, so it scrolls and zooms with it), above the background map with its city
  * names and drawings and below the header. Its colours come from the theme (white normally, dark in
  * developer mode). One box at a time; the same button, the ✕, Esc or a click elsewhere closes it.
+ * A mouse resting on a button for HOVER_MS opens it too; such a box closes when the mouse leaves both
+ * the button and the box (unless the button was clicked, which keeps it open).
  * Styles: .infobox in src/styles/global.css.
  */
-let current: { box: HTMLElement; button: HTMLElement } | null = null;
+let current: { box: HTMLElement; button: HTMLElement; byHover: boolean } | null = null;
+
+const HOVER_MS = 400;
+let hoverTimer = 0;
+let openTimer = 0;
+const cancelHoverClose = () => window.clearTimeout(hoverTimer);
+function hoverClose(button: HTMLElement) {
+  cancelHoverClose();
+  // a short grace time to cross the gap between the button and its box
+  hoverTimer = window.setTimeout(() => current?.button === button && current.byHover && close(), 250);
+}
 
 function close(animate = true) {
   if (!current) return;
@@ -22,7 +34,7 @@ function close(animate = true) {
 /** the title: data-info-title, or the text of the element named by data-info-title-from */
 const titleOf = (b: HTMLElement) => (b.dataset.infoTitleFrom ? b.querySelector(b.dataset.infoTitleFrom)?.textContent?.trim() : undefined) || b.dataset.infoTitle || '';
 
-function open(button: HTMLElement) {
+function open(button: HTMLElement, byHover = false) {
   // on <body> (position: relative), above the background layer (--z-grid) with the city names
   const root = document.body;
   const box = document.createElement('div');
@@ -80,6 +92,11 @@ function open(button: HTMLElement) {
     box.append(ul);
   }
   root.append(box);
+  box.addEventListener('pointerenter', () => {
+    cancelHoverClose();
+    window.clearTimeout(openTimer);
+  });
+  box.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && hoverClose(button));
 
   // position under the button, measured in the root's own (zoom-free) pixels
   const rr = root.getBoundingClientRect();
@@ -89,7 +106,10 @@ function open(button: HTMLElement) {
   const centre = (br.left + br.width / 2 - rr.left) / k;
   // kept inside the visible part of the page
   const visLeft = -rr.left / k;
-  const visRight = (window.innerWidth - rr.left) / k;
+  let visRight = (window.innerWidth - rr.left) / k;
+  // ... and off the country ribbon on the right, which lies above it (its ✕ would be unclickable)
+  const ribbon = document.querySelector<HTMLElement>('.chile')?.getBoundingClientRect();
+  if (ribbon && ribbon.width > 0 && ribbon.left > br.right) visRight = Math.min(visRight, (ribbon.left - rr.left) / k);
   const left = Math.max(visLeft + 8, Math.min(visRight - width - 8, centre - width / 2));
   box.style.left = `${left}px`;
   box.style.top = `${(br.bottom - rr.top) / k + 14}px`;
@@ -98,7 +118,7 @@ function open(button: HTMLElement) {
   box.style.setProperty('--arrow-x', `${centre - left}px`);
 
   button.setAttribute('aria-expanded', 'true');
-  current = { box, button };
+  current = { box, button, byHover };
 }
 
 /** (Re)open the box of this button – also when it is already open (e.g. with a new text). */
@@ -107,6 +127,7 @@ export function showInfoBox(button: HTMLElement): void {
   open(button);
 }
 
+/** a click opens / closes the box; a mouse resting on the button opens it too (touch has no hover) */
 export function wireInfoBoxes(scope: ParentNode = document): void {
   scope.querySelectorAll<HTMLElement>('[data-info-title]').forEach((b) => {
     if (b.dataset.infoWired) return;
@@ -114,9 +135,28 @@ export function wireInfoBoxes(scope: ParentNode = document): void {
     b.setAttribute('aria-expanded', 'false');
     b.addEventListener('click', (e) => {
       e.stopPropagation();
+      window.clearTimeout(openTimer);
       const same = current?.button === b;
+      // already opened by the mouse resting on it: a click keeps it open
+      if (same && current!.byHover) return void (current!.byHover = false);
       close(!same ? false : true);
       if (!same) open(b);
+    });
+    b.addEventListener('pointerenter', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      window.clearTimeout(openTimer);
+      if (current?.button === b) return cancelHoverClose();
+      // only a mouse that stays opens it (not one passing by, e.g. on its way to an open box)
+      openTimer = window.setTimeout(() => {
+        cancelHoverClose();
+        close(false);
+        open(b, true);
+      }, HOVER_MS);
+    });
+    b.addEventListener('pointerleave', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      window.clearTimeout(openTimer);
+      if (current?.button === b) hoverClose(b);
     });
   });
 }

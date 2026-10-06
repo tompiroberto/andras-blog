@@ -148,6 +148,19 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
     border-radius: 14px;
     background: #000;
   }
+  /* a video plays in its own shape (16:9, upright…), across the whole row – only previews are cropped */
+  .post-media li:has(video) {
+    grid-column: 1 / -1;
+  }
+  .post-media video {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 75vh;
+    margin-inline: auto;
+    aspect-ratio: auto;
+    object-fit: contain;
+  }
   .post-music {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
