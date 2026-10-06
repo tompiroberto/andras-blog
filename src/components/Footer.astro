@@ -1,4 +1,5 @@
 ---
+import { MAIN_SITE as MAIN_SITE_URL } from '../lib/mainSite.mjs';
 import Globe from './Globe.astro';
 import Icon from './Icon.astro';
 import PowerLines from './PowerLines.astro';
@@ -15,7 +16,7 @@ interface Props {
 const { lang } = Astro.props;
 const year = new Date().getFullYear();
 // the visitor counter: the main site's /api/visits (netlify/functions/visits.mjs); a copy on another host asks the main site
-const visitsApi = `${import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : ''}/api/visits`;
+const visitsApi = `${import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || MAIN_SITE_URL : ''}/api/visits`;
 
 const contacts = [
   { href: `mailto:${site.email}`, icon: 'mail', label: 'E-mail', external: false },

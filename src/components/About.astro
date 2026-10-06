@@ -4,6 +4,7 @@ import Icon from './Icon.astro';
 import IconCircle from './IconCircle.astro';
 import SectionHeading from './SectionHeading.astro';
 import StatRing from './StatRing.astro';
+import Races from './Races.astro';
 import { t, type Lang, type TKey } from '../i18n';
 import site from '../data/site.json';
 
@@ -40,6 +41,7 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
                   class:list={['chip', 'chip--btn', l.level === 'solid' ? 'chip--solid' : 'chip--learning']}
                   data-info-title={t(lang, l.key as TKey)}
                   data-info-text={t(lang, `story.${l.key}` as TKey)}
+                  data-info-photos={(l as { photos?: string[] }).photos ? JSON.stringify((l as { photos?: string[] }).photos) : undefined}
                 >
                   <Icon name={l.level === 'solid' ? 'check' : 'pencil'} size={16} />
                   {t(lang, l.key as TKey)}
@@ -49,6 +51,7 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
           }
         </ul>
       </div>
+      <Races lang={lang} />
     </div>
 
     <div class="about__side reveal">
@@ -81,6 +84,8 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
               data-info-text={t(lang, `pb.${pb.id}.text` as TKey)}
               data-info-facts={t(lang, `pb.${pb.id}.facts` as TKey)}
               data-info-icon=".stat-ring__content svg"
+              data-info-audio={(pb as { song?: { file: string } }).song?.file}
+              data-info-audio-title={(pb as { song?: { title: string } }).song?.title}
             >
               <StatRing distance={pb.distance} time={pb.time} fill={pb.ringFill} label={t(lang, 'stats.pb')} tone={i % 2 ? 'violet' : 'yellow'} />
             </button>
@@ -88,24 +93,7 @@ const workRest = colon > 0 ? work.slice(colon + 1) : work;
         }
       </div>
 
-      <ul class="badges">
-        {
-          site.raceBadges.map((b) => (
-            <li>
-              <button
-                type="button"
-                class="pill badge badge--btn"
-                data-info-title={t(lang, `race.${b.id}` as TKey)}
-                data-info-text={t(lang, `race.${b.id}.text` as TKey)}
-                data-info-facts={t(lang, `race.${b.id}.facts` as TKey)}
-              >
-                <IconCircle icon={b.icon} variant={b.icon === 'trophy' ? 'yellow' : 'violet'} size="nav" />
-                {t(lang, `race.${b.id}` as TKey)}
-              </button>
-            </li>
-          ))
-        }
-      </ul>
+      <!-- the races (Split 10k, Skyrunning …) are in the list beside, under "My races" (Races.astro) -->
     </div>
   </div>
 </section>

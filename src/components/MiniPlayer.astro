@@ -1,0 +1,186 @@
+---
+/**
+ * The mini player: whatever music the site plays (a post's songs, a calendar event's, the adventures
+ * card's, the music page) keeps playing when its box is closed or scrolled away – a small bar at the
+ * bottom then shows the song with ⏯ and ✕ (✕ stops it). Phones get the same controls on the lock screen
+ * and in the notifications (Media Session). One song at a time: a new one pauses the one before.
+ * Other parts can hand over an Audio() that is not on the page: window.__nowPlaying(audio, title).
+ */
+---
+
+<div class="mini-player" hidden data-mini-player role="region" aria-label="♪">
+  <span class="mini-player__icon" aria-hidden="true">♪</span>
+  <span class="mini-player__title" data-mp-title></span>
+  <button type="button" class="mini-player__btn" data-mp-toggle aria-label="⏯">❚❚</button>
+  <button type="button" class="mini-player__btn" data-mp-stop aria-label="✕">✕</button>
+</div>
+
+<style>
+  .mini-player {
+    position: fixed;
+    left: 50%;
+    bottom: 14px;
+    z-index: 640;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: min(440px, calc(100vw * var(--inv-zoom, 1) - 24px));
+    padding: 6px 6px 6px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    box-shadow: 4px 4px 0 var(--violet);
+    translate: -50% 0;
+    zoom: var(--inv-zoom, 1);
+    animation: mini-in 300ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .mini-player[hidden] {
+    display: none;
+  }
+  @keyframes mini-in {
+    from {
+      translate: -50% 30px;
+      opacity: 0;
+    }
+  }
+  .mini-player__icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--yellow);
+    font-weight: 900;
+  }
+  .mini-player.is-playing .mini-player__icon {
+    animation: mini-beat 0.9s ease-in-out infinite alternate;
+  }
+  @keyframes mini-beat {
+    to {
+      scale: 1.15;
+    }
+  }
+  .mini-player__title {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .mini-player__btn {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--violet);
+    color: #fff;
+    font: 800 13px/1 inherit;
+    cursor: pointer;
+  }
+  .mini-player__btn[data-mp-stop] {
+    background: var(--surface, #fff);
+    color: var(--ink);
+  }
+  @media print {
+    .mini-player {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const bar = document.querySelector<HTMLElement>('[data-mini-player]');
+  if (bar) {
+    const titleEl = bar.querySelector<HTMLElement>('[data-mp-title]')!;
+    const toggle = bar.querySelector<HTMLButtonElement>('[data-mp-toggle]')!;
+    let current: HTMLAudioElement | null = null;
+    // what tells whether the song's own player is in sight: the <audio> itself, or what started it (a button)
+    let watched: Element | null = null;
+    let title = '';
+    let sourceSeen = true;
+
+    /** a song's name: what the page says next to its player, else the file name */
+    const nameOf = (a: HTMLAudioElement) =>
+      a.dataset.title ||
+      a.closest('li, .track')?.querySelector('strong, .track__title')?.textContent?.replace(/^♪\s*/, '').trim() ||
+      (a.previousElementSibling?.textContent ?? '').replace(/^🎵\s*/, '').trim() ||
+      decodeURIComponent((a.currentSrc || a.src).split('/').pop() ?? '').replace(/\.\w+$/, '');
+
+    // the bar shows while a song is on and its own player is not in sight (closed, scrolled away, or not on the page)
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.target === watched) sourceSeen = e.isIntersecting && (watched?.isConnected ?? false);
+      render();
+    });
+    function render() {
+      const show = !!current && (current.paused ? bar!.dataset.held === '1' : true) && (!sourceSeen || !watched?.isConnected);
+      bar!.hidden = !show;
+      bar!.classList.toggle('is-playing', !!current && !current.paused);
+      toggle.textContent = current && !current.paused ? '❚❚' : '▶';
+      titleEl.textContent = title;
+    }
+    function setMedia() {
+      if (!('mediaSession' in navigator) || !current) return;
+      const [artist, song] = title.includes(' – ') ? title.split(' – ', 2) : ['', title];
+      navigator.mediaSession.metadata = new MediaMetadata({ title: song || title, artist, album: 'András', artwork: [{ src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' }] });
+      navigator.mediaSession.setActionHandler('play', () => void current?.play());
+      navigator.mediaSession.setActionHandler('pause', () => current?.pause());
+      navigator.mediaSession.setActionHandler('stop', stop);
+    }
+    function take(a: HTMLAudioElement, name?: string, source?: Element) {
+      // one song at a time
+      if (current && current !== a && !current.paused) current.pause();
+      if (current !== a) {
+        if (watched) io.unobserve(watched);
+        current = a;
+        watched = source ?? a;
+        title = name || nameOf(a);
+        sourceSeen = watched.isConnected;
+        if (watched.isConnected) io.observe(watched);
+        ['play', 'pause', 'ended'].forEach((ev) => a.addEventListener(ev, onState));
+      }
+      bar!.dataset.held = '1';
+      setMedia();
+      render();
+    }
+    function onState(this: HTMLAudioElement, e: Event) {
+      if (this !== current) return;
+      if (e.type === 'ended') return stop();
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = this.paused ? 'paused' : 'playing';
+      render();
+    }
+    function stop() {
+      current?.pause();
+      if (watched) io.unobserve(watched);
+      current = null;
+      watched = null;
+      bar!.dataset.held = '';
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = null;
+        navigator.mediaSession.playbackState = 'none';
+      }
+      render();
+    }
+    // any <audio> on the page that starts playing (capture: play does not bubble)
+    document.addEventListener('play', (e) => e.target instanceof HTMLAudioElement && e.target !== current && take(e.target), true);
+    // a player removed from the page (a box redrawn) – it plays on, and the bar takes over
+    new MutationObserver(() => {
+      if (watched && !watched.isConnected) {
+        sourceSeen = false;
+        render();
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+    (window as unknown as { __nowPlaying?: (a: HTMLAudioElement, name?: string, source?: Element) => void }).__nowPlaying = take;
+    toggle.addEventListener('click', () => {
+      if (!current) return;
+      if (current.paused) void current.play();
+      else current.pause();
+    });
+    bar.querySelector('[data-mp-stop]')!.addEventListener('click', stop);
+  }
+</script>

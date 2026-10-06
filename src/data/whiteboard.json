@@ -1,0 +1,14 @@
+{
+  "_comment": "The whiteboard under the About text (src/components/Whiteboard.astro). Each item: kind (text | glass), text, x / y (% of the board, the item's centre), r (degrees), size (px), color (ink | violet | red | blue | green). Written in developer mode.",
+  "items": [
+    { "id": "w1", "kind": "text", "text": "Mi a pék?!", "x": 20, "y": 13, "r": -5, "size": 40, "color": "violet" },
+    { "id": "w2", "kind": "text", "text": "1 go, 2 go, 3 go... let's go!", "x": 63, "y": 15, "r": 3, "size": 26, "color": "ink" },
+    { "id": "w3", "kind": "text", "text": "Kenyér és sör", "x": 22, "y": 40, "r": -3, "size": 32, "color": "red" },
+    { "id": "w4", "kind": "text", "text": "M", "x": 60, "y": 42, "r": -6, "size": 58, "color": "blue" },
+    { "id": "w5", "kind": "text", "text": "ე", "x": 72, "y": 40, "r": 4, "size": 58, "color": "green" },
+    { "id": "w6", "kind": "text", "text": "A", "x": 84, "y": 43, "r": -3, "size": 58, "color": "red" },
+    { "id": "w7", "kind": "glass", "text": "", "x": 40, "y": 62, "r": 8, "size": 64, "color": "blue" },
+    { "id": "w8", "kind": "text", "text": "PUM", "x": 16, "y": 74, "r": -8, "size": 48, "color": "violet" },
+    { "id": "w9", "kind": "text", "text": "Even if I'm late", "x": 68, "y": 80, "r": 2, "size": 30, "color": "ink" }
+  ]
+}

@@ -40,7 +40,8 @@ export interface Photo {
   files?: string[];
 }
 
-type Meta = { caption?: string; place?: string; lat?: number; lng?: number; tags?: string[] };
+/** post: "" takes the picture out of its post */
+type Meta = { caption?: string; place?: string; lat?: number; lng?: number; tags?: string[]; date?: string; post?: string };
 const G = gallery as { hidden: string[]; meta: Record<string, Meta>; folders?: string[] };
 
 const files = import.meta.glob<ImageMetadata>('../assets/photos/*.{jpg,jpeg,png,webp,avif,JPG,JPEG,PNG,WEBP}', {
@@ -134,6 +135,17 @@ export async function getPhotos(lang = 'en'): Promise<Photo[]> {
     .filter((p) => !G.hidden.includes(p.key))
     .map((p) => {
       const m = G.meta[p.key];
-      return m ? { ...p, caption: m.caption || p.caption, place: m.place ?? p.place, lat: m.lat ?? p.lat, lng: m.lng ?? p.lng, tags: m.tags ?? p.tags } : p;
+      return m
+        ? {
+            ...p,
+            caption: m.caption || p.caption,
+            place: m.place ?? p.place,
+            lat: m.lat ?? p.lat,
+            lng: m.lng ?? p.lng,
+            tags: m.tags ?? p.tags,
+            date: m.date ? new Date(`${m.date}T12:00:00Z`) : p.date,
+            post: m.post === undefined ? p.post : m.post || undefined,
+          }
+        : p;
     });
 }

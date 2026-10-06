@@ -1,4 +1,5 @@
 ---
+import { MAIN_SITE as MAIN_SITE_URL } from '../../lib/mainSite.mjs';
 /**
  * Music: the tracks uploaded in developer mode (src/content/music/*.yml + public/music/*), newest first,
  * with one shared player (play / pause, seek, next). In developer mode a track can be deleted here.
@@ -22,12 +23,14 @@ const tagCount = new Map<string, number>();
 for (const tr of tracks) for (const tg of tr.tags ?? []) tagCount.set(tg, (tagCount.get(tg) ?? 0) + 1);
 const allTags = [...tagCount.entries()].sort((a, b) => b[1] - a[1]).map(([tg]) => tg);
 /** the main site: a copy on another host also plays the music uploaded there (/music.json) */
-const MAIN_SITE = import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app';
+const MAIN_SITE = import.meta.env.PUBLIC_MAIN_SITE || MAIN_SITE_URL;
 const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefined;
 // every calendar event with music is a playlist (the newest trip first); built in the browser, so a copy
 // on another host can use the main site's calendar too
 type CalEvent = { id: string; title: string; title_en?: string; country?: string; from: string; to: string; color: string; music?: string[] };
 const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length);
+// developer mode: a song can be moved to any post
+const musicPosts = (await (await import('../../lib/posts')).getPosts()).map((p) => ({ id: p.id, title: p.data.title }));
 ---
 
 <BaseLayout lang={lang} title={t(lang, 'music.title')} description={t(lang, 'music.lead')}>
@@ -130,7 +133,17 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
         <input type="text" maxlength="80" placeholder={t(lang, 'music.artist')} data-tf="artist" />
         <textarea rows="3" maxlength="300" placeholder={t(lang, 'music.about')} data-tf="about"></textarea>
         <input type="text" maxlength="200" placeholder={t(lang, 'music.tags')} data-tf="tags" />
-        <input type="text" maxlength="80" placeholder={t(lang, 'music.place')} data-tf="place" />
+        <input type="text" maxlength="80" placeholder={`${t(lang, 'music.place')} · 47.5, 19.04`} data-tf="place" />
+        <label class="track-form__row">📅 <input type="date" data-tf="date" /></label>
+        <label class="track-form__row">
+          📝
+          <select data-tf="post">
+            <option value="">–</option>
+            {musicPosts.map((p) => <option value={p.id}>{p.title}</option>)}
+          </select>
+        </label>
+        <!-- a new audio file in the old one's place -->
+        <label class="track-form__row">🔁 <input type="file" accept="audio/*" data-tf-file /></label>
         <small data-tf-note></small>
         <div><button type="button" data-tf-cancel>✕</button><button type="submit">{t(lang, 'gal.save')}</button></div>
       </form>
@@ -444,6 +457,15 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
   .track-form[hidden] {
     display: none;
   }
+  .track-form__row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .track-form__row > * {
+    flex: 1;
+  }
+  .track-form select,
   .track-form input,
   .track-form textarea {
     padding: 8px 10px;
@@ -778,13 +800,14 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
    * Developer mode: ✎ on a track rewrites its title, artist, words, hashtags and place
    * (src/content/music/<id>.yml, saved to GitHub; 🚀 Publish puts it online).
    */
-  import { commitFiles, getToken } from '../../lib/githubCommit';
+  import { commitFiles, getToken, toBase64 } from '../../lib/githubCommit';
   import { geocode } from '../../lib/geocode';
 
   const form = document.querySelector<HTMLFormElement>('[data-track-form]');
   if (form) {
     const tx = (n: string) => document.querySelector<HTMLTemplateElement>(`[data-music-${n}]`)?.content.textContent ?? '';
-    const field = (n: string) => form.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-tf="${n}"]`)!;
+    const field = (n: string) => form.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`[data-tf="${n}"]`)!;
+    const fileIn = form.querySelector<HTMLInputElement>('[data-tf-file]')!;
     const note = form.querySelector<HTMLElement>('[data-tf-note]')!;
     type Meta = { id: string; file: string; title: string; artist?: string; about?: string; tags?: string[]; place?: string; lat?: number; lng?: number; date?: string; post?: string };
     let tr: HTMLElement | null = null;
@@ -799,7 +822,10 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
       field('artist').value = meta.artist ?? '';
       field('about').value = meta.about ?? '';
       field('tags').value = (meta.tags ?? []).map((x) => `#${x}`).join(' ');
-      field('place').value = meta.place ?? '';
+      field('place').value = meta.place ?? (meta.lat !== undefined ? `${meta.lat}, ${meta.lng}` : '');
+      field('date').value = meta.date ? String(meta.date).slice(0, 10) : '';
+      field('post').value = meta.post ?? '';
+      fileIn.value = '';
       note.textContent = '';
       form.hidden = false;
       field('about').focus();
@@ -815,7 +841,11 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
       const place = field('place').value.trim();
       let lat = meta.lat;
       let lng = meta.lng;
-      if (place !== (meta.place ?? '')) {
+      const xy = place.match(/^(-?\d+(?:\.\d+)?)\s*[,;]\s*(-?\d+(?:\.\d+)?)$/);
+      if (xy) {
+        lat = Number(xy[1]);
+        lng = Number(xy[2]);
+      } else if (place !== (meta.place ?? '')) {
         lat = lng = undefined;
         if (place) {
           const hit = (await geocode(place, document.documentElement.lang || 'en').catch(() => []))[0];
@@ -824,16 +854,17 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
           lng = Math.round(hit.longitude * 1e5) / 1e5;
         }
       }
-      const date = meta.date ? String(meta.date).slice(0, 10) : '';
+      const date = field('date').value;
+      const post = field('post').value;
       const yml = [
         `file: ${meta.file}`,
         `title: ${JSON.stringify(title)}`,
         artist && `artist: ${JSON.stringify(artist)}`,
         about && `about: ${JSON.stringify(about)}`,
         date && `date: ${date}`,
-        meta.post && `post: ${meta.post}`,
+        post && `post: ${post}`,
         tags.length && `tags: ${JSON.stringify(tags)}`,
-        place && `place: ${JSON.stringify(place)}`,
+        place && !xy && `place: ${JSON.stringify(place)}`,
         lat !== undefined && lng !== undefined && `lat: ${lat}\nlng: ${lng}`,
       ]
         .filter(Boolean)
@@ -842,7 +873,10 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
       if (!key) key = (window.prompt(tx('needkey')) ?? '').trim();
       if (!key) return;
       try {
-        await commitFiles(key, [{ path: `src/content/music/${meta.id}.yml`, text: `${yml}\n` }], `Music edited on the site: ${title}`, [`✎ 🎵 ${title}`]);
+        const newFile = fileIn.files?.[0];
+        const files: ({ path: string; text: string } | { path: string; base64: string })[] = [{ path: `src/content/music/${meta.id}.yml`, text: `${yml}\n` }];
+        if (newFile) files.push({ path: `public${meta.file}`, base64: await toBase64(newFile) });
+        await commitFiles(key, files as never, `Music edited on the site: ${title}`, [`✎ 🎵 ${title}${newFile ? ' · 🔁' : ''}`]);
         // show it at once
         const set = (sel: string, text: string) => {
           const el = tr!.querySelector(sel);
@@ -853,7 +887,7 @@ const calEvents = (calendar.events as CalEvent[]).filter((e) => e.music?.length)
         set('.track__about', about);
         set('.track__place', place ? `📍 ${place}` : '');
         set('.track__tags', tags.map((x) => `#${x}`).join(' '));
-        tr.dataset.meta = JSON.stringify({ ...meta, title, artist, about, tags, place, lat, lng });
+        tr.dataset.meta = JSON.stringify({ ...meta, title, artist, about, tags, place, lat, lng, date, post });
         note.textContent = tx('saved');
         window.setTimeout(() => (form.hidden = true), 900);
       } catch (err) {

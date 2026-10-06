@@ -1,0 +1,231 @@
+---
+/**
+ * Thirty jars of Nutella on a shelf (under the About text, where the whiteboard was). A click (or a tap)
+ * on a jar: András eats it – the jar empties. A counter says how many are left; when they are all gone,
+ * one button fills them up again. Each visitor's eaten jars are remembered in the browser.
+ */
+import { t, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const JARS = 30;
+---
+
+<div class="nshelf" data-nshelf data-left={t(lang, 'nshelf.left')} data-gone={t(lang, 'nshelf.gone')}>
+  <p class="nshelf__head">
+    <strong>{t(lang, 'nshelf.title')}</strong>
+    <span class="nshelf__count" data-nshelf-count aria-live="polite"></span>
+  </p>
+  <ul class="nshelf__jars">
+    {
+      Array.from({ length: JARS }, (_, i) => (
+        <li>
+          <button type="button" class="nshelf__jar" data-i={i} aria-label={`Nutella ${i + 1}`}>
+            <svg viewBox="0 0 46 56" aria-hidden="true" focusable="false">
+              <rect class="nshelf__lid" x="9" y="3" width="28" height="10" rx="3" />
+              <path d="M8 14h30q4 0 4 5v27q0 7-7 7H11q-7 0-7-7V19q0-5 4-5Z" class="nshelf__glass" />
+              <path d="M9 18q14 4 28 0" class="nshelf__swirl" />
+              <rect x="7" y="26" width="32" height="15" rx="3" class="nshelf__label" />
+              <circle cx="15" cy="33.5" r="3.4" class="nshelf__nut" />
+              <path d="M21 31h13M21 36h9" class="nshelf__text" />
+            </svg>
+          </button>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="nshelf__hint">{t(lang, 'nshelf.hint')}</p>
+  <button type="button" class="nshelf__refill" hidden data-nshelf-refill>🔄 {t(lang, 'nshelf.refill')}</button>
+</div>
+
+<style>
+  .nshelf {
+    margin: 32px 0 0;
+    max-width: 640px;
+    padding: 16px 16px 12px;
+    border: var(--border);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    box-shadow: 6px 6px 0 var(--violet);
+  }
+  .nshelf__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px 12px;
+    margin: 0 0 10px;
+  }
+  .nshelf__count {
+    color: var(--muted);
+    font-size: var(--fs-small);
+    font-weight: 700;
+  }
+  /* the shelf: rows of six (five on a phone), each row standing on a wooden plank */
+  .nshelf__jars {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .nshelf__jars li {
+    display: grid;
+    place-items: end center;
+    padding-bottom: 6px;
+    border-bottom: 6px solid #b07a4a;
+    box-shadow: 0 2px 0 #7a4f2c;
+  }
+  .nshelf__jar {
+    width: 100%;
+    max-width: 58px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    transition: transform 150ms ease;
+  }
+  .nshelf__jar:hover:not(.is-empty) {
+    transform: translateY(-4px) rotate(-4deg);
+  }
+  .nshelf__jar svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .nshelf__lid {
+    fill: #fff;
+    stroke: #1b1b24;
+    stroke-width: 2;
+    transition: transform 300ms ease;
+  }
+  .nshelf__glass {
+    fill: #5a3217;
+    stroke: #1b1b24;
+    stroke-width: 2;
+    transition: fill 400ms ease;
+  }
+  .nshelf__swirl {
+    fill: none;
+    stroke: #7a4a26;
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+  .nshelf__label {
+    fill: #fff;
+    stroke: #1b1b24;
+    stroke-width: 1.5;
+  }
+  .nshelf__nut {
+    fill: #b8742c;
+    stroke: #1b1b24;
+  }
+  .nshelf__text {
+    stroke: #d7263d;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+  }
+  /* eaten: the lid off, the glass empty (a little smear left) */
+  .nshelf__jar.is-empty {
+    cursor: default;
+  }
+  .nshelf__jar.is-empty .nshelf__lid {
+    transform: translate(14px, -6px) rotate(25deg);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .nshelf__jar.is-empty .nshelf__glass {
+    fill: color-mix(in srgb, #5a3217 12%, #f4f1ff);
+  }
+  .nshelf__jar.is-empty .nshelf__swirl {
+    stroke: color-mix(in srgb, #7a4a26 35%, transparent);
+  }
+  .nshelf__jar.is-eating {
+    animation: nshelf-eat 520ms ease;
+  }
+  @keyframes nshelf-eat {
+    30% {
+      transform: scale(1.2) rotate(-10deg);
+    }
+    60% {
+      transform: scale(0.9) rotate(8deg);
+    }
+  }
+  .nshelf__hint {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: var(--fs-small);
+  }
+  .nshelf__refill {
+    margin-top: 10px;
+    padding: 6px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--yellow);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .nshelf__refill[hidden] {
+    display: none;
+  }
+  @media (max-width: 479px) {
+    .nshelf__jars {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nshelf__jar.is-eating {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  const KEY = 'andras-nutella-shelf';
+  document.querySelectorAll<HTMLElement>('[data-nshelf]').forEach((shelf) => {
+    const jars = Array.from(shelf.querySelectorAll<HTMLButtonElement>('.nshelf__jar'));
+    const count = shelf.querySelector<HTMLElement>('[data-nshelf-count]')!;
+    const refill = shelf.querySelector<HTMLButtonElement>('[data-nshelf-refill]')!;
+    let eaten = new Set<number>();
+    try {
+      eaten = new Set(JSON.parse(localStorage.getItem(KEY) ?? '[]') as number[]);
+    } catch {
+      /* storage unavailable */
+    }
+    const save = () => {
+      try {
+        localStorage.setItem(KEY, JSON.stringify([...eaten]));
+      } catch {
+        /* storage unavailable */
+      }
+    };
+    const show = () => {
+      jars.forEach((j, i) => j.classList.toggle('is-empty', eaten.has(i)));
+      const left = jars.length - eaten.size;
+      count.textContent = left ? (shelf.dataset.left ?? '{n}').replace('{n}', String(left)) : (shelf.dataset.gone ?? '');
+      refill.hidden = left > 0;
+    };
+    jars.forEach((j, i) =>
+      j.addEventListener('click', () => {
+        if (eaten.has(i)) return;
+        eaten.add(i);
+        j.classList.add('is-eating');
+        j.addEventListener('animationend', () => j.classList.remove('is-eating'), { once: true });
+        save();
+        show();
+      }),
+    );
+    refill.addEventListener('click', () => {
+      eaten.clear();
+      save();
+      show();
+    });
+    show();
+  });
+</script>

@@ -107,10 +107,27 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   <button type="button" class="lay-save__pub" data-dev-publish>🚀 {t(lang, 'pub.button')} <b data-dev-pending>0</b></button>
   <button type="button" data-ed-undo title="Ctrl+Z">↶</button>
   <button type="button" data-ed-redo title="Ctrl+Y">↷</button>
+  <button type="button" data-dev-keys-btn title="?" aria-label="?"><Icon name="keyboard" size={16} /></button>
   <button type="button" data-lay-undo>{t(lang, 'lay.undo')}</button>
   <span class="lay-save__status" data-lay-status></span>
 </div>
 <template data-dev-laytitles>{JSON.stringify({ up: t(lang, 'lay.up'), down: t(lang, 'lay.down'), hide: t(lang, 'lay.hide'), width: t(lang, 'lay.width'), smaller: t(lang, 'lay.smaller'), bigger: t(lang, 'lay.bigger'), saving: t(lang, 'dev.msgSaving'), saved: t(lang, 'lay.saved'), unsaved: t(lang, 'lay.unsaved'), needKey: t(lang, 'lay.needKey'), widths: { narrow: t(lang, 'lay.w.narrow'), normal: t(lang, 'lay.w.normal'), wide: t(lang, 'lay.w.wide'), full: t(lang, 'lay.w.full') } })}</template>
+<!-- the keys of developer mode (? or ⌨ shows them) -->
+<div class="dev-keys" hidden data-dev-keys role="dialog" aria-label="⌨">
+  <button type="button" class="dev-keys__x" data-dev-keys-x aria-label="✕"><Icon name="x" size={16} /></button>
+  <strong><Icon name="keyboard" size={18} /> Ctrl · Alt · Del</strong>
+  <dl>
+    <dt>Ctrl+S</dt><dd>{t(lang, 'dev.msgSaving').replace(/[.…]+$/, '')}</dd>
+    <dt>Ctrl+Z · Ctrl+Y</dt><dd>↶ · ↷</dd>
+    <dt>Enter · F2</dt><dd>{t(lang, 'ed.text')}</dd>
+    <dt>Ctrl+D</dt><dd>{t(lang, 'ed.dup')}</dd>
+    <dt>Alt+↑ · Alt+↓</dt><dd>{t(lang, 'ed.up')} · {t(lang, 'ed.down')}</dd>
+    <dt>← ↑ → ↓ (Shift)</dt><dd>1 px (10 px)</dd>
+    <dt>Del · Backspace</dt><dd>{t(lang, 'ed.hide')}</dd>
+    <dt>Esc</dt><dd>{t(lang, 'facts.close')}</dd>
+    <dt>?</dt><dd>⌨</dd>
+  </dl>
+</div>
 <template data-dev-layhidden>{JSON.stringify(layout.hidden)}</template>
 <template data-dev-pubbusy>{t(lang, 'pub.busy')}</template>
 <template data-dev-pubdone>{t(lang, 'pub.done')}</template>
@@ -778,13 +795,70 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       transform: translateY(20px) scale(0.95);
     }
   }
+  /* the list of keys */
+  .dev-keys {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    z-index: 2100;
+    width: min(420px, calc(100vw - 32px));
+    padding: 16px 20px;
+    border: 2px solid #39d353;
+    border-radius: 14px;
+    background: #0d1117;
+    color: #d6f5d6;
+    font: 13px/1.5 ui-monospace, 'Cascadia Code', Consolas, monospace;
+    translate: -50% -50%;
+    box-shadow: 0 10px 40px rgb(0 0 0 / 0.5);
+  }
+  .dev-keys[hidden] {
+    display: none;
+  }
+  .dev-keys strong {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: #39d353;
+    font-size: 15px;
+  }
+  .dev-keys dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 14px;
+    margin: 0;
+  }
+  .dev-keys dt {
+    color: #39ff14;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .dev-keys dd {
+    margin: 0;
+  }
+  .dev-keys__x {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #1f6f2a;
+    border-radius: 8px;
+    background: none;
+    color: #d6f5d6;
+    cursor: pointer;
+  }
 </style>
 
 <script>
-  import { PENDING_EVENT, TOKEN_KEY, commitFiles, getToken, pendingCount, pendingLog, publishSite, readFile } from '../lib/githubCommit';
+  import { PENDING_EVENT, TOKEN_KEY, commitFiles, getToken, keyCanWrite, pendingCount, pendingLog, publishSite, readFile } from '../lib/githubCommit';
   import { VIEW_SESSION_KEY } from '../lib/constants';
 
   const KEY = 'andras-dev-mode';
+  /** this tab has checked the GitHub key with GitHub */
+  const VERIFIED_KEY = 'andras-dev-verified';
 
   // ---- the panel: drag it by the title bar, resize it from the corner; remembered in this browser ----
   {
@@ -1067,9 +1141,30 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       }
       return;
     }
+    // the code is only the first lock: the GitHub key must be a real one too (the browser cannot be
+    // trusted with a secret – the key is checked by GitHub itself)
+    gateForm.hidden = true;
+    await type('> verifying GitHub key ......', run, 8);
+    let key = getToken();
+    if (!key) key = (window.prompt(tpl('msgkey')) ?? '').trim();
+    if (run !== gateRun) return void (checking = false);
+    if (!(await keyCanWrite(key))) {
+      verdict.textContent = 'KEY REJECTED — CONNECTION TERMINATED';
+      verdict.className = 'dev-gate__verdict is-denied';
+      checking = false;
+      await sleep(1800);
+      if (run === gateRun) closeGate();
+      return;
+    }
+    try {
+      localStorage.setItem(TOKEN_KEY, key);
+      sessionStorage.setItem(VERIFIED_KEY, '1');
+    } catch {
+      /* storage unavailable */
+    }
+    gateLog.textContent += ' OK\n';
     verdict.textContent = 'ACCESS GRANTED';
     verdict.className = 'dev-gate__verdict is-granted';
-    gateForm.hidden = true;
     await type('> decrypting content store ... OK', run, 8);
     await type('> mounting /posts /photos .... OK', run, 8);
     await type('> welcome back, András.', run, 25);
@@ -1142,7 +1237,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   let menuCategory: string | undefined;
   let menuHost: HTMLElement | null = null;
   const openPhoto = () => window.dispatchEvent(new Event('andras:upload-photos'));
-  const openPost = (category?: string) => window.dispatchEvent(new CustomEvent('andras:new-post', { detail: { category } }));
+  const openPost = (category?: string, folder?: string) => window.dispatchEvent(new CustomEvent('andras:new-post', { detail: { category, folder } }));
   const hideMenu = () => (menu.hidden = true);
   const addPluses = () => {
     document.querySelectorAll<HTMLElement>('main .section, [data-dev-add]').forEach((host) => {
@@ -1160,7 +1255,7 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
         const kind = host.dataset.devAdd;
         if (kind === 'photo') return openPhoto();
         if (kind === 'music') return window.dispatchEvent(new Event('andras:upload-music'));
-        if (kind === 'post') return openPost(host.dataset.devCategory);
+        if (kind === 'post') return openPost(host.dataset.devCategory, host.dataset.devFolder);
         menuCategory = host.dataset.devCategory;
         menuHost = host;
         // sections made of cards / notes offer a new one (a copy of the first, then rewritten)
@@ -1378,6 +1473,27 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   }
   (window as unknown as { __devSave?: (key: string) => Promise<boolean> }).__devSave = async (key) => (unsaved ? saveNow(key) : true);
 
+  // ---- keys: Ctrl+S saves the changes (without publishing), ? (or ⌨) lists the keys ----
+  const keysBox = document.querySelector<HTMLElement>('[data-dev-keys]')!;
+  const toggleKeys = (open = keysBox.hidden) => (keysBox.hidden = !open);
+  document.querySelector('[data-dev-keys-btn]')?.addEventListener('click', () => toggleKeys());
+  keysBox.querySelector('[data-dev-keys-x]')!.addEventListener('click', () => toggleKeys(false));
+  document.addEventListener('keydown', (e) => {
+    if (!html.classList.contains('dev-mode')) return;
+    const inField = !!(e.target as HTMLElement).closest?.('input, textarea, select, [contenteditable="true"]');
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      // never the browser's "save page": in developer mode it saves the edits
+      e.preventDefault();
+      if (!unsaved) return;
+      let key = getToken();
+      if (!key) key = (window.prompt(tpl('msgkey')) ?? '').trim();
+      if (key) void saveNow(key);
+    } else if (e.key === '?' && !inField) {
+      e.preventDefault();
+      toggleKeys();
+    } else if (e.key === 'Escape' && !keysBox.hidden) toggleKeys(false);
+  });
+
   // ---- the change log: not saved yet (this page) + saved and waiting for 🚀 Publish ----
   const logBox = document.querySelector<HTMLElement>('[data-dev-log]')!;
   const LL = JSON.parse(document.querySelector<HTMLTemplateElement>('[data-dev-loglabels]')!.content.textContent ?? '{}') as Record<string, string>;
@@ -1466,7 +1582,14 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
       if (!key) key = (window.prompt(tpl('msgkey')) ?? '').trim();
       if (!key) return;
       try {
-        await commitFiles(key, [{ path: `src/content/posts/${postSlug}.md`, delete: true }], `Post deleted on the site: ${postSlug}`);
+        // its own pictures (cover, pictures in the text: src/assets/posts/<slug>-…) go with it
+        const md = await readFile(key, `src/content/posts/${postSlug}.md`).catch(() => '');
+        const pics = [...new Set([...md.matchAll(/assets\/posts\/([\w.-]+\.(?:jpe?g|png|webp|avif))/gi)].map((m) => m[1]))].filter((f) => f.startsWith(`${postSlug}-`));
+        await commitFiles(
+          key,
+          [{ path: `src/content/posts/${postSlug}.md`, delete: true }, ...pics.map((f) => ({ path: `src/assets/posts/${f}`, delete: true as const }))],
+          `Post deleted on the site: ${postSlug}`,
+        );
         say(tpl('postdeleted'));
         setTimeout(() => (location.href = `/${location.pathname.split('/')[1]}/`), 1600);
       } catch (err) {
@@ -1526,8 +1649,19 @@ const REPO = 'https://github.com/tompiroberto/andras-blog';
   document.querySelector('[data-dev-upload]')?.addEventListener('click', openPhoto);
   document.querySelector('[data-dev-music]')?.addEventListener('click', () => window.dispatchEvent(new Event('andras:upload-music')));
   document.querySelector('[data-dev-new-post]')?.addEventListener('click', () => openPost());
+  // back on a page with developer mode on: only with the key checked in this tab (or checked now) –
+  // the switch in the browser's storage alone does not open it
   try {
-    if (localStorage.getItem(KEY) === '1') setDev(true);
+    if (localStorage.getItem(KEY) === '1') {
+      if (sessionStorage.getItem(VERIFIED_KEY) === '1') setDev(true);
+      else
+        void keyCanWrite(getToken()).then((ok) => {
+          if (ok) {
+            sessionStorage.setItem(VERIFIED_KEY, '1');
+            setDev(true);
+          } else setDev(false);
+        });
+    }
   } catch {
     /* storage unavailable */
   }

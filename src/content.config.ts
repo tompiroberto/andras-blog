@@ -22,6 +22,9 @@ const posts = defineCollection({
       excerpt: z.string(),
       cover: image().optional(),
       coverAlt: z.string().optional(),
+      /** A second cover: each visit shows one of the two at random */
+      cover2: image().optional(),
+      cover2Alt: z.string().optional(),
       /** Which part of the cover stays on the 16:9 post card ('attention' = the most interesting part) */
       coverPosition: z.enum(COVER_POSITIONS).default('attention'),
       draft: z.boolean().default(false),
@@ -39,9 +42,20 @@ const posts = defineCollection({
       countries: z
         .array(z.string())
         .optional()
-        .refine((ids) => !ids || ids.every((id) => countryIds.includes(id)), {
+        // a 2-letter code works too (a new country, e.g. MN, before it's on the map's list)
+        .refine((ids) => !ids || ids.every((id) => countryIds.includes(id) || /^[A-Z]{2}$/.test(id)), {
           message: `countries must be ids from src/data/countries.json (${countryIds.join(', ')})`,
         }),
+      /** Flags shown on the cover (and the post's header): ISO codes with a /flags/<code>.svg, e.g. ["gr", "hu"] */
+      flags: z.array(z.string().regex(/^[a-z]{2}$/)).optional(),
+      /** The gallery's pictures with any of these hashtags appear in the post too (besides its own uploads) */
+      photoTags: z.array(z.string()).optional(),
+      /** The post's pictures as one album (a stack that opens on a click) – switched in developer mode */
+      mediaAlbum: z.boolean().default(false),
+      /** The header's background drawing: eu | map | random | adventure | none (default: its category's) */
+      /** Its folder on the category page (Random things, Adventures – ids in src/lib/randomFolders.ts) */
+      folder: z.string().optional(),
+      background: z.enum(['eu', 'map', 'random', 'adventure', 'none']).optional(),
     }),
 });
 

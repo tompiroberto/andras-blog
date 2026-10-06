@@ -1,4 +1,5 @@
 ---
+import { MAIN_SITE as MAIN_SITE_URL } from '../lib/mainSite.mjs';
 /**
  * The calendar (header button, html.cal-mode): where András is going and when. It opens like a wall
  * calendar flipping down under the header (the header stays), in the theme's colours. Month or year view;
@@ -13,6 +14,7 @@ import { getCollection } from 'astro:content';
 import { countries as FLAG_CODES } from 'country-flag-icons';
 import { getImage } from 'astro:assets';
 import { getPhotos } from '../lib/photos';
+import { getPosts } from '../lib/posts';
 import { HTML_LANG, localePath, t, type Lang } from '../i18n';
 
 interface Props {
@@ -22,7 +24,7 @@ interface Props {
 }
 
 const { lang, page = false } = Astro.props;
-const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
+const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || MAIN_SITE_URL : '';
 const words = {
   month: t(lang, 'cal.month'),
   year: t(lang, 'cal.year'),
@@ -82,14 +84,31 @@ const words = {
 const tracks = (await getCollection('music'))
   .map((e) => ({ id: e.id, file: e.data.file, title: e.data.title, ...(e.data.artist ? { artist: e.data.artist } : {}) }))
   .sort((a, b) => a.title.localeCompare(b.title));
-// the photos / videos uploaded to an event (their yml says event: <id>)
+// an event can belong to a post (its "post": the slug): the event's page links to it, and the
+// post's pictures show on the event too
+const posts = await getPosts();
+const postLinks: Record<string, { href: string; title: string }> = Object.fromEntries(
+  posts.map((p) => [p.id, { href: localePath(lang, `posts/${p.id}`), title: p.data.title }]),
+);
+const eventOfPost: Record<string, string> = Object.fromEntries(
+  (calendar.events as { id: string; post?: string }[]).filter((e) => e.post).map((e) => [e.post!, e.id]),
+);
+// ... and the hashtags whose pictures a post shows (its photoTags), per event
+const eventTags: Record<string, string[]> = {};
+for (const p of posts) if (eventOfPost[p.id] && p.data.photoTags?.length) eventTags[eventOfPost[p.id]] = p.data.photoTags;
+// the photos / videos of an event: uploaded to it (their yml says event: <id>), to its post, or with its post's hashtags
 type Pic = { large: string; thumb: string; caption: string; video?: string };
 const eventPhotos: Record<string, Pic[]> = {};
-for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
+for (const p of await getPhotos(lang)) {
+  const ev =
+    p.event ??
+    (p.post ? eventOfPost[p.post] : undefined) ??
+    Object.keys(eventTags).find((id) => eventTags[id].some((tag) => p.tags?.includes(tag)));
+  if (!ev) continue;
   const pic: Pic = p.image
     ? { large: (await getImage({ src: p.image, width: Math.min(1800, p.image.width) })).src, thumb: (await getImage({ src: p.image, width: 360 })).src, caption: p.caption }
     : { large: '', thumb: '', caption: p.caption, video: p.video };
-  (eventPhotos[p.event!] ??= []).push(pic);
+  (eventPhotos[ev] ??= []).push(pic);
 }
 ---
 
@@ -194,6 +213,10 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
     <p class="cal-evd__when" data-evd-when></p>
     <h3 class="cal-evd__title" data-evd-title></h3>
     <p class="cal-evd__tags" data-evd-tags></p>
+    <!-- the post about this event -->
+    <a class="btn btn--primary cal-evd__post" hidden data-evd-post data-posts={JSON.stringify(postLinks)}>
+      <Icon name="book-open" size={18} /><span data-evd-post-title></span>
+    </a>
     <section class="cal-evd__sec" data-evd-sec="desc">
       <h4>📝 {t(lang, 'cal.evdDesc')}</h4>
       <p class="cal-evd__desc" data-evd-desc></p>
@@ -1200,6 +1223,13 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
     border-radius: 4px;
     object-fit: cover;
   }
+  .cal-evd__post {
+    align-self: flex-start;
+    margin: 4px 0 8px;
+  }
+  .cal-evd__post[hidden] {
+    display: none;
+  }
   .cal-evd__tags {
     margin: 0 0 8px;
     color: var(--violet);
@@ -1714,7 +1744,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
   import { parseTags, showTags } from '../lib/tags';
   import { commitFiles, getToken } from '../lib/githubCommit';
 
-  type Ev = { id: string; title: string; title_en?: string; place?: string; place_en?: string; country?: string; from: string; to: string; color: string; note?: string; note_en?: string; music?: string[]; tags?: string[]; docs?: { name: string; file: string }[] };
+  type Ev = { id: string; title: string; title_en?: string; place?: string; place_en?: string; country?: string; lat?: number; lng?: number; from: string; to: string; color: string; note?: string; note_en?: string; music?: string[]; tags?: string[]; docs?: { name: string; file: string }[]; post?: string };
   type Plan = { id: string; text: string; text_en?: string; when?: string; when_en?: string };
   type Track = { id: string; file: string; title: string; artist?: string };
   const view = document.querySelector<HTMLElement>('[data-cal]');
@@ -2263,8 +2293,8 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
                 const box = li.querySelector<HTMLElement>('.cal-day__music')!;
                 box.hidden = !box.hidden;
                 b.setAttribute('aria-expanded', String(!box.hidden));
-                if (box.hidden) box.querySelectorAll('audio').forEach((a) => a.pause());
-                else box.querySelector('audio')?.play().catch(() => {});
+                // opening the list plays it; closing it does not stop the music (the mini player takes it over)
+                if (!box.hidden) box.querySelector('audio')?.play().catch(() => {});
               });
             }
           }
@@ -2340,7 +2370,8 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       }
     });
     // closing the day box stops its music
-    const stopMusic = () => dayBox.querySelectorAll('audio').forEach((a) => a.pause());
+    // closing a day or an event does not stop its music: the mini player (MiniPlayer.astro) takes it over
+    const stopMusic = () => {};
     view.querySelector('[data-cal-day-close]')!.addEventListener('click', () => {
       stopMusic();
       dayBox.hidden = true;
@@ -2611,6 +2642,14 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       if (flag) title.append(flag);
       title.append(tr(e, 'title'));
       evdQ('[data-evd-tags]').textContent = showTags(e.tags);
+      // its post, if it has one
+      const postLink = evdQ<HTMLAnchorElement>('[data-evd-post]');
+      const linked = e.post ? (JSON.parse(postLink.dataset.posts ?? '{}') as Record<string, { href: string; title: string }>)[e.post] : undefined;
+      postLink.hidden = !linked;
+      if (linked) {
+        postLink.href = linked.href;
+        evdQ('[data-evd-post-title]').textContent = linked.title;
+      }
       // description (and its editor in developer mode)
       evdQ('[data-evd-desc]').textContent = tr(e, 'note');
       evdQ<HTMLTextAreaElement>('[data-evd-hu]').value = e.note ?? '';
@@ -2646,7 +2685,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       evd.hidden = false;
     }
     const closeEvd = () => {
-      evd.querySelectorAll('audio').forEach((a) => a.pause());
+      // its music plays on (the mini player takes it over)
       evd.hidden = true;
     };
     evdQ('[data-cal-evd-close]').addEventListener('click', closeEvd);
@@ -2694,13 +2733,16 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
 
     // the place → its country (the flag), found by itself; changed by hand, it stays
     let countryByHand = false;
+    /** the place's coordinates (found from its name) */
+    let placeAt: { lat: number; lng: number } | null = null;
     const found = form.querySelector<HTMLElement>('[data-cf-found]')!;
     cf('country').addEventListener('change', () => (countryByHand = true));
     cf('place').addEventListener('change', async () => {
       const q = cf('place').value.trim();
       found.textContent = '';
       if (!q) return;
-      const hit = (await geocode(q, 'hu').catch(() => []))[0];
+      const hit = (await geocode(q.split(',')[0], 'hu').catch(() => []))[0];
+      placeAt = hit ? { lat: Math.round(hit.latitude * 1e4) / 1e4, lng: Math.round(hit.longitude * 1e4) / 1e4 } : null;
       const cc = hit?.country_code?.toUpperCase();
       if (!cc) return;
       found.textContent = `📍 ${W.foundCountry.replace('{country}', regionNames.of(cc) ?? cc)}`;
@@ -2720,6 +2762,7 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       fillCountries();
       cf('country').value = e?.country ?? '';
       countryByHand = !!e?.country;
+      placeAt = e?.lat !== undefined && e?.lng !== undefined ? { lat: e.lat, lng: e.lng } : null;
       found.textContent = '';
       cf('tags').value = showTags(e?.tags);
       cf('from').value = e?.from ?? day;
@@ -2750,13 +2793,17 @@ for (const p of (await getPhotos(lang)).filter((x) => x.event)) {
       ev.preventDefault();
       const from = cf('from').value;
       const to = cf('to').value < from ? from : cf('to').value;
+      const kept: Partial<Ev> = { ...(editing ?? {}) };
+      (['title_en', 'place', 'place_en', 'country', 'lat', 'lng', 'note', 'note_en', 'music', 'tags'] as const).forEach((k) => delete kept[k]);
       const item: Ev = {
+        ...kept,
         id: formKey(),
         title: cf('title').value.trim(),
         ...(cf('title_en').value.trim() ? { title_en: cf('title_en').value.trim() } : {}),
         ...(cf('place').value.trim() ? { place: cf('place').value.trim() } : {}),
         ...(cf('place_en').value.trim() ? { place_en: cf('place_en').value.trim() } : {}),
         ...(cf('country').value ? { country: cf('country').value } : {}),
+        ...(cf('place').value.trim() && placeAt ? placeAt : {}),
         from,
         to,
         color: form.querySelector<HTMLInputElement>('input[name="cal-color"]:checked')?.value ?? '#7B2FF7',

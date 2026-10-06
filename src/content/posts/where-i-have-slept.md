@@ -4,6 +4,10 @@ category: random
 lang: en
 excerpt: 'A beach without a blanket, the middle of a forest, a bus stop, a castle ruin and a motorboat – so far.'
 icon: moon-star
+cover: '../../assets/photos/sleeping-rough-zamardi-1.jpg'
+coverAlt: 'Two of us sleeping on the road at night – Zamárdi'
+cover2: '../../assets/photos/sleeping-rough-zamardi-2.jpg'
+cover2Alt: 'Lying on the lakeside promenade at sunset – Zamárdi'
 facts:
   - { icon: waves, label: 'A beach (no blanket)' }
   - { icon: forest, label: 'The middle of a forest' }

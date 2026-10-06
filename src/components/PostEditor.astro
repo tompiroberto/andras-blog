@@ -10,6 +10,7 @@ import TokenField from './TokenField.astro';
 import { LOCALES, NATIVE_NAMES, t, type Lang } from '../i18n';
 import { CATEGORIES } from '../lib/constants';
 import { categoryMeta } from '../lib/categories';
+import { FOLDERS } from '../lib/randomFolders';
 
 interface Props {
   lang: Lang;
@@ -66,6 +67,38 @@ const { lang } = Astro.props;
     </label>
     <!-- opened from the world map: the post is pinned to this place -->
     <p class="ped__place" hidden data-ped-place></p>
+    <div class="ped__row ped__row--two">
+      <!-- its folder (only for the categories that have folders) -->
+      <label class="ped__field" data-ped-folder-wrap>
+        <span>📁 Mappa / folder</span>
+        <select name="folder">
+          <option value="">–</option>
+          {Object.entries(FOLDERS).map(([cat, list]) => list.map((f) => <option value={f.id} data-folder-cat={cat}>{f.icon} {f.name}</option>))}
+        </select>
+      </label>
+      <!-- a city's name (found on the map by itself) or "lat, lng" -->
+      <label class="ped__field">
+        <span>📍 Helyszín / place</span>
+        <input name="place" type="text" placeholder="Split · 43.51, 16.44" data-ped-place-input />
+      </label>
+    </div>
+    <div class="ped__row ped__row--two">
+      <label class="ped__field">
+        <span>🏳️ Zászlók / flags</span>
+        <input name="flags" type="text" placeholder="gr, hu" />
+      </label>
+      <label class="ped__field">
+        <span>🖼️ Háttér / background</span>
+        <select name="background">
+          <option value="">★ (a témáé / the category's)</option>
+          <option value="eu">🇪🇺 EU</option>
+          <option value="map">🗺️ térkép / map</option>
+          <option value="random">🍫 random</option>
+          <option value="adventure">⛺ kaland / adventure</option>
+          <option value="none">— nincs / none</option>
+        </select>
+      </label>
+    </div>
 
     <!-- how its card will look among the category's posts -->
     <div class="ped__preview">
@@ -536,6 +569,7 @@ const { lang } = Astro.props;
 <script>
   import { commitFiles, fileExists, getToken, readFile, shrinkToJpeg, slugify, wireTokenField, type NewFile } from '../lib/githubCommit';
   // (a post written from the world map gets place / lat / lng in its front matter)
+  import { geocode } from '../lib/geocode';
   import { fieldValue, parsePost, setFields, writePost, type ParsedPost } from '../lib/frontmatter';
 
   const dialog = document.querySelector<HTMLDialogElement>('[data-post-editor]');
@@ -574,6 +608,41 @@ const { lang } = Astro.props;
       status.className = `ped__status${kind ? ` is-${kind}` : ''}`;
     };
 
+    /** the place as it was loaded (an unchanged place keeps its coordinates) */
+    let placeLoaded = '';
+    /** the folder list follows the category (only Random things and Adventures have folders) */
+    function showFolders() {
+      const cat = field<HTMLSelectElement>('category').value;
+      const sel = field<HTMLSelectElement>('folder');
+      let any = false;
+      sel.querySelectorAll<HTMLOptionElement>('[data-folder-cat]').forEach((o) => {
+        o.hidden = o.disabled = o.dataset.folderCat !== cat;
+        any ||= !o.hidden;
+      });
+      if (sel.selectedOptions[0]?.disabled) sel.value = '';
+      q<HTMLElement>('[data-ped-folder-wrap]').hidden = !any;
+    }
+    /** the extra fields: folder, place (a city's name is looked up; "lat, lng" is taken as it is), flags, background */
+    async function extraFields(): Promise<Record<string, string | null>> {
+      const out: Record<string, string | null> = {};
+      out.folder = field<HTMLSelectElement>('folder').value || null;
+      out.background = field<HTMLSelectElement>('background').value || null;
+      const flags = field<HTMLInputElement>('flags').value.toLowerCase().match(/[a-z]{2}/g) ?? [];
+      out.flags = flags.length ? JSON.stringify(flags) : null;
+      const place = field<HTMLInputElement>('place').value.trim();
+      if (!place) Object.assign(out, pinned ? {} : { place: null, lat: null, lng: null });
+      else if (place !== placeLoaded) {
+        const xy = place.match(/^(-?\d+(?:\.\d+)?)\s*[,;]\s*(-?\d+(?:\.\d+)?)$/);
+        if (xy) Object.assign(out, { place: null, lat: xy[1], lng: xy[2] });
+        else {
+          const hit = (await geocode(place.split(',')[0], document.documentElement.lang || 'hu'))[0];
+          if (!hit) throw new Error(`📍 ? ${place}`);
+          Object.assign(out, { place: JSON.stringify(place), lat: String(Math.round(hit.latitude * 1e5) / 1e5), lng: String(Math.round(hit.longitude * 1e5) / 1e5) });
+        }
+      }
+      return out;
+    }
+
     /** set while an existing post is being edited (its file name stays the same) */
     let editing: { slug: string; post: ParsedPost } | null = null;
     const heading = q<HTMLElement>('#ped-title');
@@ -597,6 +666,12 @@ const { lang } = Astro.props;
         field<HTMLInputElement>('date').value = fieldValue(post, 'date').slice(0, 10);
         field<HTMLSelectElement>('category').value = fieldValue(post, 'category') || 'random';
         field<HTMLSelectElement>('lang').value = fieldValue(post, 'lang') || 'en';
+        field<HTMLSelectElement>('folder').value = fieldValue(post, 'folder');
+        field<HTMLInputElement>('place').value = fieldValue(post, 'place') || (fieldValue(post, 'lat') ? `${fieldValue(post, 'lat')}, ${fieldValue(post, 'lng')}` : '');
+        field<HTMLInputElement>('flags').value = (fieldValue(post, 'flags').match(/[a-z]{2}/gi) ?? []).join(', ');
+        field<HTMLSelectElement>('background').value = fieldValue(post, 'background');
+        placeLoaded = field<HTMLInputElement>('place').value;
+        showFolders();
         body.value = post.body.trim();
         say('');
       } catch (err) {
@@ -610,6 +685,7 @@ const { lang } = Astro.props;
     const cats = Array.from(dialog!.querySelectorAll<HTMLButtonElement>('[data-cat]'));
     const fmtDate = new Intl.DateTimeFormat(document.documentElement.lang || 'hu', { year: 'numeric', month: 'long', day: 'numeric' });
     function preview() {
+      showFolders();
       const c = catSel.value;
       const btn = cats.find((b) => b.dataset.cat === c);
       cats.forEach((b) => b.setAttribute('aria-checked', String(b === btn)));
@@ -645,12 +721,15 @@ const { lang } = Astro.props;
     window.addEventListener('andras:new-post', (e) => {
       editing = null;
       heading.innerHTML = headingNew;
-      const d = (e as CustomEvent<{ category?: string; place?: string; lat?: number; lng?: number }>).detail;
+      const d = (e as CustomEvent<{ category?: string; folder?: string; place?: string; lat?: number; lng?: number }>).detail;
+      placeLoaded = '';
       pinned = d?.lat !== undefined && d?.lng !== undefined ? { place: d.place, lat: d.lat, lng: d.lng } : null;
       placeNote.hidden = !pinned;
       if (pinned) placeNote.textContent = `📍 ${pinned.place ?? ''} · ${pinned.lat!.toFixed(3)}, ${pinned.lng!.toFixed(3)}`;
       const category = d?.category;
       if (category) field<HTMLSelectElement>('category').value = category;
+      showFolders();
+      field<HTMLSelectElement>('folder').value = d?.folder ?? '';
       const date = field<HTMLInputElement>('date');
       if (!date.value) date.value = new Date().toISOString().slice(0, 10);
       token.refresh();
@@ -733,6 +812,7 @@ const { lang } = Astro.props;
             category: field<HTMLSelectElement>('category').value,
             lang: postLang,
             excerpt: JSON.stringify(excerpt.value.trim()),
+            ...(await extraFields()),
           });
           if (cover) {
             const coverName = `${slug}-cover-${stamp}.jpg`;
@@ -758,7 +838,8 @@ const { lang } = Astro.props;
           `lang: ${postLang}`,
           `excerpt: ${JSON.stringify(excerpt.value.trim())}`,
         ];
-        if (pinned) front.push(...[pinned.place && `place: ${JSON.stringify(pinned.place)}`, `lat: ${Math.round(pinned.lat! * 1e5) / 1e5}`, `lng: ${Math.round(pinned.lng! * 1e5) / 1e5}`].filter((x): x is string => !!x));
+        for (const [k, v] of Object.entries(await extraFields())) if (v !== null) front.push(`${k}: ${v}`);
+        if (pinned && !field<HTMLInputElement>('place').value.trim()) front.push(...[pinned.place && `place: ${JSON.stringify(pinned.place)}`, `lat: ${Math.round(pinned.lat! * 1e5) / 1e5}`, `lng: ${Math.round(pinned.lng! * 1e5) / 1e5}`].filter((x): x is string => !!x));
         if (cover) {
           files.push({ path: `src/assets/posts/${slug}-cover.jpg`, base64: await shrink(cover) });
           front.push(`cover: ../../assets/posts/${slug}-cover.jpg`, `coverAlt: ${JSON.stringify(title.value.trim())}`, `coverPosition: ${coverPosition}`);

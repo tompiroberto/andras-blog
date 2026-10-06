@@ -9,7 +9,9 @@
       "country": "PL",
       "from": "2025-11-14",
       "to": "2025-11-16",
-      "color": "#E63946"
+      "color": "#E63946",
+      "lat": 50.0647,
+      "lng": 19.945
     },
     {
       "id": "hr-split-2026",
@@ -20,7 +22,13 @@
       "country": "HR",
       "from": "2026-02-13",
       "to": "2026-02-15",
-      "color": "#2F86D6"
+      "color": "#2F86D6",
+      "lat": 43.5081,
+      "lng": 16.4402,
+      "music": [
+        "lamour-toujours-hardstyle-slowed",
+        "living-for-the-moment"
+      ]
     },
     {
       "id": "si-2026",
@@ -31,7 +39,12 @@
       "country": "SI",
       "from": "2026-04-17",
       "to": "2026-04-20",
-      "color": "#FF8C1A"
+      "color": "#FF8C1A",
+      "lat": 45.5142,
+      "lng": 13.5917,
+      "music": [
+        "rather-be"
+      ]
     },
     {
       "id": "hr-sky-2026",
@@ -42,7 +55,9 @@
       "country": "HR",
       "from": "2026-05-01",
       "to": "2026-05-10",
-      "color": "#FF5FA2"
+      "color": "#FF5FA2",
+      "lat": 43.2969,
+      "lng": 17.0178
     },
     {
       "id": "sk-ba-2026",
@@ -53,7 +68,9 @@
       "country": "SK",
       "from": "2026-06-06",
       "to": "2026-06-07",
-      "color": "#2DBE6C"
+      "color": "#2DBE6C",
+      "lat": 48.1486,
+      "lng": 17.1077
     },
     {
       "id": "sk-lv-2026",
@@ -64,7 +81,10 @@
       "country": "SK",
       "from": "2026-06-26",
       "to": "2026-06-27",
-      "color": "#FFD60A"
+      "color": "#FFD60A",
+      "post": "cycling-to-my-classmate",
+      "lat": 48.2149,
+      "lng": 18.6071
     },
     {
       "id": "at-2026",
@@ -75,7 +95,9 @@
       "country": "AT",
       "from": "2026-08-01",
       "to": "2026-08-12",
-      "color": "#E63946"
+      "color": "#E63946",
+      "lat": 47.8095,
+      "lng": 13.055
     },
     {
       "id": "lt-2026",
@@ -86,18 +108,34 @@
       "color": "#2DBE6C",
       "country": "LT",
       "title_en": "Lithuania – Erasmus+",
-      "place_en": "Lithuania"
+      "place_en": "Lithuania",
+      "music": [
+        "even-if-im-late",
+        "obsesion",
+        "i-love-it",
+        "miami-supercops",
+        "12-to-12",
+        "my-way"
+      ],
+      "post": "erasmus-lithuania-2026",
+      "lat": 54.6519,
+      "lng": 23.035
     },
     {
       "id": "cz-2026",
-      "title": "Csehország",
+      "title": "Csehország – osztálykirándulás",
       "place": "Prága",
       "from": "2026-09-17",
       "to": "2026-09-20",
       "color": "#2F86D6",
       "country": "CZ",
-      "title_en": "Czechia",
-      "place_en": "Prague"
+      "title_en": "Czechia – class trip",
+      "place_en": "Prague",
+      "music": [
+        "impacto"
+      ],
+      "lat": 50.0755,
+      "lng": 14.4378
     },
     {
       "id": "gr-2026",
@@ -108,7 +146,18 @@
       "color": "#7B2FF7",
       "country": "GR",
       "title_en": "Greece – Erasmus+",
-      "place_en": "Elafonisos"
+      "place_en": "Elafonisos",
+      "music": [
+        "supergirl",
+        "blessings",
+        "hey-kids",
+        "viva-la-vida",
+        "as-it-was",
+        "save-your-tears"
+      ],
+      "post": "erasmus-greece-2026",
+      "lat": 36.4836,
+      "lng": 22.959
     },
     {
       "id": "ge-2026",
@@ -119,7 +168,9 @@
       "color": "#E63946",
       "country": "GE",
       "title_en": "Georgia",
-      "place_en": "Georgia"
+      "place_en": "Georgia",
+      "lat": 42.2679,
+      "lng": 42.6946
     }
   ],
   "plans": [

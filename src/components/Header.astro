@@ -297,6 +297,13 @@ const citiesToggle = {
       right: 14px;
       margin: 0;
       font-size: 18px;
+      transition: opacity 200ms ease, scale 200ms ease;
+    }
+    /* … only at the top of the page: further down it would sit on the content */
+    .site-header.is-scrolled .pum {
+      opacity: 0;
+      scale: 0.6;
+      pointer-events: none;
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -693,4 +700,5 @@ const citiesToggle = {
       showInfoBox(pum);
     });
   });
+
 </script>

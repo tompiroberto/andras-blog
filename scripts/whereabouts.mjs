@@ -30,6 +30,24 @@ if (!step) process.exit(0);
 
 const countries = read('src/data/countries.json');
 let changed = false;
+// a country that isn't on the map's list yet (e.g. a new trip to Mongolia, "MN"): added, with its names in the
+// site's languages and its shape's number from the map data (matched by its English name)
+if (!countries.countries.some((c) => c.id === step.country) && /^[A-Z]{2}$/.test(step.country)) {
+  const geoms = read('public/data/countries-110m.json').objects.countries.geometries;
+  const name = (lang) => new Intl.DisplayNames([lang], { type: 'region' }).of(step.country) ?? step.country;
+  const simple = (s) => s.toLowerCase().replace(/[^a-z]/g, '');
+  const en = simple(name('en'));
+  const num = Object.entries(read('src/data/iso-a2.json')).find(([, a2]) => a2 === step.country)?.[0];
+  const geom = num ? { id: num } : geoms.find((g) => simple(g.properties?.name ?? '') === en) ?? geoms.find((g) => { const n = simple(g.properties?.name ?? ''); return n && (en.startsWith(n) || n.startsWith(en)); });
+  const event = read('src/data/calendar.json').events.find((e) => e.country === step.country);
+  countries.countries.push({
+    id: step.country,
+    ...(geom ? { isoNumeric: String(geom.id).padStart(3, '0') } : {}),
+    status: 'now',
+    i18n: Object.fromEntries(['en', 'hu', 'pt', 'ro', 'el', 'ka'].map((l) => [l, { name: name(l), text: (l === 'hu' ? event?.title : event?.title_en ?? event?.title) ?? '' }])),
+  });
+  changed = true;
+}
 for (const c of countries.countries) {
   if (c.id === step.country) {
     if (c.status !== 'home' && c.status !== 'now') {
@@ -43,7 +61,8 @@ for (const c of countries.countries) {
 }
 const site = read('src/data/site.json');
 if (site.currentlyIn?.countryId !== step.country) {
-  site.currentlyIn = { ...site.currentlyIn, countryId: step.country };
+  // the program label (e.g. "Erasmus+") belonged to the last place
+  site.currentlyIn = { countryId: step.country };
   changed = true;
   write('src/data/site.json', site);
 }

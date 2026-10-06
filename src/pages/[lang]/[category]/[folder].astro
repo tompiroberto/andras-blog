@@ -1,0 +1,246 @@
+---
+/**
+ * A folder of a category (Random things, Adventures – src/lib/randomFolders.ts): everything of its posts on one page –
+ * each post's whole text, then its photos, videos and music. Nothing more to click through.
+ */
+import { Image, getImage } from 'astro:assets';
+import { render, getCollection } from 'astro:content';
+import StravaEmbeds from '../../../components/StravaEmbeds.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Backdrop from '../../../components/Backdrop.astro';
+import { HTML_LANG, LOCALES, localePath, t, type Lang } from '../../../i18n';
+import { getPosts } from '../../../lib/posts';
+import { getPhotos } from '../../../lib/photos';
+import { FOLDERS, folderCover, folderOfPost } from '../../../lib/randomFolders';
+import { categoryMeta } from '../../../lib/categories';
+
+export function getStaticPaths() {
+  return LOCALES.flatMap((lang) => Object.entries(FOLDERS).flatMap(([category, list]) => list.map((f) => ({ params: { lang, category, folder: f.id } }))));
+}
+
+const lang = Astro.params.lang as Lang;
+const category = Astro.params.category as string;
+const catTitle = t(lang, categoryMeta(category as never).titleKey);
+const folder = FOLDERS[category].find((f) => f.id === Astro.params.folder)!;
+const posts = (await getPosts(category as never)).filter((p) => folderOfPost(category, p.id, p.data.folder) === folder.id).sort((a, b) => folder.posts.indexOf(a.id) - folder.posts.indexOf(b.id));
+const photos = await getPhotos(lang);
+// each post: its text, its photos and videos (its own uploads and the hashtags it collects) and its music
+const music = await getCollection('music');
+const parts = await Promise.all(
+  posts.map(async (p) => ({
+    post: p,
+    Content: (await render(p)).Content,
+    media: await Promise.all(
+      photos
+        .filter((ph) => ph.files && (ph.post === p.id || (p.data.photoTags ?? []).some((tag) => ph.tags?.includes(tag))))
+        .map(async (ph) => ({ ...ph, thumb: ph.image ? (await getImage({ src: ph.image, width: 640 })).src : ph.src, large: ph.image ? (await getImage({ src: ph.image, width: 1800 })).src : ph.src })),
+    ),
+    music: music.filter((m) => m.data.post === p.id),
+  })),
+);
+const media = parts.flatMap((x) => x.media);
+const cover = folderCover(folder.cover) ?? posts.find((p) => p.data.cover)?.data.cover ?? photos.find((ph) => ph.image && posts.some((p) => p.id === ph.post))?.image;
+---
+
+<BaseLayout lang={lang} title={`${folder.name} · ${catTitle}`} description={posts.map((p) => p.data.title).join(' · ')}>
+  <section class="section rfolder" data-dev-add="post" data-dev-category={category} data-dev-folder={folder.id}>
+    <div class="bg-layer rfolder__bg"><Backdrop theme={folder.background ?? categoryMeta(category as never).backdrop} strength="strong" /></div>
+    <div class="container">
+      <a class="link-arrow back-link" href={localePath(lang, category)}>{catTitle}</a>
+      <h1>{folder.icon} {folder.name}</h1>
+      {folder.blurb && <p class="rfolder__blurb">{lang === 'hu' ? folder.blurb[0] : folder.blurb[1]}</p>}
+      {cover && media.length === 0 && !posts.some((p) => p.data.cover) && <Image class="rfolder__cover" src={cover} alt="" widths={[700, 1400]} sizes="(max-width: 800px) 100vw, 70ch" />}
+      {posts.length === 0 && <p class="rfolder__empty">{t(lang, 'posts.empty')}</p>}
+      {
+        parts.map(({ post: p, Content, media: pics, music: songs }) => (
+          <article class="rfolder__post" id={p.id}>
+            {/* one post: the folder's title is its title; more posts: each has its own */}
+            {parts.length > 1 && <h2 class="rfolder__post-title">{p.data.title}</h2>}
+            {p.data.facts && (
+              <ul class="facts rfolder__facts">
+                {p.data.facts.map((x) => (
+                  <li>
+                    <strong>{x.label}</strong>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {p.data.cover && <Image class="rfolder__cover" src={p.data.cover} alt={p.data.coverAlt ?? ""} widths={[700, 1400]} sizes="(max-width: 800px) 100vw, 760px" />}
+            <div class="prose" lang={HTML_LANG[p.data.lang]}>
+              <Content />
+            </div>
+            {p.data.strava && p.data.strava.length > 0 && <StravaEmbeds lang={lang} activities={p.data.strava} />}
+            {pics.length > 0 && (
+              <ul class="rfolder__gallery">
+                {pics.map((ph) => (
+                  <li>
+                    {ph.video ? (
+                      <video src={ph.video} controls preload="metadata" playsinline />
+                    ) : (
+                      <a href={ph.large} target="_blank" rel="noopener">
+                        <img src={ph.thumb} alt={ph.caption} loading="lazy" />
+                      </a>
+                    )}
+                    {ph.caption && <span>{ph.caption}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {songs.length > 0 && (
+              <ul class="rfolder__music">
+                {songs.map((m) => (
+                  <li>
+                    <strong>♪ {m.data.artist ? `${m.data.artist} – ${m.data.title}` : m.data.title}</strong>
+                    <audio src={m.data.file} controls preload="none" />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .rfolder h1 {
+    margin: 12px 0 20px;
+  }
+  .rfolder__blurb {
+    max-width: 60ch;
+    margin: -8px 0 20px;
+    color: var(--muted);
+    font-size: var(--fs-tagline);
+  }
+  .rfolder__cover {
+    display: block;
+    width: 100%;
+    max-width: 760px;
+    max-height: 420px;
+    margin-bottom: 24px;
+    object-fit: cover;
+    border: var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-yellow);
+  }
+  .rfolder__list {
+    display: grid;
+    gap: 12px;
+    max-width: 760px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .rfolder__list a {
+    display: grid;
+    gap: 4px;
+    padding: 14px 18px;
+    border: var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--ink);
+    text-decoration: none;
+    box-shadow: 4px 4px 0 var(--violet);
+    transition: transform 150ms ease;
+  }
+  .rfolder__list li:nth-child(even) a {
+    box-shadow: 4px 4px 0 var(--yellow);
+  }
+  .rfolder__list a:hover {
+    transform: translate(-2px, -2px);
+  }
+  .rfolder__list strong {
+    font-size: 1.1rem;
+  }
+  .rfolder__list span {
+    color: var(--muted);
+  }
+  /* the drawing beside the title, not in the middle of a long page */
+  .rfolder__bg {
+    bottom: auto;
+    height: 380px;
+  }
+  .rfolder__post {
+    max-width: 980px;
+    margin-top: 28px;
+  }
+  .rfolder__post + .rfolder__post {
+    margin-top: 56px;
+    padding-top: 40px;
+    border-top: 2px dashed var(--violet);
+  }
+  .rfolder__post-title {
+    margin: 0 0 14px;
+  }
+  .rfolder__post .prose {
+    max-width: 70ch;
+  }
+  .rfolder__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 18px;
+    padding: 0;
+    list-style: none;
+  }
+  .rfolder__facts li {
+    padding: 4px 12px;
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--yellow);
+    font-size: var(--fs-small);
+  }
+  .rfolder__music {
+    display: grid;
+    gap: 10px;
+    max-width: 520px;
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .rfolder__music li {
+    display: grid;
+    gap: 6px;
+  }
+  .rfolder__music audio {
+    width: 100%;
+  }
+  .rfolder__gallery {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .rfolder__gallery li {
+    display: grid;
+    gap: 6px;
+    align-content: start;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .rfolder__gallery img,
+  .rfolder__gallery video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border: var(--border);
+    border-radius: 14px;
+    background: #000;
+  }
+  .rfolder__gallery video {
+    object-fit: contain;
+  }
+  .rfolder__empty {
+    color: var(--muted);
+    font-size: var(--fs-tagline);
+  }
+  .rfolder__list strong::before {
+    content: '→ ';
+    color: var(--violet);
+  }
+</style>

@@ -143,6 +143,25 @@ export async function fileExists(token: string, path: string): Promise<boolean> 
   }
 }
 
+/**
+ * Is this a real key to the site – one that may write to the repository? Developer mode opens only
+ * with one: the access code alone only keeps out the curious (it is checked in the browser).
+ */
+export async function keyCanWrite(token: string): Promise<boolean> {
+  if (!token) return false;
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}`, {
+      headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' },
+      cache: 'no-store',
+    });
+    if (!res.ok) return false;
+    const repo = (await res.json()) as { permissions?: { push?: boolean } };
+    return repo.permissions?.push === true;
+  } catch {
+    return false;
+  }
+}
+
 export function getToken(): string {
   try {
     return localStorage.getItem(TOKEN_KEY) ?? '';
@@ -200,6 +219,16 @@ export async function shrinkToJpeg(file: File, max = 2400, quality = 0.85): Prom
 }
 
 /** "Bali, rizsteraszok!" → "bali-rizsteraszok" (file names) */
+/** a file as base64 (unchanged – a video, a song …) */
+export function toBase64(file: File): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).replace(/^data:[^,]*,/, ''));
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
 export function slugify(text: string): string {
   return (
     text

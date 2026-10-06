@@ -1,4 +1,5 @@
 ---
+import { MAIN_SITE as MAIN_SITE_URL } from '../lib/mainSite.mjs';
 /**
  * Edits made on the page in developer mode (src/data/edits.json, saved by src/components/EditMode.astro):
  * moved / resized / hidden elements, rewritten texts and added subtitles or paragraphs. Applied for every
@@ -18,7 +19,7 @@
 import edits from '../data/edits.json';
 
 /** a copy on another host: the main site's current edits are applied after the page loads */
-const liveSite = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
+const liveSite = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || MAIN_SITE_URL : '';
 
 /** fonts offered in developer mode (EditMode's font menu) */
 const fonts = {"heading": "'Unbounded', system-ui, sans-serif", "body": "'DM Sans', system-ui, sans-serif", "serif": "Georgia, 'Times New Roman', serif", "mono": "ui-monospace, 'Cascadia Code', Consolas, monospace", "hand": "'Segoe Print', 'Comic Sans MS', 'Bradley Hand', cursive", "impact": "Impact, 'Arial Black', sans-serif"};

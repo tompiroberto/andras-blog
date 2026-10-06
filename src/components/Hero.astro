@@ -1,4 +1,5 @@
 ---
+import { MAIN_SITE as MAIN_SITE_URL } from '../lib/mainSite.mjs';
 import Globe from './Globe.astro';
 import { STEPS, stepAt, stepText } from '../lib/whereabouts';
 import Icon from './Icon.astro';
@@ -26,7 +27,7 @@ const nickLead = t(lang, 'hero.nicknames').split(':')[0].trim();
 const whereWords = Object.fromEntries(Object.keys(translations).filter((k) => k.startsWith('where.')).map((k) => [k.slice(6), t(lang, k as TKey)]));
 const whereSteps = STEPS.map((st) => ({ from: st.from, text: stepText(st, lang, whereWords) }));
 const whereNow = stepAt() ? stepText(stepAt()!, lang, whereWords) : t(lang, 'hero.status');
-const whereLive = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
+const whereLive = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || MAIN_SITE_URL : '';
 ---
 
 <section class="hero section" data-lay="hero" aria-labelledby="hero-title">
@@ -93,13 +94,15 @@ const whereLive = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env
           }
           {after}
         </h1>
+        <!-- pointing at the name: round photos of András pop out around it and fill the space beside the title -->
+        <span class="hero-faces" aria-hidden="true" data-hero-faces data-count="23"></span>
         <div class="nick-tip" id="nick-tip" role="tooltip" data-nick-tip>
           {nickLead}:{' '}
           {
             site.nicknames.map((n, i) => (
               <>
                 {i > 0 && <span aria-hidden="true"> · </span>}
-                <strong lang={/[Ⴀ-ჿ]/.test(n) ? 'ka' : 'de'}>{n}</strong>
+                <strong lang={/[Ⴀ-ჿ]/.test(n) ? 'ka' : n === 'Später' ? 'de' : 'hu'}>{n}</strong>
               </>
             ))
           }
@@ -305,6 +308,69 @@ const whereLive = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env
     outline-offset: 4px;
     border-radius: 0.28em;
   }
+  /* the photos: they start on the name and pop out to their places (--face-x, --face-y in the wrap;
+     own names: --r is a registered <length> elsewhere) */
+  .hero-faces {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 2;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+  .hero-faces :global(img) {
+    position: absolute;
+    left: -50px;
+    top: -50px;
+    width: 100px;
+    max-width: none;
+    height: 100px;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow:
+      0 0 0 2px var(--ink),
+      4px 5px 0 2px var(--violet);
+    transform: translate(var(--from-x), var(--from-y)) scale(0.2) rotate(-30deg);
+    opacity: 0;
+    transition:
+      transform 480ms cubic-bezier(0.3, 1.5, 0.5, 1),
+      opacity 220ms ease;
+    transition-delay: calc(var(--face-i, 0) * 55ms);
+  }
+  .hero-faces :global(img:nth-child(even)) {
+    box-shadow:
+      0 0 0 2px var(--ink),
+      4px 5px 0 2px var(--yellow);
+  }
+  .hero-faces :global(img.is-out) {
+    transform: translate(var(--face-x), var(--face-y)) scale(1) rotate(var(--face-r, 0deg));
+    opacity: 1;
+  }
+  /* the Hungarian flag that comes out with them: it stays in its place (no flying in, no waving) –
+     it only fades in, straight */
+  .hero-faces :global(img.hero-faces__flag) {
+    left: -36px;
+    top: -26px;
+    width: 72px;
+    height: 52px;
+    border: 3px solid #fff;
+    border-radius: 8px;
+    transform: translate(var(--face-x), var(--face-y)) scale(0.92);
+    transition:
+      opacity 250ms ease,
+      transform 250ms ease;
+    transition-delay: 0ms;
+  }
+  .hero-faces :global(img.hero-faces__flag.is-out) {
+    transform: translate(var(--face-x), var(--face-y)) scale(1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-faces :global(img) {
+      transition: opacity 150ms ease;
+    }
+  }
 
   .nick-tip {
     position: absolute;
@@ -494,10 +560,89 @@ const whereLive = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env
     });
     window.addEventListener('resize', () => tip.classList.contains('is-open') && place());
   }
+
+  // ---- the name in the title: round photos of András pop out beside it – up to six, in a symmetric
+  // wedge pointing right (3 + 2 + 1, as many columns as fit) – and a Hungarian flag at the end of the
+  // line above; each new visit swaps one or two of the photos for others ----
+  const faces = wrap?.querySelector<HTMLElement>('[data-hero-faces]');
+  const title = wrap?.querySelector<HTMLElement>('h1');
+  if (wrap && trigger && faces && title) {
+    const all = Array.from({ length: Number(faces.dataset.count ?? 0) }, (_, i) => `/images/faces/andras-${i + 1}.jpg`);
+    const shuffled = <T,>(a: T[]) => [...a].sort(() => Math.random() - 0.5);
+    const SIZE = 100;
+    const GAP = 10;
+    let shown: string[] = [];
+    let hideTimer = 0;
+
+    /** the places, in the wrap's own (zoom-free) pixels */
+    const spots = () => {
+      const z = pageZoom();
+      const w = wrap.getBoundingClientRect();
+      const n = trigger.getBoundingClientRect();
+      const ny = (n.top + n.height / 2 - w.top) / z;
+      // the text lines of the title (the ones above and below the name are not to be covered)
+      const range = document.createRange();
+      range.selectNodeContents(title);
+      const rects = Array.from(range.getClientRects());
+      const lineEnd = Math.max(...rects.filter((r) => r.bottom > n.top && r.top < n.bottom).map((r) => r.right));
+      const ox = (lineEnd - w.left) / z + 18;
+      // how far right they may go: the window, or the country ribbon on the right
+      const ribbon = document.querySelector<HTMLElement>('.chile')?.getBoundingClientRect();
+      const right = ((ribbon && ribbon.width > 0 ? Math.min(window.innerWidth, ribbon.left) : window.innerWidth) - w.left) / z - 12;
+      // the wedge: columns of 3, 2 and 1, packed like a honeycomb
+      const step = SIZE + GAP;
+      const colX = (c: number) => ox + SIZE / 2 + c * step * 0.87;
+      const columns = [
+        [-step, 0, step],
+        [-step / 2, step / 2],
+        [0],
+      ];
+      const out: { x: number; y: number }[] = [];
+      for (let c = 0; c < columns.length && colX(c) + SIZE / 2 <= right; c++) columns[c].forEach((dy) => out.push({ x: colX(c), y: ny + dy }));
+      // the flag: at the end of the line above the name, or above the wedge if there is none
+      // (line boxes overlap a little: a line is above the name when its middle is)
+      const above = rects.filter((r) => r.top + r.height / 2 < n.top);
+      const lastAbove = above.length ? above.reduce((a, b) => (b.bottom > a.bottom || (b.bottom === a.bottom && b.right > a.right) ? b : a)) : null;
+      const flag = lastAbove
+        ? { x: (lastAbove.right - w.left) / z + 70, y: (lastAbove.top + lastAbove.height / 2 - w.top) / z }
+        : { x: colX(0), y: ny - step * 1.55 };
+      return { out, flag, from: { x: ox, y: ny } };
+    };
+    const pop = (src: string, p: { x: number; y: number }, from: { x: number; y: number }, i: number, cls = '') => {
+      const img = Object.assign(document.createElement('img'), { src, alt: '', decoding: 'async', className: cls });
+      img.style.cssText = `--from-x:${from.x}px;--from-y:${from.y}px;--face-x:${p.x}px;--face-y:${p.y}px;--face-r:${Math.round((Math.random() - 0.5) * 20)}deg;--face-i:${i}`;
+      faces.append(img);
+      requestAnimationFrame(() => requestAnimationFrame(() => img.classList.add('is-out')));
+    };
+    const show = () => {
+      window.clearTimeout(hideTimer);
+      // back before they were gone: the same ones come out again
+      if (faces.childElementCount) return faces.querySelectorAll('img').forEach((img) => img.classList.add('is-out'));
+      const { out, flag, from } = spots();
+      const count = Math.min(out.length, all.length);
+      if (!shown.length) shown = shuffled(all).slice(0, count);
+      else {
+        // keep some, swap one or two for pictures not shown last time
+        const fresh = shuffled(all.filter((s) => !shown.includes(s)));
+        const keep = shuffled(shown).slice(0, Math.max(1, Math.min(shown.length, count) - 1 - Math.round(Math.random())));
+        shown = shuffled([...keep, ...fresh, ...shuffled(all)].filter((s, i, a) => a.indexOf(s) === i).slice(0, count));
+      }
+      out.slice(0, count).forEach((p, i) => pop(shown[i], p, from, i));
+      pop('/flags/hu.svg', flag, from, count, 'hero-faces__flag');
+    };
+    const hide = () => {
+      faces.querySelectorAll('img').forEach((img) => img.classList.remove('is-out'));
+      hideTimer = window.setTimeout(() => faces.replaceChildren(), 500);
+    };
+    trigger.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && show());
+    trigger.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && hide());
+    // the pictures load in the background, so they pop out at once
+    window.addEventListener('load', () => all.forEach((src) => (new Image().src = src)), { once: true });
+  }
 </script>
 
 <script>
-  import { commitFiles, getToken } from '../lib/githubCommit';
+  import { commitFiles, getToken, keyCanWrite } from '../lib/githubCommit';
   import { MANUAL, STEPS, stepNow, stepText, timeline, type Step, type Trip } from '../lib/whereabouts';
 
   // the pill moves on by itself: the last step that has started (set by hand, or a trip of the calendar)
@@ -526,7 +671,15 @@ const whereLive = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env
     // ---- developer mode: a click on the pill rewrites it ----
     const form = document.querySelector<HTMLFormElement>('[data-where-form]');
     if (!form) return;
-    const isDev = () => document.documentElement.classList.contains('dev-mode') && !document.documentElement.classList.contains('dev-preview');
+    // developer mode with the GitHub key checked by GitHub in this tab (DevMode.astro) – nothing less
+    const verified = () => {
+      try {
+        return sessionStorage.getItem('andras-dev-verified') === '1';
+      } catch {
+        return false;
+      }
+    };
+    const isDev = () => verified() && document.documentElement.classList.contains('dev-mode') && !document.documentElement.classList.contains('dev-preview');
     const sel = form.querySelector<HTMLSelectElement>('[data-where-country]')!;
     const flag = form.querySelector<HTMLImageElement>('[data-where-flag]')!;
     const inHu = form.querySelector<HTMLInputElement>('[data-where-hu]')!;
@@ -592,6 +745,9 @@ const whereLive = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env
       let key = getToken();
       if (!key) key = (window.prompt('GitHub key') ?? '').trim();
       if (!key) return;
+      // only a real key to the site may change it (asked from GitHub, not trusted from the browser)
+      note.textContent = '…';
+      if (!(await keyCanWrite(key))) return void (note.textContent = '⛔ GitHub key');
       // the time with its own offset (e.g. +02:00), like the other steps
       const at = new Date(inFrom.value);
       const off = -at.getTimezoneOffset();
@@ -663,4 +819,3 @@ const whereLive = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env
     }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   });
 </script>
-

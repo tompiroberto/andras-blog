@@ -427,6 +427,8 @@ const labels = {
   import type { MapCountry } from '../lib/map';
   import { REDUCED_MOTION_QUERY } from '../lib/constants';
   import { pageZoom, textZoom } from '../lib/zoom';
+  import { stepNow, timeline, type Step, type Trip } from '../lib/whereabouts';
+  import isoA2 from '../data/iso-a2.json';
 
   const panel = document.querySelector<HTMLElement>('[data-map]');
   const section = panel?.closest<HTMLElement>('[data-map-wrap]') ?? panel?.closest('section');
@@ -449,6 +451,8 @@ const labels = {
   }
 
   async function initMap(panel: HTMLElement, section: HTMLElement) {
+    // where he is today (the calendar's trips and the whereabouts steps, as the "currently in" pill reads them)
+    const live = Promise.all([fetch('/whereabouts.json').then((r) => r.json()), fetch('/calendar.json').then((r) => r.json())]).catch(() => null);
     const [geo, z, sel, topo, world] = await Promise.all([
       import('d3-geo'),
       import('d3-zoom'),
@@ -465,6 +469,28 @@ const labels = {
     const tipText = tip.querySelector<HTMLElement>('[data-tip-text]')!;
     const tipLink = tip.querySelector<HTMLAnchorElement>('[data-tip-link]')!;
     const data: MapCountry[] = JSON.parse(section.querySelector('[data-map-countries]')!.textContent || '[]');
+    // today's country is "now" on the map at once – also a new one (e.g. Mongolia) – not only after the next build
+    try {
+      const got = (await live) as [{ steps?: Step[] }, { events?: Trip[] }] | null;
+      const now = got && stepNow(timeline(got[0].steps ?? [], got[1].events ?? []));
+      const num = now && Object.entries(isoA2 as Record<string, string>).find(([, a2]) => a2 === now.country)?.[0];
+      if (num) {
+        for (const c of data) if (c.status === 'now' && c.iso !== num) c.status = 'visited';
+        const here = data.find((c) => c.iso === num);
+        if (here && here.status !== 'home') here.status = 'now';
+        if (!here) {
+          let name = now.country;
+          try {
+            name = new Intl.DisplayNames([document.documentElement.lang || 'en'], { type: 'region' }).of(now.country) ?? name;
+          } catch {
+            /* the code as it is */
+          }
+          data.push({ iso: num, status: 'now', name, text: (document.documentElement.lang === 'hu' ? now.place : now.place_en || now.place) ?? '' });
+        }
+      }
+    } catch {
+      /* the built map stays as it is */
+    }
     const byIso = new Map(data.map((c) => [c.iso, c]));
     let hovered: SVGPathElement | null = null;
     const statusIcon = (s: string) =>

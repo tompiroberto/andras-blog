@@ -1,4 +1,6 @@
 ---
+import isoA2 from '../data/iso-a2.json';
+import { MAIN_SITE as MAIN_SITE_URL } from '../lib/mainSite.mjs';
 /**
  * Map mode: the whole site as a Google-Maps-like world map. The page itself is hidden
  * (html.map-mode rules in global.css); the content is pinned to places as cards that show more
@@ -17,6 +19,8 @@ import site from '../data/site.json';
 import countriesData from '../data/countries.json';
 import mapPins from '../data/map-pins.json';
 import friends from '../data/friends.json';
+import calendarData from '../data/calendar.json';
+import racesData from '../data/races.json';
 import nutella from '../data/nutella-factories.json';
 import { SPACE_ART } from '../lib/spaceArt';
 import { getImage } from 'astro:assets';
@@ -311,7 +315,9 @@ const A2: Record<string, string> = Object.fromEntries(
 );
 for (const c of countriesData.countries as { isoNumeric?: string; id: string }[]) if (c.isoNumeric && /^[A-Z]{2}$/.test(c.id)) A2[c.isoNumeric] ??= c.id;
 for (const f of friends.countries) A2[f.iso] ??= f.a2;
-const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
+// and every other country of the map (src/data/iso-a2.json: map number → 2-letter code)
+for (const [num, a2] of Object.entries(isoA2 as Record<string, string>)) A2[num] ??= a2;
+const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || MAIN_SITE_URL : '';
 const frWords = {
   kicker: t(lang, 'mapmode.friendsKicker'),
   noNote: t(lang, 'mapmode.friendsNoNote'),
@@ -350,6 +356,15 @@ const LEGEND: { status: string; key: TKey }[] = [
   { status: 'home', key: 'legend.home' },
   { status: 'planned', key: 'legend.planned' },
   { status: 'unexplored', key: 'mapmode.unexplored' },
+];
+// "Events" switch: every place András has been to (the calendar's trips) and every race he ran
+const mapEvents = [
+  ...(calendarData.events as { id: string; title: string; title_en?: string; place?: string; place_en?: string; from: string; to: string; lat?: number; lng?: number }[])
+    .filter((e) => e.lat !== undefined && e.lng !== undefined)
+    .map((e) => ({ kind: 'trip', title: lang === 'hu' ? e.title : e.title_en || e.title, place: lang === 'hu' ? e.place : e.place_en || e.place, from: e.from, to: e.to, lat: e.lat!, lng: e.lng! })),
+  ...(racesData.races as { title: string; title_en?: string; place?: string; place_en?: string; date: string; time?: string; result?: string; result_en?: string; lat?: number; lng?: number }[])
+    .filter((r) => r.lat !== undefined && r.lng !== undefined)
+    .map((r) => ({ kind: 'race', title: lang === 'hu' ? r.title : r.title_en || r.title, place: lang === 'hu' ? r.place : r.place_en || r.place, from: r.date, to: r.date, time: r.time, result: lang === 'hu' ? r.result : r.result_en || r.result, lat: r.lat!, lng: r.lng! })),
 ];
 ---
 
@@ -429,6 +444,11 @@ const LEGEND: { status: string; key: TKey }[] = [
       <input type="checkbox" data-mm-friends />
       <span>👥 {t(lang, 'mapmode.friends')}</span>
     </label>
+    <!-- every place András has been to and every race (everything else hides) -->
+    <label class="mm-media-switch mm-events-switch">
+      <input type="checkbox" data-mm-events />
+      <span>📍🏃 {t(lang, 'mapmode.events')}</span>
+    </label>
   </div>
   <div class="mm-bar mm-bar--right">
     <button type="button" class="mm-btn mm-btn--icon" data-mm-zoom="in" aria-label={t(lang, 'map.zoomIn')} title={t(lang, 'map.zoomIn')}><Icon name="plus" size={18} /></button>
@@ -458,6 +478,8 @@ const LEGEND: { status: string; key: TKey }[] = [
   </ul>
   <!-- friends: their markers on the globe, and the list of the countries -->
   <div class="mm-fr-marks" data-mm-fr-marks></div>
+  <!-- events: the trips (📍) and the races (🏃) -->
+  <div class="mm-ev-marks" data-mm-ev-marks data-events={JSON.stringify(mapEvents)} data-locale={HTML_LANG[lang]}></div>
   <p class="mm-fr-hover" hidden data-mm-fr-hover><strong></strong><span></span></p>
   <aside class="mm-fr-list" data-mm-fr-list>
     <strong data-mm-fr-count></strong>
@@ -995,6 +1017,59 @@ const LEGEND: { status: string; key: TKey }[] = [
   }
   .map-mode-view.is-friends .mm-canvas :global(.mm-land.is-friend:hover) {
     fill: #ff8cc0;
+  }
+  /* "Events": only the places he has been to and his races – everything else hides */
+  .map-mode-view.is-events .mm-items,
+  .map-mode-view.is-events .mm-cities,
+  .map-mode-view.is-events .mm-jars,
+  .map-mode-view.is-events .mm-intro,
+  .map-mode-view.is-events .mm-geo-labels,
+  .map-mode-view.is-events .mm-route-stops,
+  .map-mode-view.is-events .mm-space,
+  .map-mode-view.is-events .mm-legend--travel,
+  .map-mode-view.is-events .mm-say-layer {
+    display: none !important;
+  }
+  .mm-ev-marks {
+    display: none;
+  }
+  .map-mode-view.is-events .mm-ev-marks {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+  }
+  .mm-ev-marks :global(.mm-ev-mark) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--yellow);
+    box-shadow: 2px 2px 0 var(--ink);
+    font-size: 17px;
+    translate: calc(var(--x) - 17px) calc(var(--y) - 17px);
+    pointer-events: auto;
+    cursor: pointer;
+    animation: mm-fr-pop 400ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+    animation-delay: var(--d, 0ms);
+  }
+  .mm-ev-marks :global(.mm-ev-mark.is-race) {
+    background: var(--violet);
+    color: #fff;
+  }
+  .mm-ev-marks :global(.mm-ev-mark[hidden]) {
+    display: none;
+  }
+  .mm-ev-marks :global(.mm-ev-mark:hover) {
+    scale: 1.2;
+    z-index: 2;
   }
   .map-mode-view.is-friends .mm-fr-marks {
     display: block;
@@ -2349,7 +2424,9 @@ const LEGEND: { status: string; key: TKey }[] = [
       renderItems();
       renderSpace();
       friendsMarks();
+      eventMarks();
     }
+    let eventMarks = () => {};
     let friendsMarks = () => {};
     let friendsClick: (e: MouseEvent, iso: string) => void = () => {};
     drawCountries();
@@ -3048,7 +3125,9 @@ const LEGEND: { status: string; key: TKey }[] = [
           delete info[iso];
         } else {
           if (!entry) {
-            entry = { id: `c${iso}`, isoNumeric: iso, status: edStatus, i18n: {} };
+            // its id is the 2-letter code (e.g. MN), as the posts and the calendar use it
+            const a2 = (JSON.parse(view.querySelector('[data-mm-friends-data]')?.textContent || '{}') as { a2?: Record<string, string> }).a2?.[iso];
+            entry = { id: a2 ?? `c${iso}`, isoNumeric: iso, status: edStatus, i18n: {} };
             raw.countries.push(entry);
           }
           entry.status = edStatus;
@@ -3364,6 +3443,69 @@ const LEGEND: { status: string; key: TKey }[] = [
       setFriends(friendsBox.checked);
       renderItems();
     });
+
+    // ---- events: every place András has been to (📍, the calendar's trips) and every race (🏃) ----
+    {
+      const evBox = view.querySelector<HTMLInputElement>('[data-mm-events]')!;
+      const evLayer = view.querySelector<HTMLElement>('[data-mm-ev-marks]')!;
+      type Ev = { kind: 'trip' | 'race'; title: string; place?: string; from: string; to: string; time?: string; result?: string; lat: number; lng: number };
+      const today = new Date().toISOString().slice(0, 10);
+      // only what has happened (a planned trip is not a place he has been to)
+      const evs = (JSON.parse(evLayer.dataset.events || '[]') as Ev[]).filter((e) => e.from <= today);
+      const fmtD = new Intl.DateTimeFormat(evLayer.dataset.locale || 'hu', { year: 'numeric', month: 'short', day: 'numeric' });
+      const day = (d: string) => fmtD.format(new Date(`${d}T12:00:00`));
+      const marks: { el: HTMLButtonElement; lat: number; lon: number }[] = [];
+      evs.forEach((e, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = `mm-ev-mark${e.kind === 'race' ? ' is-race' : ''}`;
+        b.textContent = e.kind === 'race' ? '🏃' : '📍';
+        b.title = e.title;
+        b.setAttribute('aria-label', e.title);
+        b.style.setProperty('--d', `${i * 40}ms`);
+        const when = e.from === e.to ? day(e.from) : `${day(e.from)} – ${day(e.to)}`;
+        const body = [when, e.time && `⏱ ${e.time}`, e.result && `🏅 ${e.result}`].filter(Boolean).join(' · ');
+        b.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          showTip(ev, `${e.kind === 'race' ? '🏃' : '📍'} ${e.title}`, body, e.place ?? e.title, undefined, [e.lat, e.lng]);
+        });
+        evLayer.append(b);
+        marks.push({ el: b, lat: e.lat, lon: e.lng });
+      });
+      eventMarks = () => {
+        if (!view.classList.contains('is-events')) return;
+        for (const m of marks) {
+          const [x, y] = screenP([m.lon, m.lat]);
+          m.el.hidden = x < -50 || x > W + 50 || y < -50 || y > H + 50;
+          m.el.style.setProperty('--x', `${x.toFixed(1)}px`);
+          m.el.style.setProperty('--y', `${y.toFixed(1)}px`);
+        }
+      };
+      evBox.addEventListener('change', () => {
+        // one view at a time: the other switches go off
+        if (evBox.checked) {
+          if (mediaBox.checked) {
+            mediaBox.checked = false;
+            view.classList.remove('is-media');
+          }
+          if (friendsBox.checked) {
+            friendsBox.checked = false;
+            setFriends(false);
+          }
+        }
+        view.classList.toggle('is-events', evBox.checked);
+        tip.hidden = true;
+        renderItems();
+        eventMarks();
+      });
+      for (const other of [mediaBox, friendsBox])
+        other.addEventListener('change', () => {
+          if (other.checked && evBox.checked) {
+            evBox.checked = false;
+            view.classList.remove('is-events');
+          }
+        });
+    }
     // developer mode: a click on a country (with the 👥 switch on) ticks it and asks where he met them
     const isDev = () => document.documentElement.classList.contains('dev-mode') && !document.documentElement.classList.contains('dev-preview');
     const frEd = view.querySelector<HTMLElement>('[data-mm-fr-ed]')!;

@@ -1,0 +1,84 @@
+{
+  "_comment": "The races (src/components/Races.astro, under the About text). Every race has the same fields: id, title / title_en, date (YYYY-MM-DD), place / place_en, distance, time, result / result_en, note / note_en, lat / lng (on the world map), songs ([{ file, title }]), photos (paths in public/). Written in developer mode.",
+  "races": [
+    {
+      "id": "split-10k-2026",
+      "title": "Split 10k",
+      "title_en": "Split 10k",
+      "date": "2026-02-15",
+      "place": "Split, Horvátország",
+      "place_en": "Split, Croatia",
+      "distance": "10 km",
+      "time": "34:40",
+      "result": "abszolút 2. hely",
+      "result_en": "2nd overall",
+      "note": "Három napra jöttünk ki a Castorosokkal. Nagyon rég nem voltam már tengernél, nagyon jó érzéseim voltak. Ez a zene nagyon fülbemászó lett nekem ott: a viharos szélben végig az ment a fejemben. Abszolút 2. lettem – nagyon menő volt ilyen elöl befutni!",
+      "note_en": "We came out for three days with the Castoros team. I had not been to the sea for a very long time, and it felt really good. This song got stuck in my head there: it played in my head all the way through the stormy wind. I finished 2nd overall – it was so cool to come in that far ahead!",
+      "photos": [
+        "/images/races/split-1.jpg",
+        "/images/races/split-2.jpg",
+        "/images/races/split-menoo.jpg",
+        "/images/races/split-10k-1.jpg",
+        "/images/races/split-10k-2.jpg",
+        "/images/races/split-10k-3.jpg"
+      ],
+      "lat": 43.5081,
+      "lng": 16.4402,
+      "songs": [
+        {
+          "file": "/music/lamour-toujours-hardstyle-slowed.mp3",
+          "title": "L'Amour Toujours (Hardstyle + slowed)"
+        },
+        {
+          "file": "/music/living-for-the-moment.mp3",
+          "title": "Zyzz – Living for the Moment"
+        }
+      ]
+    },
+    {
+      "id": "skyrunning-youth-worlds-2026",
+      "title": "Ifjúsági Skyrunning VB 2026",
+      "title_en": "Youth Skyrunning Worlds 2026",
+      "date": "2026-05-01",
+      "place": "Makarska, Horvátország",
+      "place_en": "Makarska, Croatia",
+      "distance": "Vertikál + Sky",
+      "time": "",
+      "result": "középmezőny",
+      "result_en": "mid-pack",
+      "note": "Két távon indultam: a vertikálon és a sky-on. Nagyon élveztem, óriási tapasztalat volt – hazafelé pedig Bosznián keresztül jöttünk.",
+      "note_en": "I raced two distances: the Vertical and the Sky. I loved it – a huge experience – and on the way home we travelled through Bosnia.",
+      "photos": [
+        "/images/races/skyrunning-3.jpg",
+        "/images/races/skyrunning-1.jpg",
+        "/images/races/skyrunning-2.jpg"
+      ],
+      "lat": 43.2969,
+      "lng": 17.0178,
+      "songs": []
+    },
+    {
+      "id": "5vos5km-2026",
+      "title": "5vös5km",
+      "title_en": "5vös5km",
+      "date": "2026-09-22",
+      "place": "Budapest",
+      "place_en": "Budapest",
+      "lat": 47.4979,
+      "lng": 19.0402,
+      "distance": "5 km",
+      "time": "16:20",
+      "result": "abszolút 8. hely",
+      "result_en": "8th overall",
+      "note": "Nagyon kíváncsi voltam, hogy meg tudom-e futni azt az időt, ami még tavasz elején sikerült – és hála Istennek meglett. A végén még az egyik ellenfelemet is sikerült lesprintelnem. Abszolút 8. lettem.",
+      "note_en": "I was really curious whether I could run the time I had managed in early spring – and thank God, I did. At the end I even out-sprinted one of my rivals. I finished 8th overall.",
+      "photos": [],
+      "songs": [
+        {
+          "file": "/music/self-aware.mp3",
+          "title": "Lil Texas & Gezellige Uptempo – Self Aware"
+        }
+      ]
+    }
+  ]
+}

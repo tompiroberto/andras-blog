@@ -5,6 +5,17 @@
 [build.environment]
   NODE_VERSION = "24"
 
+# Safety for every page: not to be framed by other sites, no type guessing, a short referrer,
+# no camera / microphone / location for anything on the site, HTTPS only
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Strict-Transport-Security = "max-age=31536000"
+
 # Long cache for fingerprinted assets and the (large) map data
 [[headers]]
   for = "/_astro/*"

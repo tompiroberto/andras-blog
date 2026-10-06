@@ -9,6 +9,8 @@ export interface CategoryMeta {
   titleKey: TKey;
   textKey: TKey;
   linkKey: TKey;
+  /** the themed background drawing of its page and cards (src/components/Backdrop.astro) */
+  backdrop: 'eu' | 'map' | 'random' | 'adventure' | 'none';
 }
 
 /** Explore cards and category pages share these definitions. */
@@ -21,6 +23,7 @@ export const CATEGORY_META: CategoryMeta[] = [
     titleKey: 'adv.title',
     textKey: 'adv.text',
     linkKey: 'adv.link',
+    backdrop: 'adventure',
   },
   {
     slug: 'erasmus',
@@ -30,6 +33,7 @@ export const CATEGORY_META: CategoryMeta[] = [
     titleKey: 'eras.title',
     textKey: 'eras.text',
     linkKey: 'eras.link',
+    backdrop: 'eu',
   },
   {
     slug: 'random',
@@ -39,6 +43,7 @@ export const CATEGORY_META: CategoryMeta[] = [
     titleKey: 'rand.title',
     textKey: 'rand.text',
     linkKey: 'rand.link',
+    backdrop: 'random',
   },
 ];
 

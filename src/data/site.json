@@ -3,7 +3,8 @@
   "nicknames": [
     "Später",
     "ანდრო",
-    "Péter"
+    "Péter",
+    "Gyökér"
   ],
   "email": "pum.pum.production@gmail.com",
   "messageMode": "form",
@@ -40,7 +41,11 @@
   "raceBadges": [
     {
       "id": "split",
-      "icon": "trophy"
+      "icon": "trophy",
+      "song": {
+        "file": "/music/lamour-toujours-hardstyle-slowed.mp3",
+        "title": "L'Amour Toujours (Hardstyle + slowed)"
+      }
     },
     {
       "id": "skyrunning",
@@ -62,7 +67,10 @@
     },
     {
       "key": "lang.georgian",
-      "level": "learning"
+      "level": "learning",
+      "photos": [
+        "/images/georgian-abc.jpg"
+      ]
     },
     {
       "key": "lang.portuguese",

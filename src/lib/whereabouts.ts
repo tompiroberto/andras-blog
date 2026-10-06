@@ -29,12 +29,16 @@ const dayAfter = (day: string) => {
   return d.toISOString().slice(0, 10);
 };
 
+/** midnight of a day in Hungarian time (the trips' days are Hungarian days, wherever the visitor is) */
+const huMidnight = (day: string) =>
+  `${day}T00:00:00${new Date(`${day}T12:00:00Z`).toLocaleString('en', { timeZone: 'Europe/Budapest', timeZoneName: 'shortOffset' }).includes('GMT+2') ? '+02:00' : '+01:00'}`;
+
 export function timeline(steps: Step[], trips: Trip[]): Step[] {
   const out: Step[] = steps.map((s) => ({ ...s, manual: true }));
   for (const e of trips) {
     if (!e.country) continue;
-    out.push({ from: `${e.from}T00:00:00`, country: e.country, trip: e.id, place: e.place, place_en: e.place_en });
-    out.push({ from: `${dayAfter(e.to)}T00:00:00`, country: 'HU', key: 'HU' });
+    out.push({ from: huMidnight(e.from), country: e.country, trip: e.id, place: e.place, place_en: e.place_en });
+    out.push({ from: huMidnight(dayAfter(e.to)), country: 'HU', key: 'HU' });
   }
   return out.sort((a, b) => Date.parse(a.from) - Date.parse(b.from) || Number(!!a.manual) - Number(!!b.manual));
 }

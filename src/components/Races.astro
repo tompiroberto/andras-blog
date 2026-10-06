@@ -1,0 +1,506 @@
+---
+/**
+ * My races, under the About text: a card for each (src/data/races.json) – name, date, place, distance,
+ * time, result, a few words, its songs and its photos. Every race has the same fields (see the
+ * _comment in races.json). Developer mode: ＋ a new race, ✎ edit, 🗑 delete – in one form with every
+ * field, songs (mp3) and photos to upload; ✓ saves to GitHub (🚀 Publish puts it online).
+ */
+import { HTML_LANG, t, type Lang } from '../i18n';
+import races from '../data/races.json';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+---
+
+<section class="races" data-races data-lang={lang} data-locale={HTML_LANG[lang]} aria-labelledby="races-title">
+  <div class="races__head">
+    <h3 id="races-title">🏃 {t(lang, 'races.title')}</h3>
+    <button type="button" class="races__add" data-dev-ui data-races-add>＋ {t(lang, 'races.new')}</button>
+  </div>
+  <ul class="races__list" data-races-list></ul>
+  <p class="races__empty" hidden data-races-empty>{t(lang, 'races.empty')}</p>
+
+  <!-- developer mode: one form for a new race or a changed one – every field of the schema -->
+  <dialog class="races__form" data-dev-ui data-races-dialog>
+    <form method="dialog" data-races-form>
+      <strong data-races-form-title>🏁</strong>
+      <div class="races__grid">
+        <label>🇭🇺 Név *<input name="title" required maxlength="80" placeholder="Split 10k" /></label>
+        <label>🇬🇧 Name<input name="title_en" maxlength="80" /></label>
+        <label>📅 Dátum *<input name="date" type="date" required /></label>
+        <label>🏃 Táv<input name="distance" maxlength="40" placeholder="10 km" /></label>
+        <label>🇭🇺 📍 Hely<input name="place" maxlength="80" placeholder="Split, Horvátország" /></label>
+        <label>🇬🇧 📍 Place<input name="place_en" maxlength="80" placeholder="Split, Croatia" /></label>
+        <label>🗺 Koordináta (üresen: a helyből keresi)<input name="coords" maxlength="60" placeholder="43.5081, 16.4402" /></label>
+        <label>⏱ Idő<input name="time" maxlength="20" placeholder="34:40" /></label>
+        <label>🇭🇺 🏅 Eredmény<input name="result" maxlength="60" placeholder="abszolút 2. hely" /></label>
+        <label>🇬🇧 🏅 Result<input name="result_en" maxlength="60" placeholder="2nd overall" /></label>
+      </div>
+      <label>🇭🇺 Pár szó<textarea name="note" rows="3" maxlength="800"></textarea></label>
+      <label>🇬🇧 A few words<textarea name="note_en" rows="3" maxlength="800"></textarea></label>
+      <fieldset>
+        <legend>🎵 Zene</legend>
+        <div class="races__songs-now" data-races-songs-now></div>
+        <label>Új zene (mp3, max. 40 MB)<input name="song" type="file" accept="audio/*" /></label>
+        <label>Az új zene címe<input name="song_title" maxlength="120" placeholder="Előadó – Cím" /></label>
+      </fieldset>
+      <fieldset>
+        <legend>📷 Képek</legend>
+        <div class="races__photos-now" data-races-photos-now></div>
+        <label>Új képek (több is)<input name="photos" type="file" accept="image/*" multiple /></label>
+      </fieldset>
+      <small class="races__note" data-races-note></small>
+      <div class="races__actions">
+        <button type="button" data-races-cancel>✕</button>
+        <button type="submit" class="races__save">✓ Mentés</button>
+      </div>
+    </form>
+  </dialog>
+  <template data-races-key>{t(lang, 'dev.msgKey')}</template>
+  <script type="application/json" data-races-data set:html={JSON.stringify(races)} />
+</section>
+
+<style is:global>
+  .races {
+    margin: 32px 0 0;
+    max-width: 640px;
+  }
+  .races__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .races__head h3 {
+    margin: 0;
+  }
+  /* small cards, two side by side; the rest of each race is in its info box */
+  .races__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .race {
+    position: relative;
+  }
+  .race__card {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 10px 6px 6px;
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--violet);
+    transition: transform 150ms ease;
+  }
+  .race:nth-child(even) .race__card {
+    box-shadow: 3px 3px 0 var(--yellow);
+  }
+  .race__card:hover,
+  .race__card[aria-expanded='true'] {
+    transform: translate(-1px, -2px);
+  }
+  .race__thumb {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    flex: none;
+    border-radius: 10px;
+    object-fit: cover;
+    background: var(--yellow);
+    font-size: 22px;
+  }
+  .race__txt {
+    display: grid;
+    min-width: 0;
+  }
+  .race__title {
+    overflow: hidden;
+    font-weight: 800;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .race__meta {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .race__note-icon {
+    margin-left: auto;
+    color: var(--violet);
+    font-weight: 900;
+  }
+  .race__dev {
+    position: absolute;
+    top: -12px;
+    right: -6px;
+    display: none;
+    gap: 6px;
+  }
+  .races__add {
+    display: none;
+  }
+  :root.dev-mode:not(.dev-preview) .race__dev,
+  :root.dev-mode:not(.dev-preview) .races__add {
+    display: flex;
+  }
+  .race__dev button,
+  .races__add,
+  .races__form button {
+    padding: 5px 12px;
+    border: 1.5px solid #39d353;
+    border-radius: 8px;
+    background: #0d1117;
+    color: #39d353;
+    font: 700 13px ui-monospace, Consolas, monospace;
+    cursor: pointer;
+  }
+  .races__empty {
+    color: var(--muted);
+  }
+  /* the form */
+  .races__form {
+    width: min(620px, calc(100vw - 24px));
+    max-height: calc(100vh - 40px);
+    padding: 16px;
+    border: 2px solid #39d353;
+    border-radius: 14px;
+    background: #0d1117;
+    color: #d6f5d6;
+    font: 13px/1.4 ui-monospace, Consolas, monospace;
+  }
+  .races__form::backdrop {
+    background: rgb(0 0 0 / 0.55);
+  }
+  .races__form form {
+    display: grid;
+    gap: 10px;
+  }
+  .races__form strong {
+    color: #39ff14;
+    font-size: 15px;
+  }
+  .races__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px 10px;
+  }
+  .races__form label {
+    display: grid;
+    gap: 3px;
+  }
+  .races__form input:not([type='checkbox']),
+  .races__form textarea {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    background: #010409;
+    color: #e6edf3;
+    font: inherit;
+  }
+  .races__form fieldset {
+    display: grid;
+    gap: 6px;
+    border: 1px solid #1f6f2a;
+    border-radius: 10px;
+  }
+  .races__form .races__check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .races__photos-now {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .races__photos-now span {
+    position: relative;
+  }
+  .races__photos-now img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  .races__photos-now button {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    padding: 0 6px !important;
+    background: #c0392b !important;
+    color: #fff !important;
+    border-color: #c0392b !important;
+  }
+  .races__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .races__form .races__save {
+    background: #39d353;
+    color: #0d1117;
+  }
+  .races__note {
+    color: #9be9a8;
+  }
+</style>
+
+<script>
+  import { commitFiles, getToken, shrinkToJpeg, slugify } from '../lib/githubCommit';
+  import { wireInfoBoxes } from '../lib/infobox';
+  import { geocode } from '../lib/geocode';
+
+  type Race = {
+    id: string;
+    title: string;
+    title_en?: string;
+    date: string;
+    place?: string;
+    place_en?: string;
+    distance?: string;
+    time?: string;
+    result?: string;
+    result_en?: string;
+    note?: string;
+    note_en?: string;
+    lat?: number;
+    lng?: number;
+    songs?: { file: string; title: string }[];
+    photos?: string[];
+  };
+  const MUSIC_MAX = 40 * 1024 * 1024;
+
+  document.querySelectorAll<HTMLElement>('[data-races]').forEach((root) => {
+    const data = JSON.parse(root.querySelector('[data-races-data]')?.textContent || '{"races":[]}') as { _comment?: string; races: Race[] };
+    const en = root.dataset.lang !== 'hu';
+    const fmt = new Intl.DateTimeFormat(root.dataset.locale || 'hu', { year: 'numeric', month: 'long', day: 'numeric' });
+    const list = root.querySelector<HTMLElement>('[data-races-list]')!;
+    // files uploaded in this visit are not on the site until it is rebuilt: shown from memory
+    const local = new Map<string, string>();
+    const src = (p: string) => local.get(p) ?? p;
+    const tr = (r: Race, k: 'title' | 'place' | 'result' | 'note') => (en && r[`${k}_en` as keyof Race] ? (r[`${k}_en` as keyof Race] as string) : (r[k] ?? ''));
+    const el = <K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {}) => Object.assign(document.createElement(tag), props);
+
+    function render() {
+      const sorted = [...data.races].sort((a, b) => b.date.localeCompare(a.date));
+      list.replaceChildren(
+        ...sorted.map((r) => {
+          // a small card: name, date and time; pointing at it (or a click, which keeps it open) shows
+          // everything else in an info box – place, distance, result, a few words, photos, its song
+          const li = el('li', { className: 'race' });
+          li.dataset.id = r.id;
+          const when = r.date ? fmt.format(new Date(`${r.date}T12:00:00`)) : '';
+          const card = el('button', { type: 'button', className: 'race__card' });
+          const thumb = r.photos?.[0];
+          card.append(thumb ? el('img', { className: 'race__thumb', src: src(thumb), alt: '', loading: 'lazy' }) : el('span', { className: 'race__thumb', textContent: '🏁' }));
+          const txt = el('span', { className: 'race__txt' });
+          txt.append(el('strong', { className: 'race__title', textContent: tr(r, 'title') }));
+          txt.append(el('small', { className: 'race__meta', textContent: [when, r.time && `⏱ ${r.time}`].filter(Boolean).join(' · ') }));
+          card.append(txt);
+          if (r.songs?.length) card.append(el('span', { className: 'race__note-icon', textContent: '♪'.repeat(Math.min(3, r.songs.length)) }));
+          card.dataset.infoTitle = tr(r, 'title');
+          card.dataset.infoText = tr(r, 'note');
+          card.dataset.infoFacts = JSON.stringify(
+            [when && `📅 ${when}`, tr(r, 'place') && `📍 ${tr(r, 'place')}`, r.distance && `🏃 ${r.distance}`, r.time && `⏱ ${r.time}`, tr(r, 'result') && `🏅 ${tr(r, 'result')}`].filter(Boolean),
+          );
+          if (r.photos?.length) card.dataset.infoPhotos = JSON.stringify(r.photos.map(src));
+          if (r.songs?.length) card.dataset.infoSongs = JSON.stringify(r.songs.map((x) => ({ file: src(x.file), title: x.title })));
+          const dev = el('span', { className: 'race__dev' });
+          const edit = el('button', { type: 'button', textContent: '✎' });
+          edit.addEventListener('click', () => openForm(r));
+          const del = el('button', { type: 'button', textContent: '🗑' });
+          del.addEventListener('click', () => void remove(r));
+          dev.append(edit, del);
+          li.append(card, dev);
+          return li;
+        }),
+      );
+      wireInfoBoxes(list);
+      root.querySelector<HTMLElement>('[data-races-empty]')!.hidden = data.races.length > 0;
+    }
+
+    // ---- developer mode ----
+    const dialog = root.querySelector<HTMLDialogElement>('[data-races-dialog]')!;
+    const form = root.querySelector<HTMLFormElement>('[data-races-form]')!;
+    const note = root.querySelector<HTMLElement>('[data-races-note]')!;
+    const photosNow = root.querySelector<HTMLElement>('[data-races-photos-now]')!;
+    const field = (n: string) => form.elements.namedItem(n) as HTMLInputElement;
+    let editing: Race | null = null;
+    let keptPhotos: string[] = [];
+    let keptSongs: { file: string; title: string }[] = [];
+    // the songs it has: each with a ✕
+    const showSongsNow = () => {
+      const box = root.querySelector<HTMLElement>('[data-races-songs-now]')!;
+      box.replaceChildren(
+        ...(keptSongs.length
+          ? keptSongs.map((x) => {
+              const p = el('p', { className: 'races__current', textContent: `♪ ${x.title} ` });
+              const del = el('button', { type: 'button', textContent: '✕' });
+              del.addEventListener('click', () => {
+                keptSongs = keptSongs.filter((y) => y !== x);
+                showSongsNow();
+              });
+              p.append(del);
+              return p;
+            })
+          : [el('p', { className: 'races__current', textContent: '—' })]),
+      );
+    };
+
+    const showPhotosNow = () =>
+      photosNow.replaceChildren(
+        ...keptPhotos.map((p) => {
+          const s = el('span');
+          s.append(el('img', { src: src(p), alt: '' }));
+          const x = el('button', { type: 'button', textContent: '✕' });
+          x.addEventListener('click', () => {
+            keptPhotos = keptPhotos.filter((q) => q !== p);
+            showPhotosNow();
+          });
+          s.append(x);
+          return s;
+        }),
+      );
+    function openForm(r: Race | null) {
+      editing = r;
+      form.reset();
+      note.textContent = '';
+      for (const k of ['title', 'title_en', 'date', 'place', 'place_en', 'distance', 'time', 'result', 'result_en', 'note', 'note_en'] as const) field(k).value = (r?.[k] as string) ?? '';
+      if (!r) field('date').value = new Date().toISOString().slice(0, 10);
+      field('coords').value = r?.lat !== undefined && r?.lng !== undefined ? `${r.lat}, ${r.lng}` : '';
+      keptSongs = [...(r?.songs ?? [])];
+      showSongsNow();
+      keptPhotos = [...(r?.photos ?? [])];
+      showPhotosNow();
+      root.querySelector('[data-races-form-title]')!.textContent = r ? `✎ ${r.title}` : '🏁 ＋';
+      dialog.showModal();
+    }
+    root.querySelector('[data-races-add]')!.addEventListener('click', () => openForm(null));
+    root.querySelector('[data-races-cancel]')!.addEventListener('click', () => dialog.close());
+
+    const key = () => {
+      let k = getToken();
+      if (!k) k = (window.prompt(root.querySelector<HTMLTemplateElement>('[data-races-key]')?.content.textContent ?? '') ?? '').trim();
+      return k;
+    };
+    const toBase64 = (file: File) =>
+      new Promise<string>((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result).replace(/^data:[^,]*,/, ''));
+        fr.onerror = () => reject(fr.error);
+        fr.readAsDataURL(file);
+      });
+    /** the files uploaded for races (public/music/races, public/images/races) that no race uses any more: deleted */
+    const unused = (before: Race[]) => {
+      const used = new Set(data.races.flatMap((r) => [...(r.songs ?? []).map((x) => x.file), ...(r.photos ?? [])]));
+      const was = new Set(before.flatMap((r) => [...(r.songs ?? []).map((x) => x.file), ...(r.photos ?? [])]));
+      return [...was].filter((p) => !used.has(p) && /^\/(music|images)\/races\//.test(p)).map((p) => ({ path: `public${p}`, delete: true as const }));
+    };
+    const save = (files: ({ path: string; base64: string } | { path: string; text: string } | { path: string; delete: true })[], line: string) => {
+      const k = key();
+      if (!k) return Promise.reject(new Error('🔑'));
+      return commitFiles(k, [...files, { path: 'src/data/races.json', text: `${JSON.stringify(data, null, 2)}\n` }], 'Races: changed on the site', [line]);
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const v = (n: string) => field(n).value.trim();
+      const id = editing?.id ?? `${slugify(v('title')) || 'race'}-${v('date').slice(0, 4)}-${Date.now().toString(36).slice(-4)}`;
+      const files: { path: string; base64: string }[] = [];
+      note.textContent = '…';
+      try {
+        // the songs: the ones kept, and a new one if a file is chosen
+        const songs = [...keptSongs];
+        const songFile = field('song').files?.[0];
+        if (songFile) {
+          if (songFile.size > MUSIC_MAX) throw new Error('🎵 > 40 MB');
+          const ext = (songFile.name.match(/\.([a-z0-9]{2,4})$/i)?.[1] ?? 'mp3').toLowerCase();
+          const path = `/music/races/${id}-${Date.now().toString(36)}.${ext}`;
+          files.push({ path: `public${path}`, base64: await toBase64(songFile) });
+          local.set(path, URL.createObjectURL(songFile));
+          songs.push({ file: path, title: v('song_title') || songFile.name.replace(/\.[^.]+$/, '') });
+        }
+        // the photos: the ones kept and the new ones (made smaller, as JPEG)
+        const photos = [...keptPhotos];
+        let n = Date.now();
+        for (const f of Array.from(field('photos').files ?? [])) {
+          const base64 = await shrinkToJpeg(f, 1600);
+          const path = `/images/races/${id}-${(n++).toString(36)}.jpg`;
+          files.push({ path: `public${path}`, base64 });
+          local.set(path, `data:image/jpeg;base64,${base64}`);
+          photos.push(path);
+        }
+        // where it was (the world map): typed coordinates, else the place looked up (when it is new or changed)
+        let lat = editing?.lat;
+        let lng = editing?.lng;
+        const typed = v('coords').match(/^(-?\d{1,2}(?:[.,]\d+)?)\s*[,; ]\s*(-?\d{1,3}(?:[.,]\d+)?)$/);
+        if (typed) {
+          lat = Number(typed[1].replace(',', '.'));
+          lng = Number(typed[2].replace(',', '.'));
+        } else if (v('place') && (v('place') !== editing?.place || lat === undefined)) {
+          const hit = (await geocode(v('place').split(',')[0], 'hu').catch(() => []))[0];
+          if (hit) {
+            lat = Math.round(hit.latitude * 1e4) / 1e4;
+            lng = Math.round(hit.longitude * 1e4) / 1e4;
+          }
+        }
+        const race: Race = {
+          id,
+          title: v('title'),
+          title_en: v('title_en'),
+          date: v('date'),
+          place: v('place'),
+          place_en: v('place_en'),
+          distance: v('distance'),
+          time: v('time'),
+          result: v('result'),
+          result_en: v('result_en'),
+          note: v('note'),
+          note_en: v('note_en'),
+          ...(lat !== undefined && lng !== undefined ? { lat, lng } : {}),
+          songs,
+          photos,
+        };
+        const racesBefore = data.races;
+        data.races = editing ? data.races.map((r) => (r.id === editing!.id ? race : r)) : [...data.races, race];
+        await save([...files, ...unused(racesBefore)], `🏁 ${race.title}${editing ? ' ✎' : ' ＋'}`);
+        render();
+        note.textContent = '✓';
+        window.setTimeout(() => dialog.close(), 600);
+      } catch (err) {
+        note.textContent = err instanceof Error ? err.message : String(err);
+      }
+    });
+    async function remove(r: Race) {
+      if (!window.confirm(`🗑 ${r.title}?`)) return;
+      const before = data.races;
+      data.races = data.races.filter((x) => x.id !== r.id);
+      try {
+        await save(unused(before), `🗑 🏁 ${r.title}`);
+        render();
+      } catch (err) {
+        data.races = before;
+        window.alert(err instanceof Error ? err.message : String(err));
+      }
+    }
+
+    render();
+  });
+</script>

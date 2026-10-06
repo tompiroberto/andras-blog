@@ -1,11 +1,12 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import { MAIN_SITE } from './src/lib/mainSite.mjs';
 
-// The live Netlify address (canonical links, hreflang, the sitemap and the structured data use it).
+// The live address (src/lib/mainSite.mjs – change it there) (canonical links, hreflang, the sitemap and the structured data use it).
 // If the site gets its own domain, change it here and in public/robots.txt.
 // An export for another host can set its own address: SITE_URL=https://… (scripts/export.mjs).
-const SITE = process.env.SITE_URL || 'https://lambent-platypus-c39161.netlify.app';
+const SITE = process.env.SITE_URL || MAIN_SITE;
 
 export default defineConfig({
   site: SITE,

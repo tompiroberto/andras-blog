@@ -36,5 +36,6 @@ jobs:
           git config user.name "whereabouts bot"
           git config user.email "actions@users.noreply.github.com"
           git add src/data/countries.json src/data/site.json
-          git commit -m "Where am I now: moved on (scheduled)"
+          if [ "${{ github.event_name }}" = "push" ]; then skip=" [skip netlify]"; else skip=""; fi
+          git commit -m "Where am I now: moved on (${{ github.event_name }})$skip"
           git push

@@ -28,6 +28,7 @@ import Roadside from '../components/Roadside.astro';
 import PlaceMessage from '../components/PlaceMessage.astro';
 import CvView from '../components/CvView.astro';
 import NutellaRain from '../components/NutellaRain.astro';
+import MiniPlayer from '../components/MiniPlayer.astro';
 import CountryView from '../components/CountryView.astro';
 import RouteView from '../components/RouteView.astro';
 import ZoomSpace from '../components/ZoomSpace.astro';
@@ -155,7 +156,8 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
       } catch (e) {}
       // page zoom (slider): saved level, else the default "zoomed out a bit".
       // Same formula as zoomVars() in src/lib/zoom.ts.
-      var zoom = defaultZoom;
+      // (a phone: the full width, no space around the page)
+      var zoom = window.innerWidth < 700 ? 100 : defaultZoom;
       try {
         var savedZoom = Number(localStorage.getItem(zoomKey));
         if (savedZoom >= zoomMin && savedZoom <= zoomMax) zoom = savedZoom;
@@ -214,6 +216,7 @@ const usesLatinHeadings = lang !== 'el' && lang !== 'ka';
     <ChaosView lang={lang} />
     <FactCard lang={lang} />
     <NutellaRain lang={lang} />
+    <MiniPlayer />
     <DynamicBg lang={lang} />
     <CountryView lang={lang} />
     <RouteView lang={lang} />

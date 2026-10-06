@@ -1,4 +1,5 @@
 ---
+import { MAIN_SITE as MAIN_SITE_URL } from '../../lib/mainSite.mjs';
 /**
  * Gallery: every photo (src/lib/photos.ts), newest first. A click opens a large view with the
  * description, place and date; arrows / swipe-free buttons step through the photos.
@@ -8,15 +9,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import SectionHeading from '../../components/SectionHeading.astro';
 import Icon from '../../components/Icon.astro';
 import { getPhotos } from '../../lib/photos';
+import { getPosts } from '../../lib/posts';
 import gallery from '../../data/gallery.json';
 
 /** the main site: a copy on another host shows the photos uploaded there too (/gallery.json) */
-const MAIN_SITE = import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app';
+const MAIN_SITE = import.meta.env.PUBLIC_MAIN_SITE || MAIN_SITE_URL;
 import { HTML_LANG, langStaticPaths, localePath, t, type Lang } from '../../i18n';
 
 export const getStaticPaths = langStaticPaths;
 
 const lang = Astro.params.lang as Lang;
+// developer mode: a picture can be moved to any post
+const allPosts = (await getPosts()).map((p) => ({ id: p.id, title: p.data.title }));
 const fmt = new Intl.DateTimeFormat(HTML_LANG[lang], { year: 'numeric', month: 'long', day: 'numeric' });
 const photos = await Promise.all(
   (await getPhotos(lang)).map(async (p) => ({
@@ -63,7 +67,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
       <ul class="gallery__grid" data-gallery-grid data-live={import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? MAIN_SITE : undefined} data-lang={lang}>
         {
           photos.map((p, i) => (
-            <li class="gallery__item" data-key={p.key} data-tags={(p.tags ?? []).join(',')} data-files={p.files ? JSON.stringify(p.files) : undefined}>
+            <li class="gallery__item" data-key={p.key} data-day={p.date ? p.date.toISOString().slice(0, 10) : undefined} data-post-id={p.post} data-tags={(p.tags ?? []).join(',')} data-files={p.files ? JSON.stringify(p.files) : undefined}>
               <button type="button" class="gallery__open" data-index={i} data-large={p.large} data-video={p.video ?? ''} data-caption={p.caption} data-place={p.place ?? ''} data-when={p.when} data-post={p.post ? localePath(lang, `posts/${p.post}`) : ''}>
                 {p.video ? (
                   <span class="gallery__video">
@@ -149,6 +153,16 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
     <input type="text" maxlength="80" placeholder={t(lang, 'upload.place')} data-gal-in-place />
     <input type="text" maxlength="60" placeholder={t(lang, 'upload.coords')} data-gal-in-coords />
     <input type="text" maxlength="200" placeholder={t(lang, 'upload.tags')} data-gal-in-tags />
+    <label class="gal-place__row">📅 <input type="date" data-gal-in-date /></label>
+    <label class="gal-place__row">
+      📝
+      <select data-gal-in-post>
+        <option value="">–</option>
+        {allPosts.map((p) => <option value={p.id}>{p.title}</option>)}
+      </select>
+    </label>
+    <!-- an uploaded picture or video: a new file in its place (the caption, tags … stay) -->
+    <label class="gal-place__row" data-gal-replace-wrap>🔁 <input type="file" accept="image/*,video/*" data-gal-in-file /></label>
     <small data-gal-note></small>
     <div><button type="button" data-gal-cancel>✕</button><button type="submit">{t(lang, 'gal.save')}</button></div>
   </form>
@@ -379,6 +393,19 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
   .gal-place[hidden] {
     display: none;
   }
+  .gal-place__row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .gal-place__row[hidden] {
+    display: none;
+  }
+  .gal-place__row > * {
+    flex: 1;
+    min-width: 0;
+  }
+  .gal-place select,
   .gal-place textarea,
   .gal-place input {
     padding: 8px 10px;
@@ -841,11 +868,11 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
    * ＋ new folder) and, on a copy on another host, the pictures uploaded on the main site since then.
    * Saved to GitHub (src/data/gallery.json); 🚀 Publish puts it online.
    */
-  import { commitFiles, getToken } from '../../lib/githubCommit';
+  import { commitFiles, getToken, shrinkToJpeg, toBase64 } from '../../lib/githubCommit';
   import { geocode } from '../../lib/geocode';
   import { parseTags, showTags } from '../../lib/tags';
 
-  type Meta = { caption?: string; place?: string; lat?: number; lng?: number; tags?: string[] };
+  type Meta = { caption?: string; place?: string; lat?: number; lng?: number; tags?: string[]; date?: string; post?: string };
   const grid = document.querySelector<HTMLElement>('[data-gallery-grid]');
   const form = document.querySelector<HTMLFormElement>('[data-gal-form]');
   const raw = document.querySelector('[data-gal-data]');
@@ -962,7 +989,7 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
       if (!k) k = (window.prompt(tx('key')) ?? '').trim();
       return k;
     };
-    const save = (lines: string[], extra: { path: string; delete: true }[] = []) => {
+    const save = (lines: string[], extra: ({ path: string; delete: true } | { path: string; base64: string })[] = []) => {
       const k = key();
       if (!k) return Promise.reject(new Error('no key'));
       return commitFiles(k, [{ path: 'src/data/gallery.json', text: `${JSON.stringify(data, null, 2)}\n` }, ...extra], 'Gallery: changed on the site', lines);
@@ -971,6 +998,9 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
     const inCaption = form.querySelector<HTMLTextAreaElement>('[data-gal-in-caption]')!;
     const inCoords = form.querySelector<HTMLInputElement>('[data-gal-in-coords]')!;
     const inTags = form.querySelector<HTMLInputElement>('[data-gal-in-tags]')!;
+    const inDate = form.querySelector<HTMLInputElement>('[data-gal-in-date]')!;
+    const inPost = form.querySelector<HTMLSelectElement>('[data-gal-in-post]')!;
+    const inFile = form.querySelector<HTMLInputElement>('[data-gal-in-file]')!;
     const note = form.querySelector<HTMLElement>('[data-gal-note]')!;
     let item: HTMLElement | null = null;
 
@@ -984,6 +1014,10 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
         inPlace.value = m.place ?? li.querySelector('.gallery__open')?.getAttribute('data-place') ?? '';
         inCoords.value = m.lat !== undefined && m.lng !== undefined ? `${m.lat}, ${m.lng}` : '';
         inTags.value = showTags(tagsOf(li));
+        inDate.value = m.date ?? li.dataset.day ?? '';
+        inPost.value = m.post ?? li.dataset.postId ?? '';
+        inFile.value = '';
+        form.querySelector<HTMLElement>('[data-gal-replace-wrap]')!.hidden = !li.dataset.files;
         note.textContent = '';
         const r = ((e.target as Element).closest('[data-gal-place]') as HTMLElement).getBoundingClientRect();
         form.hidden = false;
@@ -1033,14 +1067,26 @@ const pinned = photos.map((p, i) => ({ p, i })).filter(({ p }) => p.lat !== unde
         lng = Math.round(hit.longitude * 1e5) / 1e5;
       }
       const old = data.meta[k] ?? {};
+      const day = inDate.value;
+      const postId = inPost.value;
       data.meta[k] = {
+        ...(day && day !== item.dataset.day ? { date: day } : old.date && day ? { date: day } : {}),
+        ...(postId !== (item.dataset.postId ?? '') ? { post: postId } : old.post !== undefined ? { post: postId } : {}),
         ...(caption ? { caption } : {}),
         ...(place ? { place } : {}),
         ...(lat !== undefined ? { lat, lng } : old.lat !== undefined && place === before ? { lat: old.lat, lng: old.lng } : {}),
         tags,
       };
       try {
-        await save([`✎ 📷 ${caption}${place ? ` · 📍 ${place}` : ''}${tags.length ? ` · ${showTags(tags)}` : ''}`]);
+        // a new file in the old one's place (an uploaded picture: its .jpg; a video: its .mp4 …)
+        const extra: { path: string; base64: string }[] = [];
+        const newFile = inFile.files?.[0];
+        const media = item.dataset.files ? (JSON.parse(item.dataset.files) as string[]).find((p) => !p.endsWith('.yml')) : undefined;
+        if (newFile && media) {
+          if (newFile.size > 40 * 1024 * 1024) return void (note.textContent = '> 40 MB');
+          extra.push({ path: media, base64: /\.mp4$|\.webm$|\.mov$/i.test(media) ? await toBase64(newFile) : await shrinkToJpeg(newFile, 2000) });
+        }
+        await save([`✎ 📷 ${caption}${place ? ` · 📍 ${place}` : ''}${tags.length ? ` · ${showTags(tags)}` : ''}${extra.length ? ' · 🔁' : ''}`], extra as never);
         // show it at once
         const openBtn = item.querySelector<HTMLElement>('.gallery__open');
         if (openBtn) {

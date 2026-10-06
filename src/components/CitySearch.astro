@@ -1,4 +1,5 @@
 ---
+import { MAIN_SITE as MAIN_SITE_URL } from '../lib/mainSite.mjs';
 /**
  * City search: looks the name up with the Open-Meteo geocoding API (free, no key), falling back to
  * OpenStreetMap Nominatim if Open-Meteo fails or is slow. It then moves the page's coordinate system to
@@ -14,7 +15,7 @@ interface Props {
 
 const { lang } = Astro.props;
 // a copy on another host searches the main site's (newer) index
-const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || 'https://lambent-platypus-c39161.netlify.app' : '';
+const live = import.meta.env.PUBLIC_STATIC_EXPORT === '1' ? import.meta.env.PUBLIC_MAIN_SITE || MAIN_SITE_URL : '';
 const text = {
   site: t(lang, 'search.site'),
   cities: t(lang, 'search.cities'),

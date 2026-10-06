@@ -200,6 +200,26 @@ const { lang } = Astro.props;
       display: none;
     }
   }
+  /* a phone: smaller and see-through, so they cover less of the page (solid again under a finger) */
+  @media (max-width: 699px) {
+    .nutella-btn,
+    .bread-btn {
+      scale: 0.72;
+      transform-origin: 0 100%;
+      opacity: 0.55;
+      bottom: 8px;
+    }
+    .nutella-btn {
+      left: 8px;
+    }
+    .bread-btn {
+      left: 46px;
+    }
+    .nutella-btn:active,
+    .bread-btn:active {
+      opacity: 1;
+    }
+  }
 </style>
 
 <script>

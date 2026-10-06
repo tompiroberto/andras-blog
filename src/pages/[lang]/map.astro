@@ -4,6 +4,7 @@
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Globe from '../../components/Globe.astro';
+import Backdrop from '../../components/Backdrop.astro';
 import IconCircle from '../../components/IconCircle.astro';
 import WorldMap from '../../components/WorldMap.astro';
 import { langStaticPaths, localePath, t, type Lang } from '../../i18n';
@@ -22,6 +23,7 @@ const intro = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
   <header class="section page-header">
     <div class="bg-layer">
       <Globe size="min(620px, 110vw)" right="-14%" top="-30%" speed={80} />
+      <Backdrop theme="map" strength="strong" />
     </div>
     <div class="container">
       <a class="link-arrow back-link" href={`${localePath(lang)}#explore`}>{t(lang, 'posts.back')}</a>

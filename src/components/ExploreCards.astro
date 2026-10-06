@@ -1,5 +1,6 @@
 ---
 import Globe from './Globe.astro';
+import Backdrop from './Backdrop.astro';
 import IconCircle from './IconCircle.astro';
 import SectionHeading from './SectionHeading.astro';
 import { localePath, t, type Lang } from '../i18n';
@@ -24,6 +25,8 @@ const mapText = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
       {
         CATEGORY_META.map((c, i) => (
           <li class:list={['card', 'card--hover', 'explore-card', 'reveal', { 'card--violet': i % 2 === 1 }]} data-dev-add="post" data-dev-category={c.slug}>
+            {/* the theme's drawing in the corner: the EU flag, mountains with a tent and a car, random things */}
+            <Backdrop theme={c.backdrop} strength="card" />
             <IconCircle icon={c.icon} variant={c.tone} size="lg" />
             <h3>{t(lang, c.titleKey)}</h3>
             <div class="explore-card__small" aria-hidden="true">
@@ -32,6 +35,23 @@ const mapText = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
               ))}
             </div>
             <p>{t(lang, c.textKey)}</p>
+            {c.slug === 'adventures' && (
+              <button type="button" class="explore-card__song" aria-pressed="false" data-card-song="/music/this-is-the-life.mp3">
+                <span class="explore-card__song-icon" aria-hidden="true">▶</span>
+                <span>
+                  <strong>This Is The Life</strong>
+                  <small>LIZOT x KYANU</small>
+                </span>
+              </button>
+            )}
+            {c.slug === 'erasmus' && (
+              <>
+                <blockquote class="explore-card__quote" lang="en">
+                  <p>“On the first day there was ice, but as time passed it melted and became water.”</p>
+                  <cite>– Andro</cite>
+                </blockquote>
+              </>
+            )}
             <a class="link-arrow explore-card__link" href={localePath(lang, c.slug)}>
               {t(lang, c.linkKey)}
             </a>
@@ -40,6 +60,7 @@ const mapText = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
       }
       <!-- "Where I've been": a card like the others, the map is on its own page -->
       <li class="card card--hover explore-card card--violet reveal" data-dev-add="post">
+        <Backdrop theme="map" strength="card" />
         <IconCircle icon="map-pin" variant="violet" size="lg" />
         <h3>{t(lang, 'map.title')}</h3>
         <div class="explore-card__small" aria-hidden="true">
@@ -67,10 +88,17 @@ const mapText = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
     list-style: none;
   }
   .explore-card {
+    position: relative;
+    isolation: isolate;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+  }
+  /* the content above the drawing */
+  .explore-card > :not(:global(.backdrop)) {
+    position: relative;
+    z-index: 1;
   }
   .explore-card h3 {
     margin: 4px 0 0;
@@ -87,6 +115,89 @@ const mapText = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
   .explore-card__link {
     margin-top: auto;
   }
+  /* the adventures card: its song */
+  .explore-card__song {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px 6px 6px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .explore-card__song strong,
+  .explore-card__song small {
+    display: block;
+    line-height: 1.2;
+  }
+  .explore-card__song strong {
+    font-size: var(--fs-small);
+  }
+  .explore-card__song small {
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .explore-card__song-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--violet);
+    color: #fff;
+    font-size: 14px;
+  }
+  .explore-card__song[aria-pressed='true'] .explore-card__song-icon {
+    background: var(--yellow);
+    color: var(--ink);
+    animation: song-beat 0.9s ease-in-out infinite alternate;
+  }
+  @keyframes song-beat {
+    to {
+      scale: 1.12;
+    }
+  }
+  /* the Erasmus+ card: a quote, and a short look back behind a button */
+  .explore-card__quote {
+    margin: 0;
+    padding: 10px 14px;
+    border-left: 4px solid var(--yellow);
+    border-radius: 0 10px 10px 0;
+    background: color-mix(in srgb, var(--yellow) 14%, transparent);
+  }
+  .explore-card__quote p {
+    color: var(--ink);
+    font-style: italic;
+    font-weight: 600;
+  }
+  .explore-card__quote cite {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: var(--fs-small);
+    font-style: normal;
+    font-weight: 700;
+  }
+  .explore-card__more {
+    padding: 6px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-small);
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .explore-card__more:hover {
+    background: var(--yellow);
+  }
   @media (min-width: 1560px) {
     .explore__grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -100,6 +211,36 @@ const mapText = t(lang, 'map.cardText').replace('{n}', String(beenCount()));
 </style>
 
 <script>
+  import { wireInfoBoxes } from '../lib/infobox';
+
+  // the Erasmus+ card's "in short" box
+  wireInfoBoxes(document.querySelector('.explore') ?? document);
+
+  // the adventures card's song: a click plays it, another one pauses it
+  document.querySelectorAll<HTMLButtonElement>('[data-card-song]').forEach((b) => {
+    let audio: HTMLAudioElement | null = null;
+    const icon = b.querySelector('.explore-card__song-icon')!;
+    const set = (on: boolean) => {
+      b.setAttribute('aria-pressed', String(on));
+      icon.textContent = on ? '❚❚' : '▶';
+    };
+    b.addEventListener('click', () => {
+      if (!audio) {
+        audio = Object.assign(new Audio(b.dataset.cardSong), { preload: 'auto' });
+        // the button follows the song, also when the mini player pauses or stops it
+        audio.addEventListener('play', () => set(true));
+        audio.addEventListener('pause', () => set(false));
+        audio.addEventListener('ended', () => set(false));
+      }
+      if (audio.paused) {
+        void audio.play().catch(() => set(false));
+        // the mini player (MiniPlayer.astro) takes it over when the card is scrolled away
+        const label = `${b.querySelector('small')?.textContent ?? ''} – ${b.querySelector('strong')?.textContent ?? ''}`;
+        (window as unknown as { __nowPlaying?: (a: HTMLAudioElement, name?: string, source?: Element) => void }).__nowPlaying?.(audio, label, b);
+      } else audio.pause();
+    });
+  });
+
   // "Where I've been" opens the world map theme (the globe) – the map page stays as the fallback
   document.querySelectorAll<HTMLAnchorElement>('[data-open-mapmode]').forEach((a) =>
     a.addEventListener('click', (e) => {

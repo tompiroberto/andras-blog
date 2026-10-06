@@ -1,0 +1,303 @@
+---
+/**
+ * A whiteboard under the About text: things written on it in marker (src/data/whiteboard.json).
+ * Everyone sees it; only developer mode writes on it – ＋ adds a line, an item is dragged to move it,
+ * a double click rewrites it, ✕ removes it, 💾 saves the board to GitHub (🚀 Publish puts it online).
+ */
+import '@fontsource/caveat/600.css';
+import board from '../data/whiteboard.json';
+
+type Item = { id: string; kind: string; text: string; x: number; y: number; r: number; size: number; color: string };
+const items = board.items as Item[];
+const COLORS = ['ink', 'violet', 'red', 'blue', 'green'];
+---
+
+<div class="whiteboard" data-whiteboard>
+  <div class="whiteboard__surface" data-wb-surface>
+    {
+      items.map((it) => (
+        <span
+          class:list={['wb-item', `wb-item--${it.kind}`, `is-${it.color}`]}
+          data-id={it.id}
+          data-kind={it.kind}
+          style={`--wb-x:${it.x}%;--wb-y:${it.y}%;--wb-r:${it.r}deg;--wb-s:${it.size}px;--wb-n:${it.size}`}
+        >
+          {it.kind === 'glass' ? (
+            <svg viewBox="0 0 64 64" aria-label="an upside-down glass" role="img">
+              <path d="M8 8 L14 58 L50 58 L56 8" />
+              <ellipse cx="32" cy="8" rx="24" ry="5" />
+              <ellipse cx="32" cy="58" rx="18" ry="3.5" />
+              <path d="M19 18 L23 50" />
+            </svg>
+          ) : (
+            it.text
+          )}
+        </span>
+      ))
+    }
+  </div>
+  <span class="whiteboard__tray" aria-hidden="true">
+    <i class="is-violet"></i><i class="is-red"></i><i class="is-blue"></i>
+  </span>
+  <!-- developer mode: write on it -->
+  <div class="whiteboard__dev" data-dev-ui>
+    <button type="button" data-wb-add>＋ T</button>
+    <span class="whiteboard__colors">
+      {COLORS.map((c, i) => <button type="button" class:list={[`is-${c}`, { 'is-on': i === 0 }]} data-wb-color={c} aria-label={c}></button>)}
+    </span>
+    <button type="button" data-wb-save>💾</button>
+    <small data-wb-note></small>
+  </div>
+  <script type="application/json" data-wb-data set:html={JSON.stringify(board)} />
+</div>
+
+<style is:global>
+  .whiteboard {
+    position: relative;
+    margin: 32px 0 0;
+    max-width: 640px;
+  }
+  .whiteboard__surface {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    /* the writing is sized for a 620 px wide board and shrinks with it (cqw: % of the board) */
+    container-type: inline-size;
+    overflow: hidden;
+    border: 10px solid #c9ced6;
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at 18% 22%, rgb(0 0 0 / 0.025), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgb(0 0 0 / 0.03), transparent 45%),
+      #fdfdfb;
+    box-shadow:
+      inset 0 0 0 2px #aab1bc,
+      0 0 0 2px var(--ink),
+      6px 7px 0 2px var(--violet);
+  }
+  .wb-item {
+    position: absolute;
+    left: var(--wb-x);
+    top: var(--wb-y);
+    translate: -50% -50%;
+    rotate: var(--wb-r);
+    font: 600 calc(var(--wb-n) * 100cqw / 620) / 1 'Caveat', 'Noto Sans Georgian', 'Comic Sans MS', cursive;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .wb-item.is-ink { color: #1c2333; }
+  .wb-item.is-violet { color: var(--violet); }
+  .wb-item.is-red { color: #d7263d; }
+  .wb-item.is-blue { color: #1f5fd1; }
+  .wb-item.is-green { color: #1f8a3a; }
+  .wb-item--glass {
+    rotate: calc(var(--wb-r) + 180deg);
+  }
+  .wb-item--glass svg {
+    display: block;
+    width: calc(var(--wb-n) * 100cqw / 620);
+    height: calc(var(--wb-n) * 100cqw / 620);
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  /* the marker tray */
+  .whiteboard__tray {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    height: 12px;
+    margin: 0 18% 0;
+    padding: 2px 10px;
+    border: 2px solid var(--ink);
+    border-top: 0;
+    border-radius: 0 0 8px 8px;
+    background: #c9ced6;
+  }
+  .whiteboard__tray i {
+    width: 34px;
+    height: 7px;
+    border-radius: 4px;
+    background: currentColor;
+  }
+  .whiteboard__tray .is-violet { color: var(--violet); }
+  .whiteboard__tray .is-red { color: #d7263d; }
+  .whiteboard__tray .is-blue { color: #1f5fd1; }
+  /* developer mode */
+  .whiteboard__dev {
+    display: none;
+  }
+  :root.dev-mode:not(.dev-preview) .whiteboard__dev {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .whiteboard__dev > button {
+    padding: 4px 12px;
+    border: 1.5px solid #39d353;
+    border-radius: 8px;
+    background: #0d1117;
+    color: #39d353;
+    font: 700 13px ui-monospace, Consolas, monospace;
+    cursor: pointer;
+  }
+  .whiteboard__colors {
+    display: flex;
+    gap: 4px;
+  }
+  .whiteboard__colors button {
+    width: 22px;
+    height: 22px;
+    border: 2px solid #0d1117;
+    border-radius: 50%;
+    background: currentColor;
+    cursor: pointer;
+  }
+  .whiteboard__colors button.is-on {
+    box-shadow: 0 0 0 2px #39d353;
+  }
+  .whiteboard__colors .is-ink { color: #1c2333; }
+  .whiteboard__colors .is-violet { color: var(--violet); }
+  .whiteboard__colors .is-red { color: #d7263d; }
+  .whiteboard__colors .is-blue { color: #1f5fd1; }
+  .whiteboard__colors .is-green { color: #1f8a3a; }
+  .whiteboard__dev small {
+    color: #1f8a3a;
+    font-weight: 700;
+  }
+  :root.dev-mode:not(.dev-preview) .wb-item {
+    cursor: grab;
+    outline: 1px dashed transparent;
+  }
+  :root.dev-mode:not(.dev-preview) .wb-item:hover {
+    outline-color: #39d353;
+  }
+  .wb-item__x {
+    display: none;
+  }
+  :root.dev-mode:not(.dev-preview) .wb-item:hover .wb-item__x {
+    position: absolute;
+    top: -10px;
+    right: -14px;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border: 0;
+    border-radius: 50%;
+    background: #c0392b;
+    color: #fff;
+    font: 700 11px/1 ui-monospace, Consolas, monospace;
+    rotate: calc(-1 * var(--wb-r));
+    cursor: pointer;
+  }
+  .wb-item--glass:hover .wb-item__x {
+    rotate: calc(-1 * var(--wb-r) - 180deg);
+  }
+</style>
+
+<script>
+  import { commitFiles, getToken } from '../lib/githubCommit';
+
+  type Item = { id: string; kind: string; text: string; x: number; y: number; r: number; size: number; color: string };
+  const root = document.querySelector<HTMLElement>('[data-whiteboard]');
+  if (root) {
+    const surface = root.querySelector<HTMLElement>('[data-wb-surface]')!;
+    const note = root.querySelector<HTMLElement>('[data-wb-note]')!;
+    const data = JSON.parse(root.querySelector('[data-wb-data]')?.textContent || '{"items":[]}') as { _comment?: string; items: Item[] };
+    const dev = () => document.documentElement.classList.contains('dev-mode') && !document.documentElement.classList.contains('dev-preview');
+    let color = 'ink';
+    let changed = false;
+    const mark = () => {
+      changed = true;
+      note.textContent = '● 💾';
+    };
+    const itemOf = (el: HTMLElement) => data.items.find((x) => x.id === el.dataset.id);
+
+    // a ✕ on every item (shown in developer mode)
+    const addX = (el: HTMLElement) => {
+      const x = Object.assign(document.createElement('button'), { type: 'button', className: 'wb-item__x', textContent: '✕' });
+      x.addEventListener('pointerdown', (e) => e.stopPropagation());
+      x.addEventListener('click', (e) => {
+        e.stopPropagation();
+        data.items = data.items.filter((it) => it.id !== el.dataset.id);
+        el.remove();
+        mark();
+      });
+      el.append(x);
+    };
+    surface.querySelectorAll<HTMLElement>('.wb-item').forEach(addX);
+
+    // dragging an item
+    surface.addEventListener('pointerdown', (e) => {
+      const el = (e.target as Element).closest<HTMLElement>('.wb-item');
+      if (!el || !dev()) return;
+      e.preventDefault();
+      el.setPointerCapture(e.pointerId);
+      const box = surface.getBoundingClientRect();
+      const move = (ev: PointerEvent) => {
+        const it = itemOf(el);
+        if (!it) return;
+        it.x = Math.round(Math.min(98, Math.max(2, ((ev.clientX - box.left) / box.width) * 100)) * 10) / 10;
+        it.y = Math.round(Math.min(96, Math.max(4, ((ev.clientY - box.top) / box.height) * 100)) * 10) / 10;
+        el.style.setProperty('--wb-x', `${it.x}%`);
+        el.style.setProperty('--wb-y', `${it.y}%`);
+        mark();
+      };
+      el.addEventListener('pointermove', move);
+      el.addEventListener('pointerup', () => el.removeEventListener('pointermove', move), { once: true });
+    });
+
+    // a double click rewrites a line
+    surface.addEventListener('dblclick', (e) => {
+      const el = (e.target as Element).closest<HTMLElement>('.wb-item--text');
+      const it = el && itemOf(el);
+      if (!el || !it || !dev()) return;
+      const text = window.prompt('✎', it.text);
+      if (text === null || !text.trim()) return;
+      it.text = text.trim();
+      el.firstChild!.textContent = it.text;
+      mark();
+    });
+
+    // ＋: a new line in the chosen colour, in the middle
+    root.querySelector('[data-wb-add]')!.addEventListener('click', () => {
+      const text = window.prompt('＋')?.trim();
+      if (!text) return;
+      const it: Item = { id: `w${Date.now().toString(36)}`, kind: 'text', text, x: 50, y: 50, r: Math.round((Math.random() - 0.5) * 10), size: 32, color };
+      data.items.push(it);
+      const el = Object.assign(document.createElement('span'), { className: `wb-item wb-item--text is-${color}`, textContent: text });
+      el.dataset.id = it.id;
+      el.dataset.kind = 'text';
+      el.style.cssText = `--wb-x:${it.x}%;--wb-y:${it.y}%;--wb-r:${it.r}deg;--wb-s:${it.size}px;--wb-n:${it.size}`;
+      addX(el);
+      surface.append(el);
+      mark();
+    });
+    root.querySelectorAll<HTMLButtonElement>('[data-wb-color]').forEach((b) =>
+      b.addEventListener('click', () => {
+        color = b.dataset.wbColor ?? 'ink';
+        root.querySelectorAll('[data-wb-color]').forEach((x) => x.classList.toggle('is-on', x === b));
+      }),
+    );
+
+    // 💾: the board to GitHub
+    root.querySelector('[data-wb-save]')!.addEventListener('click', async () => {
+      if (!changed) return;
+      let key = getToken();
+      if (!key) key = (window.prompt('🔑') ?? '').trim();
+      if (!key) return;
+      note.textContent = '…';
+      try {
+        await commitFiles(key, [{ path: 'src/data/whiteboard.json', text: `${JSON.stringify(data, null, 2)}\n` }], 'Whiteboard: changed on the site', ['🖍 whiteboard']);
+        changed = false;
+        note.textContent = '✓';
+      } catch (err) {
+        note.textContent = err instanceof Error ? err.message : String(err);
+      }
+    });
+  }
+</script>

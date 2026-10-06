@@ -3,6 +3,7 @@ import { render } from 'astro:content';
 import { Image, getImage } from 'astro:assets';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Globe from '../../../components/Globe.astro';
+import Backdrop from '../../../components/Backdrop.astro';
 import IconCircle from '../../../components/IconCircle.astro';
 import StravaEmbeds from '../../../components/StravaEmbeds.astro';
 import { HTML_LANG, LOCALES, NATIVE_NAMES, localePath, t, type Lang } from '../../../i18n';
@@ -10,6 +11,7 @@ import { categoryMeta } from '../../../lib/categories';
 import { formatDate, getPosts } from '../../../lib/posts';
 import { getCollection } from 'astro:content';
 import { getPhotos } from '../../../lib/photos';
+import calendar from '../../../data/calendar.json';
 
 export async function getStaticPaths() {
   const posts = await getPosts();
@@ -19,12 +21,14 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const lang = Astro.params.lang as Lang;
 const { Content } = await render(post);
-const { title, date, datePrecision, category, excerpt, cover, coverAlt, draft, facts, strava, lang: postLang } = post.data;
+const { title, date, datePrecision, category, excerpt, cover, coverAlt, cover2, cover2Alt, draft, facts, strava, flags, photoTags, mediaAlbum, background, lang: postLang } = post.data;
 const meta = categoryMeta(category);
-// photos / videos and music uploaded for this post
+// the calendar event this post is about (an event's "post"): a link to it
+const calEvent = (calendar.events as { id: string; post?: string }[]).find((e) => e.post === post.id);
+// photos / videos and music uploaded for this post – and the gallery's pictures with its hashtags (photoTags)
 const postPhotos = await Promise.all(
   (await getPhotos(lang))
-    .filter((p) => p.post === post.id && p.files)
+    .filter((p) => p.files && (p.post === post.id || (photoTags ?? []).some((tag) => p.tags?.includes(tag))))
     .map(async (p) => ({ ...p, thumb: p.image ? (await getImage({ src: p.image, width: 640 })).src : p.src, large: p.image ? (await getImage({ src: p.image, width: 1800 })).src : p.src })),
 );
 const postMusic = (await getCollection('music')).filter((m) => m.data.post === post.id);
@@ -40,6 +44,8 @@ const postLd = {
   ...(coverUrl ? { image: new URL(coverUrl, Astro.site).href } : {}),
   mainEntityOfPage: new URL(Astro.url.pathname, Astro.site).href,
 };
+const BACKDROPS = ['eu', 'map', 'random', 'adventure'] as const;
+const BACKDROP_NAMES: Record<string, string> = { eu: '🇪🇺 EU', map: '🗺️ térkép / map', random: '🍫 random', adventure: '⛺ kaland / adventure', none: '— nincs / none' };
 const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEnglish') : NATIVE_NAMES[postLang]) : undefined;
 ---
 
@@ -48,8 +54,23 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
     <header class="section post__header">
       <div class="bg-layer">
         <Globe size="min(600px, 110vw)" right="-16%" top="-30%" speed={80} />
+        {/* every drawing is here, the post's own shows (developer mode can switch among them) */}
+        {BACKDROPS.map((b) => (
+          <span class="post__bd" data-post-bd={b} hidden={b !== (background ?? meta.backdrop)}>
+            <Backdrop theme={b} strength="strong" />
+          </span>
+        ))}
       </div>
       <div class="container">
+        {/* developer mode: the header's background drawing – saved to the post's front matter (background) */}
+        <label class="post__bg-pick" data-dev-ui>
+          🖼️
+          <select data-post-bg data-post-file={post.filePath} data-default={meta.backdrop}>
+            {[...BACKDROPS, 'none'].map((b) => (
+              <option value={b} selected={b === (background ?? meta.backdrop)}>{BACKDROP_NAMES[b]}{b === meta.backdrop ? ' ★' : ''}</option>
+            ))}
+          </select>
+        </label>
         <a class="link-arrow back-link" href={localePath(lang)}>{t(lang, 'posts.back')}</a>
         <div class="post__meta">
           <a class="pill post__cat" href={localePath(lang, category)}>
@@ -57,10 +78,26 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
             {t(lang, meta.titleKey)}
           </a>
           {date && <time datetime={date.toISOString().slice(0, datePrecision === 'month' ? 7 : 10)}>{formatDate(date, lang, datePrecision)}</time>}
+          {
+            calEvent && (
+              <a class="pill post__cal" href={`${localePath(lang, 'calendar')}?event=${calEvent.id}`}>
+                📅 {t(lang, 'nav.calendar')}
+              </a>
+            )
+          }
           {langNote && <span class="pill post__lang">{langNote}</span>}
           {draft && <span class="pill post__draft">DRAFT</span>}
         </div>
         <h1 lang={HTML_LANG[postLang]}>{title}</h1>
+        {
+          flags && flags.length > 0 && (
+            <p class="post__flags">
+              {flags.map((f) => (
+                <img src={`/flags/${f}.svg`} alt={f.toUpperCase()} width="36" height="27" />
+              ))}
+            </p>
+          )
+        }
       </div>
     </header>
 
@@ -69,7 +106,8 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
         <Globe size="min(700px, 120vw)" left="-26%" top="20%" speed={70} direction="ccw" dots={false} />
       </div>
       <div class="container">
-        {cover && <Image class="post__cover" src={cover} alt={coverAlt ?? ''} widths={[700, 1400]} sizes="(max-width: 800px) 100vw, 70ch" />}
+        {cover && <Image class="post__cover" src={cover} alt={coverAlt ?? ''} widths={[700, 1400]} sizes="(max-width: 800px) 100vw, 70ch" data-cover-pick />}
+        {cover2 && <Image class="post__cover" src={cover2} alt={cover2Alt ?? ''} widths={[700, 1400]} sizes="(max-width: 800px) 100vw, 70ch" hidden data-cover-pick />}
         {
           facts && (
             <ul class="facts" lang={HTML_LANG[postLang]}>
@@ -88,20 +126,37 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
         {strava && strava.length > 0 && <StravaEmbeds lang={lang} activities={strava} />}
         {
           postPhotos.length > 0 && (
-            <ul class="post-media">
-              {postPhotos.map((p) => (
-                <li>
-                  {p.video ? (
-                    <video src={p.video} controls preload="metadata" playsinline />
-                  ) : (
-                    <a href={p.large} target="_blank" rel="noopener">
-                      <img src={p.thumb} alt={p.caption} loading="lazy" />
-                    </a>
-                  )}
-                  <span>{p.caption}</span>
-                </li>
-              ))}
-            </ul>
+            <div class:list={['post-media-wrap', { 'is-album': mediaAlbum }]} data-post-media data-post-file={post.filePath}>
+              {/* as an album (mediaAlbum): a stack of the pictures that opens the list */}
+              <button type="button" class="post-media-album" aria-expanded="false" data-post-album-open>
+                <span class="post-media-album__stack">
+                  {postPhotos
+                    .slice(0, 3)
+                    .reverse()
+                    .map((p) => (p.video ? <span class="post-media-album__video">▶</span> : <img src={p.thumb} alt="" loading="lazy" />))}
+                </span>
+                <span class="post-media-album__count">📁 {postPhotos.length}</span>
+              </button>
+              {/* developer mode: the pictures as one album, or as a list */}
+              <button type="button" class="post-media-toggle" data-dev-ui data-post-album-toggle>
+                {mediaAlbum ? '📁 ✓ album' : '📁 album'}
+              </button>
+              <template data-post-key>{t(lang, 'dev.msgKey')}</template>
+              <ul class="post-media">
+                {postPhotos.map((p) => (
+                  <li>
+                    {p.video ? (
+                      <video src={p.video} controls preload="metadata" playsinline />
+                    ) : (
+                      <a href={p.large} target="_blank" rel="noopener">
+                        <img src={p.thumb} alt={p.caption} loading="lazy" />
+                      </a>
+                    )}
+                    <span>{p.caption}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )
         }
         {
@@ -148,18 +203,125 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
     border-radius: 14px;
     background: #000;
   }
-  /* a video plays in its own shape (16:9, upright…), across the whole row – only previews are cropped */
-  .post-media li:has(video) {
-    grid-column: 1 / -1;
+  .post__bg-pick {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    z-index: 2;
+    display: none;
+    gap: 6px;
+    align-items: center;
+    padding: 4px 8px;
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--paper, #fff);
+    font-size: var(--fs-small);
   }
+  :global(:root.dev-mode:not(.dev-preview)) .post__bg-pick {
+    display: inline-flex;
+  }
+  .post__bg-pick select {
+    font: inherit;
+    border: 0;
+    background: none;
+  }
+  .post__header .container {
+    position: relative;
+  }
+  /* the pictures as an album (mediaAlbum): a stack that opens the list; the switch is for developer mode */
+  .post-media-wrap {
+    margin: 28px 0 0;
+  }
+  .post-media-wrap > .post-media {
+    margin-top: 0;
+  }
+  .post-media-album,
+  .post-media-toggle,
+  .is-album:not(.is-open) > .post-media {
+    display: none;
+  }
+  .is-album > .post-media-album {
+    position: relative;
+    display: block;
+    width: min(320px, 100%);
+    height: 220px;
+    margin-bottom: 18px;
+    padding: 0;
+    border: var(--border);
+    border-radius: var(--radius-card);
+    background: color-mix(in srgb, var(--violet) 10%, var(--surface));
+    box-shadow: var(--shadow-yellow);
+    cursor: pointer;
+  }
+  .post-media-album__stack > * {
+    position: absolute;
+    top: 18px;
+    left: 26px;
+    width: calc(100% - 52px);
+    height: calc(100% - 34px);
+    border: 3px solid #fff;
+    border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 0 3px 10px rgb(0 0 0 / 0.3);
+    transition: rotate 250ms ease, translate 250ms ease;
+  }
+  .post-media-album__video {
+    display: grid;
+    place-items: center;
+    background: #111;
+    color: #fff;
+    font-size: 34px;
+  }
+  .post-media-album__stack > :nth-last-child(3) {
+    rotate: -8deg;
+    translate: -10px 2px;
+  }
+  .post-media-album__stack > :nth-last-child(2) {
+    rotate: 6deg;
+    translate: 10px 0;
+  }
+  .post-media-album__stack > :last-child {
+    rotate: -1.5deg;
+  }
+  .post-media-album:hover .post-media-album__stack > :nth-last-child(3) {
+    rotate: -14deg;
+    translate: -26px 4px;
+  }
+  .post-media-album:hover .post-media-album__stack > :nth-last-child(2) {
+    rotate: 12deg;
+    translate: 26px 2px;
+  }
+  .post-media-album__count {
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
+    padding: 3px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--yellow);
+    font-size: 13px;
+    font-weight: 800;
+  }
+  :global(:root.dev-mode:not(.dev-preview)) .post-media-toggle {
+    display: inline-flex;
+    margin: 0 0 12px;
+    padding: 6px 12px;
+    border: 1.5px solid #39d353;
+    border-radius: 8px;
+    background: #0d1117;
+    color: #39d353;
+    font: 700 13px ui-monospace, Consolas, monospace;
+    cursor: pointer;
+  }
+  /* a video sits in the grid like a picture, its caption right under it; it keeps its own shape (16:9,
+     upright…) inside the cell – nothing of it is cut off – and full screen plays it large */
   .post-media video {
-    width: auto;
-    max-width: 100%;
-    height: auto;
-    max-height: 75vh;
-    margin-inline: auto;
-    aspect-ratio: auto;
     object-fit: contain;
+  }
+  /* each cell: the picture (or video), then its caption – aligned to the top, so a caption never
+     drifts away from its picture */
+  .post-media li {
+    align-content: start;
   }
   .post-music {
     display: grid;
@@ -214,9 +376,31 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
     background: var(--violet-tint);
     color: var(--violet-dark);
   }
+  .post__cal {
+    background: var(--yellow-tint, #fff6c2);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .post__cal:hover {
+    background: var(--yellow);
+  }
   .post__draft {
     background: var(--ink);
     color: #fff;
+  }
+  .post__flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 14px 0 0;
+  }
+  .post__flags img {
+    width: 36px;
+    height: 27px;
+    object-fit: cover;
+    border: 2px solid var(--ink);
+    border-radius: 5px;
+    box-shadow: 2px 2px 0 var(--ink);
   }
   .post__body {
     padding-top: clamp(24px, 4vw, 48px);
@@ -261,3 +445,93 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
     transform: rotate(180deg) translateX(4px);
   }
 </style>
+
+<script>
+  /**
+   * The post's pictures as an album: a click on the stack opens (and closes) the list. In developer mode
+   * "📁 album" switches it on or off for this post – saved to GitHub (mediaAlbum in the post's front matter).
+   */
+  import { commitFiles, getToken, readFile } from '../../../lib/githubCommit';
+
+  const wrap = document.querySelector<HTMLElement>('[data-post-media]');
+  if (wrap) {
+    const open = wrap.querySelector<HTMLButtonElement>('[data-post-album-open]')!;
+    open.addEventListener('click', () => {
+      const on = !wrap.classList.contains('is-open');
+      wrap.classList.toggle('is-open', on);
+      open.setAttribute('aria-expanded', String(on));
+    });
+    const toggle = wrap.querySelector<HTMLButtonElement>('[data-post-album-toggle]')!;
+    toggle.addEventListener('click', async () => {
+      let key = getToken();
+      if (!key) key = (window.prompt(wrap.querySelector<HTMLTemplateElement>('[data-post-key]')?.content.textContent ?? '') ?? '').trim();
+      if (!key) return;
+      const on = !wrap.classList.contains('is-album');
+      const path = wrap.dataset.postFile!;
+      toggle.disabled = true;
+      try {
+        const md = await readFile(key, path);
+        // the front matter: mediaAlbum out, then (when on) in again just before its closing ---
+        const m = md.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+        if (!m) throw new Error(`no front matter in ${path}`);
+        const nl = md.includes('\r\n') ? '\r\n' : '\n';
+        const fm = m[1].split(/\r?\n/).filter((line) => !/^mediaAlbum:/.test(line));
+        if (on) fm.push('mediaAlbum: true');
+        const next = `---${nl}${fm.join(nl)}${nl}---${md.slice(m[0].length)}`;
+        await commitFiles(key, [{ path, text: next }], `Post: pictures ${on ? 'as an album' : 'as a list'}`, [`📁 ${on ? 'album' : 'list'}`]);
+        wrap.classList.toggle('is-album', on);
+        wrap.classList.remove('is-open');
+        toggle.textContent = on ? '📁 ✓ album' : '📁 album';
+      } catch (err) {
+        window.alert(err instanceof Error ? err.message : String(err));
+      } finally {
+        toggle.disabled = false;
+      }
+    });
+  }
+</script>
+
+<script>
+  /** developer mode: the header's background drawing (eu / map / random / adventure / none), saved as "background" in the front matter */
+  import { commitFiles as commitBg, getToken as getBgToken, readFile as readBg } from '../../../lib/githubCommit';
+
+  const pick = document.querySelector<HTMLSelectElement>('[data-post-bg]');
+  pick?.addEventListener('change', async () => {
+    const show = (v: string) => document.querySelectorAll<HTMLElement>('[data-post-bd]').forEach((el) => (el.hidden = el.dataset.postBd !== v));
+    const before = [...document.querySelectorAll<HTMLElement>('[data-post-bd]')].find((el) => !el.hidden)?.dataset.postBd ?? 'none';
+    const v = pick.value;
+    show(v);
+    let key = getBgToken();
+    if (!key) key = (window.prompt(document.querySelector<HTMLTemplateElement>('[data-post-key]')?.content.textContent ?? 'GitHub key') ?? '').trim();
+    if (!key) {
+      show(before);
+      pick.value = before;
+      return;
+    }
+    const path = pick.dataset.postFile!;
+    pick.disabled = true;
+    try {
+      const md = await readBg(key, path);
+      const m = md.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+      if (!m) throw new Error(`no front matter in ${path}`);
+      const nl = md.includes('\r\n') ? '\r\n' : '\n';
+      const fm = m[1].split(/\r?\n/).filter((line) => !/^background:/.test(line));
+      // the category's own drawing needs no line
+      if (v !== pick.dataset.default) fm.push(`background: ${v}`);
+      const next = `---${nl}${fm.join(nl)}${nl}---${md.slice(m[0].length)}`;
+      await commitBg(key, [{ path, text: next }], `Post: background ${v}`, [`🖼️ ${v}`]);
+    } catch (err) {
+      show(before);
+      pick.value = before;
+      window.alert(err instanceof Error ? err.message : String(err));
+    } finally {
+      pick.disabled = false;
+    }
+  });
+</script>
+
+<script>
+  import { pickCovers } from '../../../lib/coverPick';
+
+  pickCovers();
+</script>

@@ -6,6 +6,7 @@
  * or reset it. The edits live in a draft of src/data/edits.json (applied by src/components/SiteEdits.astro);
  * DevMode's save bar commits it. Arrow keys nudge (Shift: 10 px), Delete hides, Esc deselects.
  */
+import Icon from './Icon.astro';
 import { t, type Lang } from '../i18n';
 
 interface Props {
@@ -58,24 +59,47 @@ const L = {
   logStory: t(lang, 'log.story'),
   more: t(lang, 'ed.more'),
 };
+/** the toolbar: [select the parent] [text, subtitle, paragraph] [style, picture] [order, copy] [hide, reset] [close] */
+const TOOLS: { act: string; icon: string; label: string; key?: string }[][] = [
+  [{ act: 'parent', icon: 'corner-left-up', label: L.parent }],
+  [
+    { act: 'text', icon: 'pencil', label: L.text, key: 'Enter' },
+    { act: 'h3', icon: 'heading', label: L.subtitle },
+    { act: 'p', icon: 'pilcrow', label: L.paragraph },
+  ],
+  [
+    { act: 'style', icon: 'palette', label: L.style },
+    { act: 'img', icon: 'image', label: L.img },
+  ],
+  [
+    { act: 'up', icon: 'arrow-up', label: L.up, key: 'Alt+↑' },
+    { act: 'down', icon: 'arrow-down', label: L.down, key: 'Alt+↓' },
+    { act: 'dup', icon: 'copy', label: L.dup, key: 'Ctrl+D' },
+  ],
+  [
+    { act: 'hide', icon: 'eye-off', label: L.hide, key: 'Del' },
+    { act: 'reset', icon: 'rotate-ccw', label: L.reset },
+  ],
+  [{ act: 'close', icon: 'x', label: L.close, key: 'Esc' }],
+];
 ---
 
 <div class="ed-frame" hidden data-dev-ui data-ed-frame>
   {['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((h) => <span class={`ed-h ed-h--${h}`} data-h={h} />)}
+  <!-- the tools of the selected element, in groups; each says its name and its key -->
   <div class="ed-tools" data-ed-tools>
     <span class="ed-tools__name" data-ed-name></span>
-    <button type="button" data-ed-act="parent" title={L.parent}>⬑</button>
-    <button type="button" data-ed-act="text" title={L.text}>✎</button>
-    <button type="button" data-ed-act="h3" title={L.subtitle}>＋H</button>
-    <button type="button" data-ed-act="p" title={L.paragraph}>＋¶</button>
-    <button type="button" data-ed-act="style" title={L.style}>🎨</button>
-    <button type="button" data-ed-act="dup" title={L.dup}>⧉</button>
-    <button type="button" data-ed-act="up" title={L.up}>▲</button>
-    <button type="button" data-ed-act="down" title={L.down}>▼</button>
-    <button type="button" data-ed-act="img" title={L.img}>🖼</button>
-    <button type="button" data-ed-act="hide" title={L.hide}>👁</button>
-    <button type="button" data-ed-act="reset" title={L.reset}>↺</button>
-    <button type="button" data-ed-act="close" title={L.close}>✕</button>
+    {
+      TOOLS.map((group) => (
+        <span class="ed-tools__group">
+          {group.map((b) => (
+            <button type="button" data-ed-act={b.act} data-label={b.label} data-key={b.key} aria-label={b.key ? `${b.label} (${b.key})` : b.label}>
+              <Icon name={b.icon} size={16} />
+            </button>
+          ))}
+        </span>
+      ))
+    }
   </div>
   <span class="ed-size" data-ed-size></span>
   <input type="file" accept="image/*" class="ed-imgfile" tabindex="-1" aria-hidden="true" data-ed-imgfile />
@@ -103,13 +127,13 @@ const L = {
 <!-- the "+" under the element the mouse is over: put something new right there -->
 <button type="button" class="ed-addhere" hidden data-dev-ui data-ed-addhere title={L.addHere} aria-label={L.addHere}>＋</button>
 <div class="ed-addmenu" hidden data-dev-ui data-ed-addmenu>
-  <button type="button" data-ed-addpick="more">⧉ {L.more}</button>
-  <button type="button" data-ed-addpick="h3">＋H {L.subtitle}</button>
-  <button type="button" data-ed-addpick="p">＋¶ {L.paragraph}</button>
-  <button type="button" data-ed-addpick="up">▲ {L.up}</button>
-  <button type="button" data-ed-addpick="down">▼ {L.down}</button>
-  <button type="button" data-ed-addpick="story" hidden>📖 {L.story}</button>
-  <button type="button" data-ed-addpick="trash" class="ed-addmenu__danger">🗑 {L.trash}</button>
+  <button type="button" data-ed-addpick="more"><Icon name="copy-plus" size={16} /> {L.more}</button>
+  <button type="button" data-ed-addpick="h3"><Icon name="heading" size={16} /> {L.subtitle}</button>
+  <button type="button" data-ed-addpick="p"><Icon name="pilcrow" size={16} /> {L.paragraph}</button>
+  <button type="button" data-ed-addpick="up"><Icon name="arrow-up" size={16} /> {L.up}</button>
+  <button type="button" data-ed-addpick="down"><Icon name="arrow-down" size={16} /> {L.down}</button>
+  <button type="button" data-ed-addpick="story" hidden><Icon name="book-open" size={16} /> {L.story}</button>
+  <button type="button" data-ed-addpick="trash" class="ed-addmenu__danger"><Icon name="trash-2" size={16} /> {L.trash}</button>
 </div>
 <!-- drag this to put the element somewhere else among its neighbours -->
 <button type="button" class="ed-grip" hidden data-dev-ui data-ed-grip title={L.grip} aria-label={L.grip}>⠿</button>
@@ -281,6 +305,9 @@ const L = {
     box-shadow: 0 0 18px rgba(57, 255, 20, 0.35);
   }
   .ed-addmenu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding: 7px 10px;
     border: 0;
     border-radius: 8px;
@@ -351,14 +378,23 @@ const L = {
     padding: 0 6px;
     color: #9be9a8;
   }
+  /* the groups, split by thin lines */
+  .ed-tools__group {
+    display: flex;
+    gap: 2px;
+    padding: 0 3px;
+    border-left: 1px solid #1f6f2a;
+  }
   .ed-tools button {
-    min-width: 28px;
-    height: 28px;
-    padding: 0 6px;
-    border: 1px solid #1f6f2a;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
     border-radius: 6px;
-    background: #031a08;
-    color: #39ff14;
+    background: transparent;
+    color: #d6f5d6;
     font: inherit;
     cursor: pointer;
   }
@@ -366,6 +402,10 @@ const L = {
   .ed-tools button:focus-visible {
     background: #39ff14;
     color: #000;
+  }
+  .ed-tools [data-ed-act='hide']:hover,
+  .ed-tools [data-ed-act='reset']:hover {
+    background: #ff6b5e;
   }
   /* invisible but not display:none – some browsers refuse to open a hidden file picker */
   .ed-imgfile {
@@ -609,7 +649,7 @@ const L = {
 
     // developer UI, and the full-screen views that have their own editing (the world map) or none
     const isDevUi = (el: Element) =>
-      !!el.closest('[data-dev-ui], .dev-panel, .lay-bar, .dev-plus, .lay-save, .dev-gate, .dev-add-menu, .dev-toast, dialog, .site-header .brand, .map-mode-view, .chaos-view, .country-view, .route-view, .street-view, .cal-view, .site-header .header-tools, .site-header .menu-toggle, .mobile-menu, .hero__status, .gal-folders, .gallery__dev, .gal-place, .music__sort, .music__tags, .music__playlists, .track__edit, .track__del, .track-form, .cal-devbar, .ctr, .ctr-new');
+      !!el.closest('[data-dev-ui], .dev-panel, .lay-bar, .dev-plus, .lay-save, .dev-gate, .dev-add-menu, .dev-toast, dialog, .site-header .brand, .map-mode-view, .chaos-view, .country-view, .route-view, .street-view, .cal-view, .site-header .header-tools, .site-header .menu-toggle, .mobile-menu, .hero__status, .gal-folders, .gallery__dev, .gal-place, .music__sort, .music__tags, .music__playlists, .track__edit, .track__del, .track-form, .cal-devbar, .ctr, .ctr-new, .post-media-album, .whiteboard, .nshelf, .races');
     const pickable = (t: EventTarget | null): HTMLElement | null => {
       let el = t instanceof Element ? t : null;
       while (el && !(el instanceof HTMLElement)) el = el.parentElement;
@@ -635,7 +675,9 @@ const L = {
       if (el !== sel) stylePanel.hidden = true;
       sel = el;
       frame.hidden = false;
-      nameEl.textContent = el.dataset.lay ?? (el.id ? `#${el.id}` : el.tagName.toLowerCase());
+      // what is selected, in a word anyone gets: ¶ a paragraph, H a title, 🖼 a picture, ▭ a box …
+      const KIND: Record<string, string> = { P: '¶', H1: 'H1', H2: 'H2', H3: 'H3', H4: 'H4', IMG: '🖼', PICTURE: '🖼', VIDEO: '▶', A: '🔗', BUTTON: '⏺', LI: '•', UL: '☰', OL: '☰', SECTION: '▭', FIGURE: '🖼' };
+      nameEl.textContent = el.dataset.lay ?? (el.id ? `#${el.id}` : (KIND[el.tagName] ?? '▭'));
       place();
     };
     function deselect() {
@@ -896,6 +938,28 @@ const L = {
         return;
       }
       if (!sel || !html.classList.contains('ed-on')) return;
+      // the usual keys keep working in fields (copy, paste, select all, delete a letter …)
+      if ((e.target as HTMLElement).closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      const mod = e.ctrlKey || e.metaKey;
+      const k = e.key.toLowerCase();
+      // Ctrl+D: a copy · Enter / F2: rewrite the text · Alt+↑ / Alt+↓: order · Del / Backspace: hide
+      if (mod && k === 'd') {
+        e.preventDefault();
+        return act('dup');
+      }
+      if ((e.key === 'Enter' || e.key === 'F2') && !mod) {
+        e.preventDefault();
+        return act('text');
+      }
+      if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault();
+        return act(e.key === 'ArrowUp' ? 'up' : 'down');
+      }
+      if (e.key === 'Backspace' && !mod) {
+        e.preventDefault();
+        return act('hide');
+      }
+      if (mod) return;
       const step = e.shiftKey ? 10 : 1;
       const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
       if (moves[e.key]) {
@@ -1180,12 +1244,12 @@ const L = {
       if ((e.target as Element).closest('[data-ed-tools]')) return;
       startText();
     });
-    frame.querySelectorAll<HTMLButtonElement>('[data-ed-act]').forEach((b) =>
+    frame.querySelectorAll<HTMLButtonElement>('[data-ed-act]').forEach((b) => {
       b.addEventListener('click', (e) => {
         e.stopPropagation();
         act(b.dataset.edAct!);
-      }),
-    );
+      });
+    });
 
     // ---- replace a picture: the 🖼 button, or drop a file onto any picture ----
     const imgFile = frame.querySelector<HTMLInputElement>('[data-ed-imgfile]')!;
