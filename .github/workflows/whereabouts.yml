@@ -7,6 +7,8 @@ name: Where am I now
 on:
   schedule:
     - cron: '5 20 4 10 *'   # 4 Oct 2026, 23:05 Greek time
+    - cron: '5 15 22 10 *'  # 22 Oct 2026, 17:05 Hungarian time (off to Poland)
+    - cron: '35 21 1 11 *'  # 1 Nov 2026, 22:35 Hungarian time (home from Poland)
     - cron: '5 23 2 12 *'   # 3 Dec 2026, 00:05 Hungarian time
     - cron: '5 23 10 12 *'  # 11 Dec 2026, 00:05 Hungarian time
     - cron: '30 6 * * 1'    # and every Monday, in case one was missed

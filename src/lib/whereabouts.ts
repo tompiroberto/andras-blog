@@ -21,7 +21,8 @@ export type Step = {
   place_en?: string;
   manual?: boolean;
 };
-export type Trip = { id: string; country?: string; place?: string; place_en?: string; from: string; to: string };
+/** depart / back: the hour he leaves on the first day and is home on the last day ("17:00", Hungarian time) */
+export type Trip = { id: string; country?: string; place?: string; place_en?: string; from: string; to: string; depart?: string; back?: string };
 
 const dayAfter = (day: string) => {
   const d = new Date(`${day}T12:00:00Z`);
@@ -29,16 +30,20 @@ const dayAfter = (day: string) => {
   return d.toISOString().slice(0, 10);
 };
 
-/** midnight of a day in Hungarian time (the trips' days are Hungarian days, wherever the visitor is) */
-const huMidnight = (day: string) =>
-  `${day}T00:00:00${new Date(`${day}T12:00:00Z`).toLocaleString('en', { timeZone: 'Europe/Budapest', timeZoneName: 'shortOffset' }).includes('GMT+2') ? '+02:00' : '+01:00'}`;
+/** a moment of a day in Hungarian time (the trips' days are Hungarian days, wherever the visitor is) */
+export const huStamp = (day: string, time = '00:00') =>
+  `${day}T${time}:00${new Date(`${day}T12:00:00Z`).toLocaleString('en', { timeZone: 'Europe/Budapest', timeZoneName: 'shortOffset' }).includes('GMT+2') ? '+02:00' : '+01:00'}`;
+const huMidnight = (day: string) => huStamp(day);
+/** when a trip starts and ends (ms): its hours, else the first day's midnight and the midnight after its last day */
+export const tripStart = (e: Pick<Trip, 'from' | 'depart'>) => Date.parse(huStamp(e.from, e.depart || '00:00'));
+export const tripEnd = (e: Pick<Trip, 'to' | 'back'>) => Date.parse(e.back ? huStamp(e.to, e.back) : huStamp(dayAfter(e.to)));
 
 export function timeline(steps: Step[], trips: Trip[]): Step[] {
   const out: Step[] = steps.map((s) => ({ ...s, manual: true }));
   for (const e of trips) {
     if (!e.country) continue;
-    out.push({ from: huMidnight(e.from), country: e.country, trip: e.id, place: e.place, place_en: e.place_en });
-    out.push({ from: huMidnight(dayAfter(e.to)), country: 'HU', key: 'HU' });
+    out.push({ from: huStamp(e.from, e.depart || '00:00'), country: e.country, trip: e.id, place: e.place, place_en: e.place_en });
+    out.push({ from: e.back ? huStamp(e.to, e.back) : huMidnight(dayAfter(e.to)), country: 'HU', key: 'HU' });
   }
   return out.sort((a, b) => Date.parse(a.from) - Date.parse(b.from) || Number(!!a.manual) - Number(!!b.manual));
 }

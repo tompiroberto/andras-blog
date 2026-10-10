@@ -839,5 +839,8 @@
   "search.site": "Pe site",
   "search.cities": "Orașe",
   "search.sitePh": "Cuvânt-cheie, ex. Erasmus, Nutella, Georgia…",
-  "search.noHits": "Nimic pe site – pentru un loc, încearcă Orașe."
+  "search.noHits": "Nimic pe site – pentru un loc, încearcă Orașe.",
+  "cal.depart": "Plecare",
+  "cal.back": "Întoarcere",
+  "post.upcoming": "În curând"
 }

@@ -839,5 +839,8 @@
   "search.site": "Az oldalon",
   "search.cities": "Városok",
   "search.sitePh": "Kulcsszó, pl. Erasmus, Nutella, Grúzia…",
-  "search.noHits": "Erre nincs találat az oldalon – egy helyhez próbáld a Városok kapcsolót."
+  "search.noHits": "Erre nincs találat az oldalon – egy helyhez próbáld a Városok kapcsolót.",
+  "cal.depart": "Indulás",
+  "cal.back": "Hazaérkezés",
+  "post.upcoming": "Hamarosan"
 }

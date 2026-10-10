@@ -21,7 +21,7 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const lang = Astro.params.lang as Lang;
 const { Content } = await render(post);
-const { title, date, datePrecision, category, excerpt, cover, coverAlt, cover2, cover2Alt, draft, facts, strava, flags, photoTags, mediaAlbum, background, lang: postLang } = post.data;
+const { title, date, datePrecision, category, excerpt, cover, coverAlt, cover2, cover2Alt, draft, upcoming, facts, strava, flags, photoTags, mediaAlbum, background, lang: postLang } = post.data;
 const meta = categoryMeta(category);
 // the calendar event this post is about (an event's "post"): a link to it
 const calEvent = (calendar.events as { id: string; post?: string }[]).find((e) => e.post === post.id);
@@ -87,6 +87,7 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
           }
           {langNote && <span class="pill post__lang">{langNote}</span>}
           {draft && <span class="pill post__draft">DRAFT</span>}
+          {upcoming && <span class="pill post__soon">⏳ {t(lang, 'post.upcoming')}</span>}
         </div>
         <h1 lang={HTML_LANG[postLang]}>{title}</h1>
         {
@@ -202,6 +203,11 @@ const langNote = postLang !== lang ? (postLang === 'en' ? t(lang, 'posts.onlyEng
     border: var(--border);
     border-radius: 14px;
     background: #000;
+  }
+  .post__soon {
+    background: var(--yellow);
+    border: var(--border);
+    font-weight: 800;
   }
   .post__bg-pick {
     position: absolute;

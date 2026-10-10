@@ -19,9 +19,10 @@ const offset = (day) => (new Date(`${day}T12:00:00Z`).toLocaleString('en', { tim
 const steps = read('src/data/whereabouts.json').steps.map((s) => ({ ...s, manual: true }));
 for (const e of read('src/data/calendar.json').events) {
   if (!e.country) continue;
-  steps.push({ from: `${e.from}T00:00:00${offset(e.from)}`, country: e.country });
-  const back = dayAfter(e.to);
-  steps.push({ from: `${back}T00:00:00${offset(back)}`, country: 'HU' });
+  // depart / back: the hours he leaves and is home again (Hungarian time)
+  steps.push({ from: `${e.from}T${e.depart || '00:00'}:00${offset(e.from)}`, country: e.country });
+  const back = e.back ? e.to : dayAfter(e.to);
+  steps.push({ from: `${back}T${e.back || '00:00'}:00${offset(back)}`, country: 'HU' });
 }
 steps.sort((a, b) => Date.parse(a.from) - Date.parse(b.from) || Number(!!a.manual) - Number(!!b.manual));
 const now = Date.now();

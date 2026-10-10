@@ -839,5 +839,8 @@
   "search.site": "No site",
   "search.cities": "Cidades",
   "search.sitePh": "Palavra-chave, ex. Erasmus, Nutella, Geórgia…",
-  "search.noHits": "Nada no site – para um lugar, experimenta Cidades."
+  "search.noHits": "Nada no site – para um lugar, experimenta Cidades.",
+  "cal.depart": "Partida",
+  "cal.back": "Regresso",
+  "post.upcoming": "Em breve"
 }

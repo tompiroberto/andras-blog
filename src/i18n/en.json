@@ -839,5 +839,8 @@
   "search.site": "On the site",
   "search.cities": "Cities",
   "search.sitePh": "A keyword, e.g. Erasmus, Nutella, Georgia…",
-  "search.noHits": "Nothing on the site for this – try the Cities switch for a place."
+  "search.noHits": "Nothing on the site for this – try the Cities switch for a place.",
+  "cal.depart": "Leaving",
+  "cal.back": "Home again",
+  "post.upcoming": "Coming soon"
 }

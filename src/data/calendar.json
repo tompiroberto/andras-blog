@@ -160,6 +160,26 @@
       "lng": 22.959
     },
     {
+      "id": "pl-2026",
+      "title": "Lengyelország – Erasmus+ training course (Play for Human Rights)",
+      "title_en": "Poland – Erasmus+ training course (Play for Human Rights)",
+      "place": "Lengyelország",
+      "place_en": "Poland",
+      "country": "PL",
+      "from": "2026-10-22",
+      "to": "2026-11-01",
+      "depart": "17:00",
+      "back": "22:30",
+      "color": "#003399",
+      "note": "Okt. 22: kiutazás · okt. 23–31: training course · nov. 1: vissza. Az iskolában épp őszi szünet van, így jelentkeztem – nagyon meglepett, hogy felvettek. Kicsit megijedtem, mert ez az első Erasmusom, ahova csapat nélkül megyek, és a ki- és visszautat is nekem kell intéznem.",
+      "note_en": "22 Oct: travelling there · 23–31 Oct: the training course · 1 Nov: back home. It's the autumn break at school, so I applied – and was really surprised to be accepted. I'm a bit nervous: it's my first Erasmus+ without a group, and I have to sort out the journey there and back myself.",
+      "tags": [
+        "erasmus+",
+        "poland"
+      ],
+      "post": "erasmus-poland-2026"
+    },
+    {
       "id": "ge-2026",
       "title": "Grúzia",
       "place": "Grúzia",

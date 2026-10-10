@@ -28,6 +28,8 @@ const posts = defineCollection({
       /** Which part of the cover stays on the 16:9 post card ('attention' = the most interesting part) */
       coverPosition: z.enum(COVER_POSITIONS).default('attention'),
       draft: z.boolean().default(false),
+      /** A trip still ahead: a "Coming soon" badge on its card and page */
+      upcoming: z.boolean().default(false),
       /** Lucide (or custom) icon name shown on the card when there is no cover photo */
       icon: z.string().optional(),
       /** Key facts shown as icon circles at the top of the post */

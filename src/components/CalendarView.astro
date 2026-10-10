@@ -265,6 +265,11 @@ for (const p of await getPhotos(lang)) {
       <label>{words.from}<input type="date" required data-cf="from" /></label>
       <label>{words.to}<input type="date" required data-cf="to" /></label>
     </div>
+    <!-- the hours: when he leaves on the first day, when he is home on the last (the countdown and "currently in" follow them) -->
+    <div class="cal-form__row">
+      <label>🛫 {t(lang, 'cal.depart')}<input type="time" data-cf="depart" /></label>
+      <label>🏠 {t(lang, 'cal.back')}<input type="time" data-cf="back" /></label>
+    </div>
     <label>{words.note} 🇭🇺<textarea rows="2" maxlength="300" data-cf="note"></textarea></label>
     <label>English 🇬🇧<textarea rows="2" maxlength="300" data-cf="note_en"></textarea></label>
     <fieldset class="cal-form__music">
@@ -1743,8 +1748,9 @@ for (const p of await getPhotos(lang)) {
   import { geocode } from '../lib/geocode';
   import { parseTags, showTags } from '../lib/tags';
   import { commitFiles, getToken } from '../lib/githubCommit';
+  import { tripEnd, tripStart } from '../lib/whereabouts';
 
-  type Ev = { id: string; title: string; title_en?: string; place?: string; place_en?: string; country?: string; lat?: number; lng?: number; from: string; to: string; color: string; note?: string; note_en?: string; music?: string[]; tags?: string[]; docs?: { name: string; file: string }[]; post?: string };
+  type Ev = { id: string; title: string; title_en?: string; place?: string; place_en?: string; country?: string; lat?: number; lng?: number; depart?: string; back?: string; from: string; to: string; color: string; note?: string; note_en?: string; music?: string[]; tags?: string[]; docs?: { name: string; file: string }[]; post?: string };
   type Plan = { id: string; text: string; text_en?: string; when?: string; when_en?: string };
   type Track = { id: string; file: string; title: string; artist?: string };
   const view = document.querySelector<HTMLElement>('[data-cal]');
@@ -1829,7 +1835,8 @@ for (const p of await getPhotos(lang)) {
     };
     const range = (e: Ev) => (e.from === e.to ? fmtShort.format(parse(e.from)) : `${fmtShort.format(parse(e.from))} – ${fmtShort.format(parse(e.to))}`);
     /** the next adventure (starts after today) and the one going on now */
-    const nextEv = () => sorted().find((e) => e.from > iso(new Date()));
+    // the next adventure: the next one he hasn't left for yet (an hour of leaving counts: "depart")
+    const nextEv = () => sorted().find((e) => tripStart(e) > Date.now());
     const nowEv = () => sorted().filter((e) => on(e, iso(new Date()))).pop();
     function renderSides() {
       // timeline: every adventure up to now (scrolled to the latest ones), and the next one faded
@@ -1916,13 +1923,9 @@ for (const p of await getPhotos(lang)) {
     const digits = Object.fromEntries(['d', 'h', 'm', 's'].map((u) => [u, view.querySelector<HTMLElement>(`[data-cd="${u}"]`)!]));
     // the countdown: to the next adventure – or (a click) the time since the last one ended; both follow the calendar
     let cdMode: 'to' | 'since' = 'to';
-    const lastEv = () => sorted().filter((e) => e.to < iso(new Date())).sort((a, b) => a.to.localeCompare(b.to)).pop();
-    /** the moment the last adventure ended: the day after its last day */
-    const endOf = (e: Ev) => {
-      const d = parse(e.to);
-      d.setDate(d.getDate() + 1);
-      return d.getTime();
-    };
+    const lastEv = () => sorted().filter((e) => tripEnd(e) < Date.now()).sort((a, b) => tripEnd(a) - tripEnd(b)).pop();
+    /** the moment the last adventure ended: the hour he got home ("back"), else the day after its last day */
+    const endOf = (e: Ev) => tripEnd(e);
     let shownDay = '';
     function renderCountdown() {
       shownDay = iso(new Date());
@@ -1937,7 +1940,8 @@ for (const p of await getPhotos(lang)) {
         const flag = flagImg(e.country);
         if (flag) to.append(flag);
         to.append(tr(e, 'place') && e.country ? regionNames.of(e.country) ?? tr(e, 'title') : tr(e, 'title'));
-        view!.querySelector('[data-cal-cd-date]')!.textContent = [...new Set([tr(e, 'title'), tr(e, 'place')].filter(Boolean))].concat(range(e)).join(' · ');
+        const hours = e.depart || e.back ? [`🕔 ${e.depart ?? '–'} → ${e.back ?? '–'}`] : [];
+        view!.querySelector('[data-cal-cd-date]')!.textContent = [...new Set([tr(e, 'title'), tr(e, 'place')].filter(Boolean))].concat(range(e), hours).join(' · ');
       } else {
         to.textContent = cdMode === 'to' ? W.noNext : W.noLast;
         view!.querySelector('[data-cal-cd-date]')!.textContent = '';
@@ -1962,7 +1966,7 @@ for (const p of await getPhotos(lang)) {
       if (shownDay && shownDay !== iso(new Date())) return renderSides();
       const e = cdMode === 'to' ? nextEv() : lastEv();
       if (!e) return;
-      const diff = cdMode === 'to' ? parse(e.from).getTime() - Date.now() : Date.now() - endOf(e);
+      const diff = cdMode === 'to' ? tripStart(e) - Date.now() : Date.now() - endOf(e);
       if (cdMode === 'to' && diff <= 0) return renderSides();
       let ms = Math.max(0, diff);
       const parts: Record<string, number> = { d: Math.floor(ms / 864e5) };
@@ -2767,6 +2771,8 @@ for (const p of await getPhotos(lang)) {
       cf('tags').value = showTags(e?.tags);
       cf('from').value = e?.from ?? day;
       cf('to').value = e?.to ?? (day === openDay && openTo ? openTo : day);
+      cf('depart').value = e?.depart ?? '';
+      cf('back').value = e?.back ?? '';
       cf('note').value = e?.note ?? '';
       renderMusic(e?.music ?? []);
       draftId = e?.id ?? `${day}-${Math.random().toString(36).slice(2, 6)}`;
@@ -2794,7 +2800,7 @@ for (const p of await getPhotos(lang)) {
       const from = cf('from').value;
       const to = cf('to').value < from ? from : cf('to').value;
       const kept: Partial<Ev> = { ...(editing ?? {}) };
-      (['title_en', 'place', 'place_en', 'country', 'lat', 'lng', 'note', 'note_en', 'music', 'tags'] as const).forEach((k) => delete kept[k]);
+      (['title_en', 'place', 'place_en', 'country', 'lat', 'lng', 'note', 'note_en', 'music', 'tags', 'depart', 'back'] as const).forEach((k) => delete kept[k]);
       const item: Ev = {
         ...kept,
         id: formKey(),
@@ -2806,6 +2812,8 @@ for (const p of await getPhotos(lang)) {
         ...(cf('place').value.trim() && placeAt ? placeAt : {}),
         from,
         to,
+        ...(cf('depart').value ? { depart: cf('depart').value } : {}),
+        ...(cf('back').value ? { back: cf('back').value } : {}),
         color: form.querySelector<HTMLInputElement>('input[name="cal-color"]:checked')?.value ?? '#7B2FF7',
         ...(cf('note').value.trim() ? { note: cf('note').value.trim() } : {}),
         ...(cf('note_en').value.trim() ? { note_en: cf('note_en').value.trim() } : {}),

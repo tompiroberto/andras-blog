@@ -839,5 +839,8 @@
   "search.site": "Στη σελίδα",
   "search.cities": "Πόλεις",
   "search.sitePh": "Λέξη-κλειδί, π.χ. Erasmus, Nutella, Γεωργία…",
-  "search.noHits": "Τίποτα στη σελίδα – για τόπο δοκίμασε τις Πόλεις."
+  "search.noHits": "Τίποτα στη σελίδα – για τόπο δοκίμασε τις Πόλεις.",
+  "cal.depart": "Αναχώρηση",
+  "cal.back": "Επιστροφή",
+  "post.upcoming": "Σύντομα"
 }
